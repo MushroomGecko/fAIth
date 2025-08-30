@@ -1,0 +1,6 @@
+# Core dependencies for fAIth
+Django>=5.2.5
+djangorestframework>=3.16.1
+
+# Testing
+# flake8>=7.0.0
