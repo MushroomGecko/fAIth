@@ -1,6 +1,16 @@
 # Core dependencies for fAIth
 Django>=5.2.5
 djangorestframework>=3.16.1
+python-dotenv>=1.1.1
+
+# LLM
+llama-cpp-python>=0.3.16
+ollama>=0.5.3
+openai>=1.104.2
+
+# Vector Database / Embedding
+sentence-transformers>=3.2.0
+pymilvus>=2.6.1
 
 # Testing
 # flake8>=7.0.0
