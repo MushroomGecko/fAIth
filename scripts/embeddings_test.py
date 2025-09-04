@@ -2,6 +2,8 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
+import torch
+import gc
 
 # Ensure project root is on sys.path when running this script directly
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +25,11 @@ def test_docker_model_runner():
     vectors = list(runner.embed(batch))
     print(vectors)
     print(len(vectors))
+    
+    runner.kill()
+    del runner
+    torch.cuda.empty_cache()
+    gc.collect()
 
 def test_hf_sentence_transformers():
     model_id = "Qwen/Qwen3-Embedding-0.6B"
@@ -31,6 +38,11 @@ def test_hf_sentence_transformers():
     print(vectors)
     print(len(vectors))
 
+    runner.kill()
+    del runner
+    torch.cuda.empty_cache()
+    gc.collect()
+
 def test_llama_cpp_python():
     repo_id = "Qwen/Qwen3-Embedding-0.6B-GGUF"
     model_id = "Qwen3-Embedding-0.6B-Q8_0.gguf"
@@ -38,6 +50,11 @@ def test_llama_cpp_python():
     vectors = list(runner.embed(batch))
     print(vectors)
     print(len(vectors))
+    
+    runner.kill()
+    del runner
+    torch.cuda.empty_cache()
+    gc.collect()
 
 def test_ollama():
     model_id = "snowflake-arctic-embed:22m"
@@ -45,6 +62,11 @@ def test_ollama():
     vectors = list(runner.embed(batch))
     print(vectors)
     print(len(vectors))
+        
+    runner.kill()
+    del runner
+    torch.cuda.empty_cache()
+    gc.collect()
 
 # Use an embedding-capable model served by your Docker OpenAI-compatible server
 # test_docker_model_runner()

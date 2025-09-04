@@ -1,14 +1,23 @@
 from django.db import models
 from django.utils.text import slugify
+from ai import globals
+import logging
+import torch
+import gc
+
+logger = logging.getLogger(__name__)
 
 class EmbeddingModelManager(models.Manager):
     def get_latest_active(self):
         """Return the most recently updated active embedding model, or None."""
-        return (
-            self.filter(is_active=True)
-            .order_by("-updated_at", "-created_at")
-            .first()
-        )
+        latest_active = self.filter(is_active=True).order_by("-updated_at", "-created_at").first()
+        if latest_active is None:
+            return self.order_by("-updated_at", "-created_at").first()
+        return latest_active
+    
+    def list_active(self):
+        """Return a list of all active embedding models."""
+        return self.filter(is_active=True)
 
 class EmbeddingModel(models.Model):
     """Stores metadata about available embedding models used for vectorization."""
@@ -70,8 +79,8 @@ class EmbeddingModel(models.Model):
     )
 
     class Meta:
-        verbose_name = "Embedding model"
-        verbose_name_plural = "Embedding models"
+        verbose_name = "Embedding Model"
+        verbose_name_plural = "Embedding Models"
         ordering = ["name"]
 
     objects = EmbeddingModelManager()
@@ -80,10 +89,36 @@ class EmbeddingModel(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        previous_active = self.get_latest_active()
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+        current_active = self.get_latest_active()
 
-    def get_latest_active(self):
+        # If the embedding engine is not initialized, initialize it
+        if not globals.EMBEDDING_ENGINE:
+            globals.EMBEDDING_ENGINE = globals.get_embedding_engine()
+            print(f"Embedding engine was not initialized, initializing with {self.slug}")
+
+        # If the embedding engine is not the same as the current active embedding model, change it
+        elif previous_active.slug != current_active.slug:
+            # Very aggressive closing of the embedding engine to ensure that memory is freed
+            # (This is mainly for the HF Sentence Transformers runner as it is a nuisance to unload it properly)
+            globals.EMBEDDING_ENGINE.kill()
+            del globals.EMBEDDING_ENGINE
+            torch.cuda.empty_cache()
+            gc.collect()
+
+            # Re-initialize the embedding engine
+            globals.EMBEDDING_ENGINE = globals.get_embedding_engine()
+            print(f"Embedding engine was changed, changing embedding engine to {current_active.slug}")
+
+        # Print the slugs for debugging
+        print(f"This slug: {self.slug}")
+        print(f"Previous active slug: {previous_active.slug}")
+        print(f"Current active slug: {current_active.slug}")
+
+    @classmethod
+    def get_latest_active(cls):
         """Return the most recently updated active embedding model, or None."""
-        return self.objects.get_latest_active()
+        return cls.objects.get_latest_active()

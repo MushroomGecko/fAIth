@@ -1,0 +1,66 @@
+[
+    {
+        "model": "ai.EmbeddingModel",
+        "pk": 1,
+        "fields": 
+        {
+            "name": "Qwen3 Embedding 0.6B (HF Transformers)",
+            "slug": "qwen3-embedding-0-6b-hf-transformers",
+            "description": "Hugging Face Sentence Transformers runner for Qwen/Qwen3-Embedding-0.6B",
+            "runner": "hf_sentence_transformers",
+            "model_repo": null,
+            "model_id": "Qwen/Qwen3-Embedding-0.6B",
+            "is_active": true,
+            "created_at": "2025-09-04T01:15:00Z",
+            "updated_at": "2025-09-04T01:15:00Z"
+        }
+    },
+    {
+        "model": "ai.EmbeddingModel",
+        "pk": 2,
+        "fields": 
+        {
+            "name": "Qwen3 Embedding 0.6B GGUF (Docker)",
+            "slug": "qwen3-embedding-0-6b-gguf-docker",
+            "description": "Docker model runner using OpenAI-compatible server for GGUF variant",
+            "runner": "docker_model_runner",
+            "model_repo": null,
+            "model_id": "hf.co/qwen/qwen3-embedding-0.6b-gguf:q8_0",
+            "is_active": false,
+            "created_at": "2025-09-04T01:15:00Z",
+            "updated_at": "2025-09-04T01:15:00Z"
+        }
+    },
+    {
+        "model": "ai.EmbeddingModel",
+        "pk": 3,
+        "fields": 
+        {
+            "name": "Qwen3 Embedding 0.6B GGUF (llama.cpp)",
+            "slug": "qwen3-embedding-0-6b-gguf-llamacpp",
+            "description": "llama_cpp_python runner using local GGUF from Hugging Face repo",
+            "runner": "llama_cpp_python",
+            "model_repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
+            "model_id": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+            "is_active": false,
+            "created_at": "2025-09-04T01:15:00Z",
+            "updated_at": "2025-09-04T01:15:00Z"
+        }
+    },
+    {
+        "model": "ai.EmbeddingModel",
+        "pk": 4,
+        "fields": 
+        {
+            "name": "Snowflake Arctic Embed 22M (Ollama)",
+            "slug": "snowflake-arctic-embed-22m-ollama",
+            "description": "Ollama runner using snowflake-arctic-embed:22m",
+            "runner": "ollama",
+            "model_repo": null,
+            "model_id": "snowflake-arctic-embed:22m",
+            "is_active": false,
+            "created_at": "2025-09-04T01:15:00Z",
+            "updated_at": "2025-09-04T01:15:00Z"
+        }
+    }
+]
