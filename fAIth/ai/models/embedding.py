@@ -31,7 +31,6 @@ class EmbeddingModel(models.Model):
     
     name = models.CharField(
         max_length=255,
-        unique=True,
         blank=False,
         null=False,
         help_text="Required. Human‑readable name of the embedding model.",
@@ -50,12 +49,8 @@ class EmbeddingModel(models.Model):
         max_length=255,
         choices=CHOICES,
         help_text="The runner used to run the embedding model.",
-    )
-    model_repo = models.CharField(
-        max_length=255,
-        help_text="The repository of the embedding model. This is used to identify the embedding model in the runner.",
-        blank=True,
-        null=True,
+        blank=False,
+        null=False,
     )
     model_id = models.CharField(
         max_length=255,
@@ -63,8 +58,14 @@ class EmbeddingModel(models.Model):
         blank=False,
         null=False,
     )
+    model_repo = models.CharField(
+        max_length=255,
+        help_text="The repository of the embedding model. This is used to identify the embedding model in the runner. (Mainly used for the Llama CPP Python runner)",
+        blank=True,
+        null=True,
+    )
     is_active = models.BooleanField(
-        default=True,
+        default=False,
         help_text="Whether the embedding model is active.",
     )
     created_at = models.DateTimeField(
@@ -81,17 +82,18 @@ class EmbeddingModel(models.Model):
     class Meta:
         verbose_name = "Embedding Model"
         verbose_name_plural = "Embedding Models"
-        ordering = ["name"]
+        ordering = ["name", "runner"]
+        unique_together = ["name", "runner"]
 
     objects = EmbeddingModelManager()
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.get_runner_display()})"
 
     def save(self, *args, **kwargs):
         previous_active = self.get_latest_active()
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = slugify(f"{self.name}-{self.runner}")
         super().save(*args, **kwargs)
         current_active = self.get_latest_active()
 
