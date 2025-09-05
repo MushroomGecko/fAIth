@@ -10,10 +10,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from fAIth.ai.embedding.runners.docker_model_runner import EmbeddingRunner as DockerRunner
-from fAIth.ai.embedding.runners.hf_sentence_transformers import EmbeddingRunner as HFRunner
-from fAIth.ai.embedding.runners.llama_cpp_python import EmbeddingRunner as LLamaCPPRunner
-from fAIth.ai.embedding.runners.ollama import EmbeddingRunner as OllamaRunner
+from ai.embedding.embedding_runners.docker_model_runner import EmbeddingRunner as DockerRunner
+from ai.embedding.embedding_runners.hf_sentence_transformers import EmbeddingRunner as HFRunner
+from ai.embedding.embedding_runners.llama_cpp_python import EmbeddingRunner as LLamaCPPRunner
+from ai.embedding.embedding_runners.ollama import EmbeddingRunner as OllamaRunner
 
 load_dotenv()
 

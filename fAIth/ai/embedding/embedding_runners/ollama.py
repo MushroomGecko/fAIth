@@ -19,7 +19,7 @@ class EmbeddingRunner:
             except Exception:
                 raise Exception(f"Model {self.model_name} not found in Ollama")
 
-    def embed(self, batch: list[str], prompt_type: str = "query"):
+    def embed(self, batch: list[str], prompt_type: str = "document"):
         """Embed a batch of text."""
         for text in batch:
             yield list(ollama.embed(model=self.model_name, input=text).get("embeddings")[0])

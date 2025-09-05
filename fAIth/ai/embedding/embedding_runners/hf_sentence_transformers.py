@@ -13,9 +13,9 @@ class EmbeddingRunner:
         """Initialize the Hugging Face Sentence Transformers runner."""
         self.model_name = model_name
         self.model = SentenceTransformer(self.model_name, 
-                                         device=os.getenv("DEVICE", "cpu"))
+                                         device=os.getenv("EMBEDDING_DEVICE", "cpu"))
 
-    def embed(self, batch: list[str], prompt_type: str = "query"):        
+    def embed(self, batch: list[str], prompt_type: str = "document"):        
         """Embed a batch of text."""
         if prompt_type == "query":
             return self.model.encode(batch, prompt_name="query").tolist()

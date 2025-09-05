@@ -18,7 +18,7 @@ class EmbeddingRunner:
         api_key = os.getenv("OPENAI_API_KEY", "sk-noauth")
         self.client = OpenAI(base_url=base_url, api_key=api_key)
 
-    def embed(self, batch: list[str], prompt_type: str = "query"):
+    def embed(self, batch: list[str], prompt_type: str = "document"):
         """Embed a batch of text."""
         for text in batch:
             yield list(self.client.embeddings.create(model=self.model_name, input=text).data[0].embedding)

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python fAIth/manage.py loaddata fAIth/ai/fixtures/embedding.json
+python fAIth/manage.py loaddata fAIth/ai/fixtures/*.json
