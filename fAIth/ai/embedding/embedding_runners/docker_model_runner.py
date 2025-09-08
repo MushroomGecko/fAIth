@@ -18,10 +18,34 @@ class EmbeddingRunner:
         api_key = os.getenv("OPENAI_API_KEY", "sk-noauth")
         self.client = OpenAI(base_url=base_url, api_key=api_key)
 
+        self.query_template = os.getenv("EMBEDDING_MODEL_QUERY_PROMPT", "")
+        self.document_template = os.getenv("EMBEDDING_MODEL_DOCUMENT_PROMPT", "")
+
     def embed(self, batch: list[str], prompt_type: str = "document"):
         """Embed a batch of text."""
-        for text in batch:
-            yield list(self.client.embeddings.create(model=self.model_name, input=text).data[0].embedding)
+        # If the prompt type is query, we need to use the query template
+        if prompt_type == "query":
+            # If the query template is empty, we need to use the default query template
+            if self.query_template == "":
+                for text in batch:
+                    yield list(self.client.embeddings.create(model=self.model_name, input=text).data[0].embedding)
+            else:
+                for text in batch:
+                    prompt = self.query_template.format(text=text)
+                    yield list(self.client.embeddings.create(model=self.model_name, input=prompt).data[0].embedding)
+        # If the prompt type is document, we need to use the document template
+        elif prompt_type == "document":
+            # If the document template is empty, we need to use the default document template
+            if self.document_template == "":
+                for text in batch:
+                    yield list(self.client.embeddings.create(model=self.model_name, input=text).data[0].embedding)
+            else:
+                for text in batch:
+                    prompt = self.document_template.format(text=text)
+                    yield list(self.client.embeddings.create(model=self.model_name, input=prompt).data[0].embedding)
+        # If the prompt type is unknown, raise an error
+        else:
+            raise ValueError(f"Unknown prompt type: {prompt_type}")
 
     def kill(self):
         """Kill the Docker Model Runner."""

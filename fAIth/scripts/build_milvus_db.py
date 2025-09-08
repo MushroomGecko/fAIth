@@ -26,18 +26,11 @@ vector_database = VectorDatabase()
 # Print the collection names
 print(vector_database.get_collection_names())
 
-collection_name = "bsb"
-queries = ["In the beginning", "Sodom and Gomorrah", "Garden of Eden", "Tower of Babel", "Adam and Eve", "What was the name of the first man?", "Noah's Arc", "Noah's Ark"]
-limit = 10
-for query in queries:
-    # Get results
-    results = vector_database.search(collection_name=collection_name, query=query, limit=limit)
+# Build the database
+vector_database.build_database()
 
-    # Print results
-    print("\n########################")
-    print(f"Results for \"{query}\":")
+# Print the collection names
+print(vector_database.get_collection_names())
 
-    # Print results
-    print(f"{vector_database.database_type} Search:")
-    for i, result in enumerate(results):
-        print(f"{i+1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}")
+# Close the database
+vector_database.close()
