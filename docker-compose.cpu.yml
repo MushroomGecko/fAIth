@@ -63,27 +63,22 @@ services:
       - "etcd"
       - "minio"
 
-  llama_cpp:
-    container_name: llama-cpp
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:latest
+    runtime: runc
     ports:
-      - "8080:8080"
+      - "11434:11434"
+    environment:
+      OLLAMA_KEEP_ALIVE: 24h
+      OLLAMA_NUM_GPU: 0
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp:/models
-    command: ["-hf", "unsloth/Qwen3-0.6B-GGUF:Q4_K_M", "-ngl", "9999", "-c", "4096", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "8080"]
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/ollama:/root/.ollama
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
       timeout: 10s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
 
 networks:
   default:
