@@ -10,11 +10,15 @@ if str(PROJECT_ROOT) not in sys.path:
 
 load_dotenv()
 
+CURRENT_LLM_PORT = os.getenv("EMBEDDING_PORT", "11435")
+MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+
+# Embedding specific things
 EMBEDDING_DEVICE = os.getenv("EMBEDDING_DEVICE", "cpu")
 EMBEDDING_MODEL_RUNNER = os.getenv("EMBEDDING_MODEL_RUNNER", "llama_cpp")
 EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")
 HF_TOKEN = os.getenv("HF_TOKEN", "")
-EMBEDDING_PORT = os.getenv("EMBEDDING_PORT", "11435")
+
 
 # Llama CPP specific things
 EMBEDDING_GPU_LAYERS = int(os.getenv("EMBEDDING_GPU_LAYERS", "0"))
@@ -28,9 +32,6 @@ DOCKER_COMPOSE_TPL = """
 services:
 {milvus_setup}
 {embedding_setup}
-networks:
-  default:
-    name: milvus
 """.lstrip('\n')
 
 NVIDIA_SETUP = \
@@ -73,39 +74,34 @@ MILVUS_SETUP = \
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_LOG_LEVEL: warn
-    ports:
-      - "9001:9001"
-      - "9000:9000"
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/minio:/minio_data
-    command: minio server /minio_data --console-address ":9001"
+    command: minio server /minio_data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
 
-  standalone:
-    container_name: milvus-standalone-faith
+  milvus:
+    container_name: milvus-faith
     image: milvusdb/milvus:latest
-    command: ["milvus", "run", "standalone"]
-    security_opt:
-    - seccomp:unconfined
+    ports:
+      - "{milvus_port}:{milvus_port}"
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
-      LOG_LEVEL: warn
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/milvus:/var/lib/milvus
+    command: ["milvus", "run", "standalone"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
       interval: 30s
       start_period: 90s
       timeout: 20s
       retries: 3
-    ports:
-      - "19530:19530"
-      - "9091:9091"
+    security_opt:
+      - seccomp:unconfined
     depends_on:
       - "etcd"
       - "minio"
@@ -117,9 +113,9 @@ OLLAMA_SETUP = \
     container_name: ollama-faith
     image: ollama/ollama:latest
     ports:
-      - "{embedding_port}:{embedding_port}"
+      - "{llm_port}:{llm_port}"
     environment:
-      OLLAMA_HOST: 0.0.0.0:{embedding_port}
+      OLLAMA_HOST: 0.0.0.0:{llm_port}
       OLLAMA_MODELS: /root/.ollama
       OLLAMA_KEEP_ALIVE: 24h
       {ollama_force_cpu}
@@ -127,7 +123,7 @@ OLLAMA_SETUP = \
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/ollama:/root/.ollama
     command: ["serve"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{embedding_port}/api/tags"]
+      test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/api/tags"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -140,16 +136,16 @@ LLAMA_CPP_SETUP = \
     container_name: llama-cpp-faith
     image: {llama_cpp_image}
     ports:
-      - "{embedding_port}:{embedding_port}"
+      - "{llm_port}:{llm_port}"
     environment:
       HF_TOKEN: {hf_token}
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/llama_cpp_cache:/root/.cache/huggingface
-    command: ["-hf", "{model_id}", "-c", "4096", "-ngl", "{embedding_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{embedding_port}"]
+    command: ["-hf", "{model_id}", "-c", "4096", "-ngl", "{embedding_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{embedding_port}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -162,7 +158,7 @@ VLLM_SETUP = \
     container_name: vllm-faith
     image: vllm/vllm-openai:latest
     ports:
-      - "{embedding_port}:{embedding_port}"
+      - "{llm_port}:{llm_port}"
     environment:
       HF_TOKEN: {hf_token}
       HF_HOME: /root/.cache/huggingface
@@ -170,9 +166,9 @@ VLLM_SETUP = \
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/vllm_cache:/root/.cache/huggingface
     ipc: host
-    command: ["--model", "{model_id}", "--download-dir", "/root/.cache/huggingface", "--max-model-len", "4096", "--dtype", "auto", "--enforce-eager", "{enforce_eager}", "--host", "0.0.0.0", "--port", "{embedding_port}"]
+    command: ["--model", "{model_id}", "--download-dir", "/root/.cache/huggingface", "--max-model-len", "4096", "--dtype", "auto", "--enforce-eager", "{enforce_eager}", "--host", "0.0.0.0", "--port", "{llm_port}"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{embedding_port}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -185,7 +181,7 @@ SGLANG_SETUP = \
     container_name: sglang-faith
     image: lmsysorg/sglang:latest
     ports:
-      - "{embedding_port}:{embedding_port}"
+      - "{llm_port}:{llm_port}"
     environment:
       HF_TOKEN: {hf_token}
       HF_HOME: /root/.cache/huggingface
@@ -193,9 +189,9 @@ SGLANG_SETUP = \
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/sglang_cache:/root/.cache/huggingface
     ipc: host
-    command: ["python", "-m", "sglang.launch_server", "--model-path", "{model_id}", "--max-total-tokens", "4096", "--disable-cuda-graph", "--host", "0.0.0.0", "--port", "{embedding_port}"]
+    command: ["python", "-m", "sglang.launch_server", "--model-path", "{model_id}", "--max-total-tokens", "4096", "--disable-cuda-graph", "--host", "0.0.0.0", "--port", "{llm_port}"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{embedding_port}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -204,7 +200,7 @@ SGLANG_SETUP = \
 
 def build_docker_compose():
     """Build the docker compose file."""
-    milvus_block = MILVUS_SETUP.format()
+    milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT)
     embedding_setup = ""
     
     if EMBEDDING_MODEL_RUNNER == "llama_cpp":
@@ -220,24 +216,24 @@ def build_docker_compose():
 
     if EMBEDDING_DEVICE == "cpu":
         if EMBEDDING_MODEL_RUNNER == "ollama":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", ollama_force_cpu="OLLAMA_NUM_GPU=0")
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", ollama_force_cpu="OLLAMA_NUM_GPU=0")
         elif EMBEDDING_MODEL_RUNNER == "llama_cpp":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", embedding_gpu_layers=0, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server", hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", embedding_gpu_layers=0, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server", hf_token=HF_TOKEN)
         elif EMBEDDING_MODEL_RUNNER == "vllm":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
         elif EMBEDDING_MODEL_RUNNER == "sglang":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", hf_token=HF_TOKEN)
         else:
             raise ValueError(f"Invalid embedding model runner: {EMBEDDING_MODEL_RUNNER}")
     elif EMBEDDING_DEVICE == "cuda":
         if EMBEDDING_MODEL_RUNNER == "ollama":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, ollama_force_cpu="")
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, ollama_force_cpu="")
         elif EMBEDDING_MODEL_RUNNER == "llama_cpp":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, embedding_gpu_layers=EMBEDDING_GPU_LAYERS, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-cuda", hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, embedding_gpu_layers=EMBEDDING_GPU_LAYERS, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-cuda", hf_token=HF_TOKEN)
         elif EMBEDDING_MODEL_RUNNER == "vllm":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
         elif EMBEDDING_MODEL_RUNNER == "sglang":
-            embedding_setup = embedding_setup.format(embedding_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, hf_token=HF_TOKEN)
         else:
             raise ValueError(f"Invalid embedding model runner: {EMBEDDING_MODEL_RUNNER}")
     else:
