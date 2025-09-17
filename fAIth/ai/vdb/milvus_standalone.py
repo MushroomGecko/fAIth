@@ -18,6 +18,7 @@ class VectorDatabase:
 
         # Get Milvus connection information
         self.milvus_url = os.getenv("MILVUS_URL")
+        self.milvus_port = os.getenv("MILVUS_PORT")
         self.milvus_database_name = os.getenv("MILVUS_DATABASE_NAME")
         self.milvus_username = os.getenv("MILVUS_USERNAME")
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
@@ -26,7 +27,7 @@ class VectorDatabase:
         self.database_type = os.getenv("DATABASE_TYPE", "hybrid")
 
         # Establish a connection to the Milvus database
-        self.client = MilvusClient(uri=self.milvus_url, token=f"{self.milvus_username}:{self.milvus_password}")
+        self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
 
         # Build the database if it doesn't exist
         if self.milvus_database_name not in self.client.list_databases():
@@ -172,13 +173,6 @@ class VectorDatabase:
                         print(f"Added {book} {chapter} to {version} collection")
 
     def search(self, collection_name: str, query: str, limit: int = 10):
-        # Load the collection
-        if collection_name in self.client.list_collections():
-            self.client.load_collection(collection_name=collection_name)
-        else:
-            print(f"Collection {collection_name} not found")
-            exit(1)
-        
         if self.database_type == "dense" or self.database_type == "hybrid":
             # Get query embedding (single vector)
             query_embedding = EMBEDDING_ENGINE.embed([query], prompt_type="query", normalize=False)[0]

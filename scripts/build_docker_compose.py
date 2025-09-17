@@ -10,7 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 load_dotenv()
 
-CURRENT_LLM_PORT = os.getenv("EMBEDDING_PORT", "11435")
+EMBEDDING_PORT = os.getenv("EMBEDDING_PORT", "11435")
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 
 # Embedding specific things
@@ -143,7 +143,7 @@ LLAMA_CPP_SETUP = \
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/llama_cpp_cache:/root/.cache/huggingface
-    command: ["-hf", "{model_id}", "-c", "4096", "-ngl", "{embedding_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}"]
+    command: ["-hf", "{model_id}", "-c", "4096", "-ngl", "{embedding_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", {embedding}]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
@@ -216,24 +216,24 @@ def build_docker_compose():
 
     if EMBEDDING_DEVICE == "cpu":
         if EMBEDDING_MODEL_RUNNER == "ollama":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", ollama_force_cpu="OLLAMA_NUM_GPU=0")
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", ollama_force_cpu="OLLAMA_NUM_GPU=0")
         elif EMBEDDING_MODEL_RUNNER == "llama_cpp":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", embedding_gpu_layers=0, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server", hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", embedding_gpu_layers=0, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server", hf_token=HF_TOKEN, embedding="--embedding")
         elif EMBEDDING_MODEL_RUNNER == "vllm":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
         elif EMBEDDING_MODEL_RUNNER == "sglang":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup="", hf_token=HF_TOKEN)
         else:
             raise ValueError(f"Invalid embedding model runner: {EMBEDDING_MODEL_RUNNER}")
     elif EMBEDDING_DEVICE == "cuda":
         if EMBEDDING_MODEL_RUNNER == "ollama":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, ollama_force_cpu="")
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, ollama_force_cpu="")
         elif EMBEDDING_MODEL_RUNNER == "llama_cpp":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, embedding_gpu_layers=EMBEDDING_GPU_LAYERS, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-cuda", hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, embedding_gpu_layers=EMBEDDING_GPU_LAYERS, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-cuda", hf_token=HF_TOKEN, embedding="--embedding")
         elif EMBEDDING_MODEL_RUNNER == "vllm":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, enforce_eager=ENFORCE_EAGER, hf_token=HF_TOKEN)
         elif EMBEDDING_MODEL_RUNNER == "sglang":
-            embedding_setup = embedding_setup.format(llm_port=CURRENT_LLM_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, hf_token=HF_TOKEN)
+            embedding_setup = embedding_setup.format(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, nvidia_setup=NVIDIA_SETUP, hf_token=HF_TOKEN)
         else:
             raise ValueError(f"Invalid embedding model runner: {EMBEDDING_MODEL_RUNNER}")
     else:
