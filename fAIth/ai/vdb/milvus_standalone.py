@@ -136,9 +136,9 @@ class VectorDatabase:
 
         # Add things to the collections
         # Get the Bible version
-        for version in VERSION_SELECTION[:1]:
+        for version in VERSION_SELECTION:
             # Get the books in order
-            for book in IN_ORDER_BOOKS[:1]:
+            for book in IN_ORDER_BOOKS:
                 for chapter in range(1, CHAPTER_SELECTION[book] + 1):
                     # Get the verses for the book and chapter
                     with open(BIBLE_DATA_ROOT / version / book / f"{chapter}.json", "r", encoding="utf-8") as file:

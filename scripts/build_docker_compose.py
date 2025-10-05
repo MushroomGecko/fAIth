@@ -177,11 +177,12 @@ MILVUS_SETUP = \
     depends_on:
       - "etcd"
       - "minio"
+      - "embedding"
 """.lstrip('\n')
 
 OLLAMA_SETUP = \
 """
-  ollama_{model_type}:
+  {model_type}:
     container_name: ollama-{model_type}-faith
     image: {ollama_image}
     ports:
@@ -204,7 +205,7 @@ OLLAMA_SETUP = \
 
 LLAMA_CPP_SETUP = \
 """
-  llama_cpp_{model_type}:
+  {model_type}:
     container_name: llama-cpp-{model_type}-faith
     image: {llama_cpp_image}
     volumes:
@@ -226,7 +227,7 @@ LLAMA_CPP_SETUP = \
 
 VLLM_SETUP = \
 """
-  vllm_{model_type}:
+  {model_type}:
     container_name: vllm-{model_type}-faith
     image: {vllm_image}
     volumes:
@@ -249,7 +250,7 @@ VLLM_SETUP = \
 
 SGLANG_SETUP = \
 """
-  sglang_{model_type}:
+  {model_type}:
     container_name: sglang-{model_type}-faith
     image: {sglang_image}
     volumes:

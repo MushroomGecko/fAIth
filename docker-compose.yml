@@ -57,8 +57,9 @@ services:
     depends_on:
       - "etcd"
       - "minio"
+      - "embedding"
 
-  llama_cpp_embedding:
+  embedding:
     container_name: llama-cpp-embedding-faith
     image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
