@@ -58,29 +58,22 @@ services:
       - "etcd"
       - "minio"
 
-  llama_cpp:
-    container_name: llama-cpp-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+  llama_cpp_embedding:
+    container_name: llama-cpp-embedding-faith
+    image: ghcr.io/ggml-org/llama.cpp:server
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     ports:
       - "11435:11435"
     environment:
       HF_TOKEN: 
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     command: ["-hf", "Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0", "-c", "4096", "-ngl", "9999", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "11435", --embedding]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11435/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
 
