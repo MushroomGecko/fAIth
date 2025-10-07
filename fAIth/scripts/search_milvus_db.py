@@ -18,7 +18,7 @@ except Exception as e:
     # Allow script to proceed; some paths may not require Django
     print(f"Warning: Django setup failed: {e}")
 
-from ai.vdb.milvus_standalone import VectorDatabase
+from ai.vdb.milvus_db import VectorDatabase
 
 # Get DB object
 vector_database = VectorDatabase()

@@ -3,7 +3,7 @@ import os
 
 def get_embedding_engine():
     """Get the embedding engine."""
-    from ai.embedding.embedding import Embedding
+    from ai.vdb.embedding import Embedding
     try:
         print("Getting embedding engine")
         return Embedding(model_name=os.getenv("EMBEDDING_MODEL_ID", ""))
