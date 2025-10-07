@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 import json
 from frontend.globals import BIBLE_DATA_ROOT, VERSION_SELECTION, IN_ORDER_BOOKS, CHAPTER_SELECTION
 from ai.vdb.embedding import Embedding
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
