@@ -2,6 +2,7 @@
 Django>=5.2.5
 djangorestframework>=3.16.1
 python-dotenv>=1.1.1
+uvicorn>=0.37.0
 
 # LLM
 llama-cpp-python>=0.3.16
