@@ -40,4 +40,4 @@ for query in queries:
     # Print results
     print(f"{vector_database.database_type} Search:")
     for i, result in enumerate(results):
-        print(f"{i+1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}")
+        print(f"{i+1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}")

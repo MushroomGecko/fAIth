@@ -7,9 +7,6 @@ import ai.globals as globals
 
 
 def full_view(request, book, chapter, version):
-
-    print(globals.EMBEDDING_ENGINE.embed(["Hello, world!"]))
-    print(globals.EMBEDDING_ENGINE.embedding_size())
     # Try to get the verses for the book and chapter
     try:
         # Process the version
