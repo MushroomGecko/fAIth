@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
 from django.conf import settings
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Default version is the BSB version
 DEFAULT_VERSION = 'bsb'
@@ -39,12 +43,12 @@ if BIBLE_DATA_ROOT.exists() and (BIBLE_DATA_ROOT / DEFAULT_VERSION).exists():
                 CHAPTER_SELECTION[book_title] = len(json_files)
             # Catch potential errors during listdir
             except Exception as e:
-                print(f"Error: {e}")
+                logger.error(f"Error: {e}")
                 CHAPTER_SELECTION[book_title] = 0
         else:
             CHAPTER_SELECTION[book_title] = 0
 else:
-    print(f"Warning: Bible data directory not found or incomplete at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' may be incomplete.")
+    logger.warning(f"Bible data directory not found or incomplete at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' may be incomplete.")
     # Initialize to prevent KeyErrors if data is missing
     for book_title in IN_ORDER_BOOKS:
         CHAPTER_SELECTION[book_title] = 0

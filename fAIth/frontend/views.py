@@ -3,10 +3,17 @@ from django.shortcuts import redirect
 from django.urls import reverse
 import json
 from .globals import BIBLE_DATA_ROOT, DEFAULT_VERSION, IN_ORDER_BOOKS, CHAPTER_SELECTION, VERSION_SELECTION
-import ai.globals as globals
+from ai.globals import get_milvus_db
+import logging
 
+# Set up logging
+logger = logging.getLogger(__name__)
 
-def full_view(request, book, chapter, version):
+async def full_view(request, book, chapter, version):
+    # Search the Milvus database using asynchronous client
+    milvus_db = await get_milvus_db()
+    results = await milvus_db.search(collection_name="bsb", query=f"Noah's Ark {book} {chapter} {version}", limit=10)
+
     # Try to get the verses for the book and chapter
     try:
         # Process the version
@@ -20,7 +27,7 @@ def full_view(request, book, chapter, version):
 
         # Check if the file exists
         if not file_path.exists():
-            print(f"Error: Bible data file not found at {file_path}")
+            logger.error(f"Error: Bible data file not found at {file_path}")
             # Consider a more user-friendly error page or redirect to a known good chapter/version
             return redirect(reverse('bible_book_view', args=['Genesis', '1', DEFAULT_VERSION]))
 
@@ -83,10 +90,10 @@ def full_view(request, book, chapter, version):
         }
         return render(request, 'index.html', context)
     except FileNotFoundError:
-        print(f"Error: Bible data file not found for {book} {chapter} ({processed_version}). Redirecting to default.")
+        logger.error(f"Error: Bible data file not found for {book} {chapter} ({processed_version}). Redirecting to default.")
         return redirect(reverse('default_view'))
     except Exception as e:
-        print(f"Error in bible_book_view for {book} {chapter} ({processed_version}): {e}")
+        logger.error(f"Error in bible_book_view for {book} {chapter} ({processed_version}): {e}")
         # A more specific error handling or logging would be good here
         return redirect(reverse('default_view'))
 

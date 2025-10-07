@@ -23,6 +23,9 @@ from ai.vdb.milvus_db import VectorDatabase
 # Get DB object
 vector_database = VectorDatabase()
 
+# Load the database
+vector_database.load_database()
+
 # Print the collection names
 print(vector_database.get_collection_names())
 

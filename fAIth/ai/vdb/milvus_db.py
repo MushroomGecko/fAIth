@@ -7,7 +7,7 @@ from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSch
 from dotenv import load_dotenv
 import json
 from frontend.globals import BIBLE_DATA_ROOT, VERSION_SELECTION, IN_ORDER_BOOKS, CHAPTER_SELECTION
-from ai.globals import EMBEDDING_ENGINE
+from ai.vdb.embedding import Embedding
 
 # Load environment variables
 load_dotenv()
@@ -16,7 +16,7 @@ load_dotenv()
 class VectorDatabase:
     """Milvus standalone client."""
     def __init__(self):
-        """Initialize the Milvus standalone client."""
+        """Initialize the Milvus standalone client. Build the database if it doesn't exist."""
 
         # Get Milvus connection information
         self.milvus_url = os.getenv("MILVUS_URL")
@@ -24,6 +24,9 @@ class VectorDatabase:
         self.milvus_database_name = os.getenv("MILVUS_DATABASE_NAME")
         self.milvus_username = os.getenv("MILVUS_USERNAME")
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
+
+        # Get the embedding engine
+        self.embedding_engine = Embedding(model_name=os.getenv("EMBEDDING_MODEL_ID", ""))
         
         # Get the database type
         self.database_type = os.getenv("DATABASE_TYPE", "hybrid")
@@ -31,27 +34,35 @@ class VectorDatabase:
         # Establish a connection to the Milvus database
         self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
 
+    def load_database(self):
         # Build the database if it doesn't exist
         if self.milvus_database_name not in self.client.list_databases():
+            logger.info(f"Database {self.milvus_database_name} does not exist. Building database.")
             self.build_database()
         # Use the database if it exists and load the collections
         else:
+            logger.info(f"Database {self.milvus_database_name} exists. Loading collections: {self.client.list_collections()}")
             self.client.use_database(self.milvus_database_name)
             for collection in self.client.list_collections():
                 self.client.load_collection(collection_name=collection)
 
+    def db_exists(self):
+        return self.milvus_database_name in self.client.list_databases()
+
     def build_database(self):
         # Rebuild the database
         if self.milvus_database_name not in self.client.list_databases():
+            logger.info(f"Database {self.milvus_database_name} does not exist. Creating database.")
             self.client.create_database(self.milvus_database_name)
             self.client.use_database(self.milvus_database_name)
         else:
             self.client.use_database(self.milvus_database_name)
+            logger.info(f"Database {self.milvus_database_name} exists. Dropping collections: {self.client.list_collections()}")
             for collection in self.client.list_collections():
                 self.client.drop_collection(collection)
 
         # Create a schema for the collection
-        print(f"Creating schema for {self.milvus_database_name}")
+        logger.info(f"Creating schema for {self.milvus_database_name}")
         # Sparse database
         if self.database_type == "sparse":
             schema = CollectionSchema(
@@ -71,7 +82,7 @@ class VectorDatabase:
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
-                    FieldSchema(name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=EMBEDDING_ENGINE.embedding_size()),
+                    FieldSchema(name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_engine.embedding_size()),
                     FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048, enable_analyzer=True),
                     FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=8),
                     FieldSchema(name="book", dtype=DataType.VARCHAR, max_length=32),
@@ -85,7 +96,7 @@ class VectorDatabase:
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
-                    FieldSchema(name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=EMBEDDING_ENGINE.embedding_size()),
+                    FieldSchema(name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_engine.embedding_size()),
                     FieldSchema(name="sparse_embedding", dtype=DataType.SPARSE_FLOAT_VECTOR),
                     FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048, enable_analyzer=True),
                     FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=8),
@@ -130,11 +141,11 @@ class VectorDatabase:
             )
 
         # Create the collection for each version
-        print(f"Creating collections for {VERSION_SELECTION}")
+        logger.info(f"Creating collections for {VERSION_SELECTION}")
         for version in VERSION_SELECTION:
             self.client.create_collection(collection_name=version, schema=schema)
             self.client.create_index(collection_name=version, index_params=index_params, sync=True)
-        print(self.client.list_collections())
+        logger.info(f"Collections created: {self.client.list_collections()}")
 
         # Add things to the collections
         # Get the Bible version
@@ -154,7 +165,7 @@ class VectorDatabase:
                                 continue
                             verse_numbers.append(int(verse))
                             verse_texts.append(json_data[verse])
-                        verse_embeddings = EMBEDDING_ENGINE.embed(verse_texts, prompt_type="document", normalize=False)
+                        verse_embeddings = self.embedding_engine.embed(verse_texts, prompt_type="document", normalize=False)
 
                         data = []
                         for verse_number, verse_text, verse_embedding in zip(verse_numbers, verse_texts, verse_embeddings):
@@ -172,12 +183,12 @@ class VectorDatabase:
                                             "chapter": chapter, 
                                             "verse": verse_number})
                         self.client.insert(collection_name=version, data=data)
-                        print(f"Added {book} {chapter} to {version} collection")
+                        logger.info(f"Added {book} {chapter} to {version} collection")
 
     def search(self, collection_name: str, query: str, limit: int = 10):
         if self.database_type == "dense" or self.database_type == "hybrid":
             # Get query embedding (single vector)
-            query_embedding = EMBEDDING_ENGINE.embed([query], prompt_type="query", normalize=False)[0]
+            query_embedding = self.embedding_engine.embed([query], prompt_type="query", normalize=False)[0]
         else:
             query_embedding = None
 
@@ -257,6 +268,9 @@ class AsyncVectorDatabase:
         self.milvus_username = os.getenv("MILVUS_USERNAME")
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
 
+        # Get the embedding engine
+        self.embedding_engine = Embedding(model_name=os.getenv("EMBEDDING_MODEL_ID", ""))
+
         # Get the database type
         self.database_type = os.getenv("DATABASE_TYPE", "hybrid")
 
@@ -264,21 +278,21 @@ class AsyncVectorDatabase:
         self.async_client = None
 
     @classmethod
-    async def create(cls):
-        """Async factory to instantiate and initialize the database client."""
+    async def load_database(cls):
+        """Async factory to instantiate and initialize the database client. Does not build the database; it expects the database to already exist."""
         self = cls()
         temp_client = AsyncMilvusClient(
             uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
             token=f"{self.milvus_username}:{self.milvus_password}",
         )
         databases = await temp_client.list_databases()
-        print(f"Databases: {databases}")
+        logger.info(f"Databases: {databases}")
 
         if self.milvus_database_name not in databases:
             raise ValueError(f"Database {self.milvus_database_name} does not exist")
         else:
             # Use the database if it exists and load the collections
-            print(f"Using database {self.milvus_database_name}")
+            logger.info(f"Using database {self.milvus_database_name}")
             self.async_client = AsyncMilvusClient(
                 uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
                 token=f"{self.milvus_username}:{self.milvus_password}",
@@ -287,20 +301,20 @@ class AsyncVectorDatabase:
 
         # Get the collections
         collections = await self.async_client.list_collections()
-        print(f"Collections: {collections}")
+        logger.info(f"Collections: {collections}")
 
         # Load the collections
         for collection in collections:
             await self.async_client.load_collection(collection_name=collection)
-            print(f"Loaded collection {collection}")
+            logger.info(f"Loaded collection: {collection}")
 
 
         return self
 
-    async def async_search(self, collection_name: str, query: str, limit: int = 10):
+    async def search(self, collection_name: str, query: str, limit: int = 10):
         if self.database_type == "dense" or self.database_type == "hybrid":
             # Get query embedding (single vector) asynchronously
-            query_embedding = (await EMBEDDING_ENGINE.async_embed([query], prompt_type="query", normalize=False))[0]
+            query_embedding = (await self.embedding_engine.async_embed([query], prompt_type="query", normalize=False))[0]
         else:
             query_embedding = None
 

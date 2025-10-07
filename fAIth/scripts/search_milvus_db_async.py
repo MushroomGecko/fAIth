@@ -22,7 +22,7 @@ from ai.vdb.milvus_db import AsyncVectorDatabase
 
 async def main():
     # Get DB object
-    vector_database = await AsyncVectorDatabase.create()
+    vector_database = await AsyncVectorDatabase.load_database()
     
     # Print the collection names
     print(await vector_database.get_collection_names())
@@ -32,7 +32,7 @@ async def main():
     limit = 10
     for query in queries:
         # Get results
-        results = await vector_database.async_search(collection_name=collection_name, query=query, limit=limit)
+        results = await vector_database.search(collection_name=collection_name, query=query, limit=limit)
 
         # Print results
         print("\n########################")
