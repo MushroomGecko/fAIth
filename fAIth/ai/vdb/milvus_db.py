@@ -38,6 +38,9 @@ class VectorDatabase:
         # Establish a connection to the Milvus database
         self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
 
+    def db_exists(self):
+        return self.milvus_database_name in self.client.list_databases()
+
     def load_database(self):
         # Build the database if it doesn't exist
         if self.milvus_database_name not in self.client.list_databases():
@@ -50,10 +53,8 @@ class VectorDatabase:
             for collection in self.client.list_collections():
                 self.client.load_collection(collection_name=collection)
 
-    def db_exists(self):
-        return self.milvus_database_name in self.client.list_databases()
-
     def build_database(self):
+        logger.info(f"Building database {self.milvus_database_name}")
         # Rebuild the database
         if self.milvus_database_name not in self.client.list_databases():
             logger.info(f"Database {self.milvus_database_name} does not exist. Creating database.")

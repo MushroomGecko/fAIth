@@ -1,47 +1,31 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
 from django.urls import reverse
-import json
 from .globals import BIBLE_DATA_ROOT, DEFAULT_VERSION, IN_ORDER_BOOKS, CHAPTER_SELECTION, VERSION_SELECTION
-from ai.globals import get_milvus_db
-import logging
+
+from frontend.utils import parse_verses
 
 # Set up logging
+import logging
 logger = logging.getLogger(__name__)
 
 async def full_view(request, book, chapter, version):
-    # Search the Milvus database using asynchronous client
-    milvus_db = await get_milvus_db()
-    results = await milvus_db.search(collection_name="bsb", query=f"Noah's Ark {book} {chapter} {version}", limit=10)
-
     # Try to get the verses for the book and chapter
     try:
         # Process the version
         processed_version = version.lower()
         # Convert chapter from string to integer
         chapter = int(chapter)
-        # Initialize the verses list
-        verses = []
         # Get the file path
         file_path = BIBLE_DATA_ROOT / processed_version / book / f"{chapter}.json"
 
         # Check if the file exists
         if not file_path.exists():
-            logger.error(f"Error: Bible data file not found at {file_path}")
+            print(f"Error: Bible data file not found at {file_path}")
             # Consider a more user-friendly error page or redirect to a known good chapter/version
             return redirect(reverse('bible_book_view', args=['Genesis', '1', DEFAULT_VERSION]))
 
-        # Read the JSON file and parse the verses of the book and chapter
-        with open(file_path, "r", encoding='utf-8') as file: # Added encoding
-            json_data = json.load(file)
-            for verse_num, verse_text in json_data.items():
-                # The text is already properly formatted, no parsing needed, just add the verse number and get headers
-                try:
-                    # This should fail if verse_num is not an int (i.e. header_1, header_2, etc.)
-                    verses.append(f'{int(verse_num)}) {verse_text}')
-                except Exception as e:
-                    # If the exception occurs, we assume the verse_num is a header
-                    verses.append(f'<span class="header">{verse_text}</span>')
+        verses = parse_verses(file_path)
 
         # Get previous chapter and book
         if chapter - 1 <= 0 and book == IN_ORDER_BOOKS[0]:
@@ -90,10 +74,10 @@ async def full_view(request, book, chapter, version):
         }
         return render(request, 'index.html', context)
     except FileNotFoundError:
-        logger.error(f"Error: Bible data file not found for {book} {chapter} ({processed_version}). Redirecting to default.")
+        print(f"Error: Bible data file not found for {book} {chapter} ({processed_version}). Redirecting to default.")
         return redirect(reverse('default_view'))
     except Exception as e:
-        logger.error(f"Error in bible_book_view for {book} {chapter} ({processed_version}): {e}")
+        print(f"Error in bible_book_view for {book} {chapter} ({processed_version}): {e}")
         # A more specific error handling or logging would be good here
         return redirect(reverse('default_view'))
 

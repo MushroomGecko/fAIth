@@ -1,5 +1,6 @@
 # Core dependencies for fAIth
 Django>=5.2.5
+adrf>=0.1.10
 djangorestframework>=3.16.1
 python-dotenv>=1.1.1
 uvicorn>=0.37.0

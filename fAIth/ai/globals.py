@@ -8,37 +8,36 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-ASYNC_MILVUS_DB = None
-ASYNC_MILVUS_DB_LOOP = None
-ASYNC_MILVUS_DB_LOCK = asyncio.Lock()
+async_milvus_db = None
+async_milvus_db_loop = None
+async_milvus_db_lock = asyncio.Lock()
 
 async def get_milvus_db():
-    global ASYNC_MILVUS_DB, ASYNC_MILVUS_DB_LOOP
+    global async_milvus_db, async_milvus_db_loop
     current_loop = asyncio.get_running_loop()
 
     # Fast path: same active loop and cached instance
-    if ASYNC_MILVUS_DB is not None and ASYNC_MILVUS_DB_LOOP is current_loop and not current_loop.is_closed():
+    if async_milvus_db is not None and async_milvus_db_loop is current_loop and not current_loop.is_closed():
         logger.info("Using cached Async Milvus database")
-        return ASYNC_MILVUS_DB
+        return async_milvus_db
 
-    async with ASYNC_MILVUS_DB_LOCK:
+    async with async_milvus_db_lock:
         # Re-check under lock
-        if ASYNC_MILVUS_DB is not None and ASYNC_MILVUS_DB_LOOP is current_loop and not current_loop.is_closed():
+        if async_milvus_db is not None and async_milvus_db_loop is current_loop and not current_loop.is_closed():
             logger.info("Using cached Async Milvus database")
-            return ASYNC_MILVUS_DB
+            return async_milvus_db
         # If cached for a different/closed loop, close it
-        if ASYNC_MILVUS_DB is not None and ASYNC_MILVUS_DB_LOOP is not current_loop:
+        if async_milvus_db is not None and async_milvus_db_loop is not current_loop:
             try:
-                await ASYNC_MILVUS_DB.close()
+                await async_milvus_db.close()
             except Exception as e:
                 logger.warning(f"Error closing Async Milvus database: {e}")
                 pass
-            ASYNC_MILVUS_DB = None
+            async_milvus_db = None
         
         # Create on the current loop
         logger.info("Creating new Async Milvus database")
-        ASYNC_MILVUS_DB = await AsyncVectorDatabase.load_database()
-        ASYNC_MILVUS_DB_LOOP = current_loop
+        async_milvus_db = await AsyncVectorDatabase.load_database()
+        async_milvus_db_loop = current_loop
         
-        return ASYNC_MILVUS_DB
-
+        return async_milvus_db

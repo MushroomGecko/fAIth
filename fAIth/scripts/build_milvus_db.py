@@ -1,3 +1,8 @@
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 import os
 import sys
 from pathlib import Path
@@ -16,7 +21,7 @@ try:
     django.setup()
 except Exception as e:
     # Allow script to proceed; some paths may not require Django
-    print(f"Warning: Django setup failed: {e}")
+    logger.warning(f"Warning: Django setup failed: {e}")
 
 from ai.vdb.milvus_db import VectorDatabase
 
@@ -24,13 +29,13 @@ from ai.vdb.milvus_db import VectorDatabase
 vector_database = VectorDatabase()
 
 # Print the collection names
-print(vector_database.get_collection_names())
+logger.info(vector_database.get_collection_names())
 
 # Build the database
 vector_database.build_database()
 
 # Print the collection names
-print(vector_database.get_collection_names())
+logger.info(vector_database.get_collection_names())
 
 # Close the database
 vector_database.close()
