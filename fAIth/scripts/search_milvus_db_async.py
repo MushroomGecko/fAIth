@@ -2,6 +2,11 @@ import os
 import sys
 from pathlib import Path
 import asyncio
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 # Ensure project root is on sys.path when running this script directly
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -16,7 +21,7 @@ try:
     django.setup()
 except Exception as e:
     # Allow script to proceed; some paths may not require Django
-    print(f"Warning: Django setup failed: {e}")
+    logger.warning(f"Warning: Django setup failed: {e}")
 
 from ai.vdb.milvus_db import AsyncVectorDatabase
 
@@ -25,7 +30,7 @@ async def main():
     vector_database = await AsyncVectorDatabase.load_database()
     
     # Print the collection names
-    print(await vector_database.get_collection_names())
+    logger.info(await vector_database.get_collection_names())
 
     collection_name = "bsb"
     queries = ["In the beginning", "Sodom and Gomorrah", "Garden of Eden", "Tower of Babel", "Adam and Eve", "What was the name of the first man?", "Noah's Arc", "Noah's Ark"]
@@ -35,15 +40,19 @@ async def main():
         results = await vector_database.search(collection_name=collection_name, query=query, limit=limit)
 
         # Print results
-        print("\n########################")
-        print(f"Results for \"{query}\":")
+        logger.info("\n########################")
+        logger.info(f"Results for \"{query}\":")
 
         # Print results
-        print(f"{vector_database.database_type} Search:")
+        logger.info(f"{vector_database.database_type} Search:")
         for i, result in enumerate(results):
-            print(f"{i+1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}")
+            logger.info(f"{i+1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}")
     # Cleanly close async client to avoid warnings/errors
     await vector_database.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise e

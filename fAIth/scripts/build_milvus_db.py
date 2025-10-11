@@ -1,11 +1,10 @@
+import os
+import sys
+from pathlib import Path
 import logging
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
-import os
-import sys
-from pathlib import Path
 
 # Ensure project root is on sys.path when running this script directly
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +35,7 @@ except Exception as e:
     logger.error(f"Error getting Milvus database object: {e}")
     raise e
 
-# Print the collection names
+# Log the collection names
 try:
     logger.info("Getting collection names")
     logger.info(vector_database.get_collection_names())
@@ -54,7 +53,7 @@ except Exception as e:
     logger.error(f"Error building Milvus database: {e}")
     raise e
 
-# Print the collection names
+# Log the collection names
 try:
     logger.info("Getting collection names")
     logger.info(vector_database.get_collection_names())

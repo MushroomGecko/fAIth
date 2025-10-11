@@ -4,6 +4,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 import torch
 import gc
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Ensure project root is on sys.path when running this script directly
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -14,12 +18,20 @@ from ai.vdb.embedding import Embedding
 load_dotenv()
 
 model_id = os.getenv("EMBEDDING_MODEL_ID", "")
-print(f"Model ID: {model_id}")
+if not model_id:
+    logger.error("Model ID is not set")
+    raise ValueError("Model ID is not set")
+logger.info(f"Model ID: {model_id}")
 
 batch = ["Hello, world!", "hi there"]
 
 def test_unified_runner():
     embedding = Embedding(model_id)
-    print(list(embedding.embed(batch)))
+    logger.info(list(embedding.embed(batch)))
 
-test_unified_runner()
+if __name__ == "__main__":
+    try:
+        test_unified_runner()
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise e

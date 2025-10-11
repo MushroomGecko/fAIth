@@ -21,7 +21,7 @@ async def full_view(request, book, chapter, version):
 
         # Check if the file exists
         if not file_path.exists():
-            print(f"Error: Bible data file not found at {file_path}")
+            logger.error(f"Error: Bible data file not found at {file_path}")
             # Consider a more user-friendly error page or redirect to a known good chapter/version
             return redirect(reverse('bible_book_view', args=['Genesis', '1', DEFAULT_VERSION]))
 
@@ -74,10 +74,10 @@ async def full_view(request, book, chapter, version):
         }
         return render(request, 'index.html', context)
     except FileNotFoundError:
-        print(f"Error: Bible data file not found for {book} {chapter} ({processed_version}). Redirecting to default.")
+        logger.error(f"Error: Bible data file not found for {book} {chapter} ({processed_version}). Redirecting to default.")
         return redirect(reverse('default_view'))
     except Exception as e:
-        print(f"Error in bible_book_view for {book} {chapter} ({processed_version}): {e}")
+        logger.error(f"Error in bible_book_view for {book} {chapter} ({processed_version}): {e}")
         # A more specific error handling or logging would be good here
         return redirect(reverse('default_view'))
 
