@@ -29,6 +29,7 @@ include/
 pyvenv.cfg
 *.egg
 MANIFEST
+share/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -64,6 +65,7 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+staticfiles/
 
 # Flask stuff:
 instance/
@@ -218,3 +220,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Docker
+volumes/
