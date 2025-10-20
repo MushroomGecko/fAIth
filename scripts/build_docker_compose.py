@@ -219,7 +219,7 @@ LLAMA_CPP_SETUP = \
       HF_TOKEN: {hf_token}
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
-    command: ["-hf", "{model_id}", "-c", "{max_context_length}", "-ngl", "{llama_cpp_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", {embedding}]
+    command: ["-hf", "{model_id}", "-c", "{max_context_length}", "-ngl", "{llama_cpp_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", "--cont-batching", "-np", "{llama_cpp_concurrency}", {embedding}]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
@@ -276,7 +276,7 @@ SGLANG_SETUP = \
 {gpu_setup}
 """.lstrip('\n')
 
-def build_docker_compose(llm_port, model_id, embedding, max_context_length, runner, gpu_type, driver,  llama_cpp_gpu_layers, vllm_enforce_eager):
+def build_docker_compose(llm_port, model_id, embedding, max_context_length, runner, gpu_type, driver, llama_cpp_gpu_layers, llama_cpp_concurrency, vllm_enforce_eager):
     """Build the docker compose file."""
     if embedding:
         embedding_setup = "--embedding"
@@ -317,7 +317,7 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         if runner == "ollama":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup="", ollama_force_cpu="OLLAMA_NUM_GPU=0", ollama_image="ollama/ollama:latest", model_type=model_type)
         elif runner == "llama_cpp":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup="", llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server", hf_token=HF_TOKEN, embedding=embedding_setup, model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup="", llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type)
         elif runner == "vllm":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup="", vllm_enforce_eager=vllm_enforce_eager, hf_token=HF_TOKEN, vllm_image="vllm/vllm-openai:latest", model_type=model_type)
         elif runner == "sglang":
@@ -332,7 +332,7 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         if runner == "ollama":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup=NVIDIA_SETUP, ollama_force_cpu="", ollama_image="ollama/ollama:latest", model_type=model_type)
         elif runner == "llama_cpp":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=NVIDIA_SETUP, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-cuda", hf_token=HF_TOKEN, embedding=embedding_setup, model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=NVIDIA_SETUP, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-cuda", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type)
         elif runner == "vllm":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=NVIDIA_SETUP, vllm_enforce_eager=vllm_enforce_eager, hf_token=HF_TOKEN, vllm_image="vllm/vllm-openai:latest", model_type=model_type)
         elif runner == "sglang":
@@ -347,7 +347,7 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         if runner == "ollama":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup=ROCM_SETUP, ollama_force_cpu="", ollama_image="ollama/ollama:rocm", model_type=model_type)
         elif runner == "llama_cpp":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=ROCM_SETUP, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-rocm", hf_token=HF_TOKEN, embedding=embedding_setup, model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=ROCM_SETUP, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-rocm", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type)
         elif runner == "vllm":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=ROCM_SETUP, vllm_enforce_eager=vllm_enforce_eager, hf_token=HF_TOKEN, vllm_image="rocm/vllm:latest", model_type=model_type)
         elif runner == "sglang":
@@ -360,7 +360,7 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
 
         if runner == "llama_cpp":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=gpu_setup, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-vulkan", hf_token=HF_TOKEN, embedding=embedding_setup, model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=gpu_setup, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-vulkan", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type)
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
     
@@ -383,6 +383,7 @@ if __name__ == "__main__":
     if EMBEDDING_LLAMA_CPP_GPU_LAYERS == -1:
         EMBEDDING_LLAMA_CPP_GPU_LAYERS = 9999
     EMBEDDING_VLLM_ENFORCE_EAGER = os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")
+    EMBEDDING_LLAMA_CPP_CONCURRENCY = int(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY", 2))
 
     # LLM specific things
     LLM_PORT = os.getenv("LLM_PORT", "11436")
@@ -394,11 +395,12 @@ if __name__ == "__main__":
     LLM_LLAMA_CPP_GPU_LAYERS = int(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS", 0))
     if LLM_LLAMA_CPP_GPU_LAYERS == -1:
         LLM_LLAMA_CPP_GPU_LAYERS = 9999
+    LLM_LLAMA_CPP_CONCURRENCY = int(os.getenv("LLM_LLAMA_CPP_CONCURRENCY", 2))
     LLM_VLLM_ENFORCE_EAGER = os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")
 
     milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT)
-    embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER)
-    llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER)
+    embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER)
+    llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER)
     
     docker_compose_str = DOCKER_COMPOSE_TPL.format(
         milvus_setup=milvus_block.lstrip('\n').rstrip('\n'),
