@@ -86,7 +86,10 @@ Drivers:
 DOCKER_COMPOSE_TPL = """
 services:
 {milvus_setup}
+
 {embedding_setup}
+
+{llm_setup}
 """.lstrip('\n')
 
 NVIDIA_SETUP = \
@@ -279,7 +282,7 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         embedding_setup = "--embedding"
         model_type = "embedding"
     else:
-        embedding_setup = None
+        embedding_setup = ""
         model_type = "llm"
     
     if runner == "llama_cpp":
@@ -381,12 +384,26 @@ if __name__ == "__main__":
         EMBEDDING_LLAMA_CPP_GPU_LAYERS = 9999
     EMBEDDING_VLLM_ENFORCE_EAGER = os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")
 
+    # LLM specific things
+    LLM_PORT = os.getenv("LLM_PORT", "11436")
+    LLM_MODEL_ID = os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")
+    LLM_MAX_CONTEXT_LENGTH = int(os.getenv("LLM_MAX_CONTEXT_LENGTH", 4096))
+    LLM_MODEL_RUNNER = os.getenv("LLM_MODEL_RUNNER", "llama_cpp")
+    LLM_GPU_TYPE = os.getenv("LLM_GPU_TYPE", "cpu")
+    LLM_DRIVER = os.getenv("LLM_DRIVER", "cpu")
+    LLM_LLAMA_CPP_GPU_LAYERS = int(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS", 0))
+    if LLM_LLAMA_CPP_GPU_LAYERS == -1:
+        LLM_LLAMA_CPP_GPU_LAYERS = 9999
+    LLM_VLLM_ENFORCE_EAGER = os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")
+
     milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT)
     embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER)
-
+    llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER)
+    
     docker_compose_str = DOCKER_COMPOSE_TPL.format(
-        milvus_setup=milvus_block,
-        embedding_setup=embedding_block,
+        milvus_setup=milvus_block.lstrip('\n').rstrip('\n'),
+        embedding_setup=embedding_block.lstrip('\n').rstrip('\n'),
+        llm_setup=llm_block.lstrip('\n').rstrip('\n'),
     )
 
     with open("docker-compose.yml", "w") as f:

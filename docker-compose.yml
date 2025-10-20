@@ -77,4 +77,20 @@ services:
       timeout: 10s
       retries: 5
 
-
+  llm:
+    container_name: llama-cpp-llm-faith
+    image: ghcr.io/ggml-org/llama.cpp:server
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
+    ports:
+      - "11436:11436"
+    environment:
+      HF_TOKEN: 
+      HF_HOME: /root/.cache/huggingface
+      HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
+    command: ["-hf", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M", "-c", "4096", "-ngl", "9999", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "11436", ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11436/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
