@@ -105,13 +105,11 @@ async def book_chapter_view(request, book, chapter):
     # Validate chapter format
     try:
         chapter = int(chapter)
+        if chapter < 1 or chapter > CHAPTER_SELECTION[book]:
+            logger.warning(f"Invalid chapter in book_chapter_view: {chapter} for book: {book}")
+            return await async_redirect('full_view', args=[book, DEFAULT_CHAPTER, DEFAULT_VERSION])
     except Exception as e:
         logger.warning(f"Invalid chapter format in book_chapter_view: {chapter} for book: {book}")
-        return await async_redirect('full_view', args=[book, DEFAULT_CHAPTER, DEFAULT_VERSION])
-    
-    # Validate chapter exists for the given book before redirecting
-    if chapter < 1 or chapter > CHAPTER_SELECTION[book]:
-        logger.warning(f"Invalid chapter in book_chapter_view: {chapter} for book: {book}")
         return await async_redirect('full_view', args=[book, DEFAULT_CHAPTER, DEFAULT_VERSION])
     
     # Redirects to the versioned URL using the default version
