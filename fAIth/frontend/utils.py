@@ -1,6 +1,9 @@
 import json
 import logging
 import asyncio
+from asgiref.sync import sync_to_async
+from django.shortcuts import render, redirect
+from django.urls import reverse
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -41,3 +44,11 @@ async def async_parse_verses(file_path):
     except Exception as e:
         logger.error(f"Error: {e} asynchronously. Returning empty list.")
         return []
+
+async def async_render(request, template, context):
+    """Async wrapper for rendering a template."""
+    return await sync_to_async(render, thread_sensitive=False)(request, template, context)
+
+async def async_redirect(url, args=[]):
+    """Async wrapper for redirecting to a URL."""
+    return await sync_to_async(redirect, thread_sensitive=False)(reverse(url, args=args))
