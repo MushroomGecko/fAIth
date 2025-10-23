@@ -30,7 +30,7 @@ class VectorDatabase:
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
 
         # Get the embedding engine
-        self.embedding_engine = Embedding(model_name=os.getenv("EMBEDDING_MODEL_ID", ""))
+        self.embedding_engine = Embedding()
         
         # Get the database type
         self.database_type = os.getenv("DATABASE_TYPE", "hybrid")
@@ -274,7 +274,7 @@ class AsyncVectorDatabase:
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
 
         # Get the embedding engine
-        self.embedding_engine = Embedding(model_name=os.getenv("EMBEDDING_MODEL_ID", ""))
+        self.embedding_engine = Embedding()
 
         # Get the database type
         self.database_type = os.getenv("DATABASE_TYPE", "hybrid")

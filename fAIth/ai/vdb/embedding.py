@@ -1,17 +1,24 @@
 import os
 from openai import OpenAI, AsyncOpenAI
 from dotenv import load_dotenv
-import gc
 import numpy as np
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 class Embedding:
     """Docker Model Runner for embedding models."""
-    def __init__(self, model_name: str):
+    def __init__(self):
         """Initialize the Docker Model Runner."""
-        self.model_name = model_name
+        self.model_name = os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")
+        if not self.model_name:
+            logger.error("Embedding model ID is not set")
+            raise ValueError("Embedding model ID is not set")
+        logger.info(f"Embedding model ID: {self.model_name}")
 
         embedding_url = os.getenv("EMBEDDING_URL", "http://localhost")
         embedding_port = os.getenv("EMBEDDING_PORT", "11435")
