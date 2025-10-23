@@ -3,13 +3,14 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from .globals import BIBLE_DATA_ROOT, DEFAULT_VERSION, IN_ORDER_BOOKS, CHAPTER_SELECTION, VERSION_SELECTION
 
-from frontend.utils import parse_verses
+from frontend.utils import async_parse_verses
 
 # Set up logging
 import logging
 logger = logging.getLogger(__name__)
 
 async def full_view(request, book, chapter, version):
+    """Async view for the full Bible view."""
     # Try to get the verses for the book and chapter
     try:
         # Process the version
@@ -25,7 +26,7 @@ async def full_view(request, book, chapter, version):
             # Consider a more user-friendly error page or redirect to a known good chapter/version
             return redirect(reverse('bible_book_view', args=['Genesis', '1', DEFAULT_VERSION]))
 
-        verses = parse_verses(file_path)
+        verses = await async_parse_verses(file_path)
 
         # Get previous chapter and book
         if chapter - 1 <= 0 and book == IN_ORDER_BOOKS[0]:
