@@ -46,4 +46,22 @@ class Completions:
         ]
         response = await self.async_client.chat.completions.create(model=self.model_name, messages=messages)
         return response.choices[0].message.content
+
+    def close(self):
+        """Close the synchronous Completions object."""
+        logger.info("Closing synchronous Completions object")
+        try:
+            self.client.close()
+        except Exception as e:
+            logger.error(f"Error closing synchronous Completions object: {e}")
+            pass
+
+    async def close(self):
+        """Close the asynchronous Completions object."""
+        logger.info("Closing asynchronous Completions object")
+        try:
+            await self.async_client.close()
+        except Exception as e:
+            logger.error(f"Error closing asynchronous Completions object: {e}")
+            pass
         

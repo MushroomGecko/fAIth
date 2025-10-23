@@ -1,16 +1,19 @@
 # Core dependencies for fAIth
-Django>=5.2.5
-adrf>=0.1.10
-djangorestframework>=3.16.1
-python-dotenv>=1.1.1
-uvicorn>=0.37.0
-whitenoise>=6.11.0
+Django==5.2.7
+djangorestframework==3.16.1
+python-dotenv==1.1.1
+whitenoise==6.11.0
+
+# ASGI Server Dependencies
+adrf==0.1.10
+django_asgi_lifespan==0.5.0
+uvicorn>=0.38.0
 
 # LLM
-openai>=1.104.2
+openai==2.6.0
 
 # Vector Database / Embedding
-pymilvus>=2.6.1
+pymilvus==2.6.2
 
 # Testing
-# flake8>=7.0.0
+# ruff==0.14.1

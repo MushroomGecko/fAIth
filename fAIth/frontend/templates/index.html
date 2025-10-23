@@ -75,8 +75,8 @@
                 <!-- Verses Container -->
                 <div class="col-md-10 d-flex flex-column">
                     <div class="overflow-auto flex-grow-1" style="min-height: 0; height: 0;">
-                        {% for verse in verses %}
-                            <p id="p-{{ forloop.counter }}">
+                        {% for verse_num, verse in verses.items %}
+                            <p id="{{ verse_num }}">
                                 {{ verse|safe }}<br>
                             </p>
                         {% endfor %}

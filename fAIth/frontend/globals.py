@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import json
 from django.conf import settings
 import logging
 
@@ -52,3 +53,24 @@ else:
     # Initialize to prevent KeyErrors if data is missing
     for book_title in IN_ORDER_BOOKS:
         CHAPTER_SELECTION[book_title] = 0
+
+ALL_VERSES = {}
+for version in VERSION_SELECTION:
+    version = version.lower()
+    ALL_VERSES[version] = {}
+    for book in IN_ORDER_BOOKS:
+        ALL_VERSES[version][book] = {}
+        for chapter in range(1, CHAPTER_SELECTION[book] + 1):
+            ALL_VERSES[version][book][chapter] = {}
+            file_path = BIBLE_DATA_ROOT / version / book / f"{chapter}.json"
+            if file_path.exists():
+                with open(file_path, "r", encoding="utf-8") as file:
+                    json_data = json.load(file)
+                    for verse_num, verse_text in json_data.items():
+                        # The text is already properly formatted, no parsing needed, just add the verse number and get headers
+                        try:
+                            # This should fail if verse_num is not an int (i.e. header_1, header_2, etc.)
+                            ALL_VERSES[version][book][chapter][verse_num] = f'{int(verse_num)}) {verse_text}'
+                        except Exception as e:
+                            # If the exception occurs, we assume the verse_num is a header
+                            ALL_VERSES[version][book][chapter][verse_num] = f'<span class="header">{verse_text}</span>'
