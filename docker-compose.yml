@@ -1,4 +1,21 @@
 services:
+  postgres:
+    container_name: postgres-faith
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: faith_user
+      POSTGRES_PASSWORD: postgres-secure-password
+      POSTGRES_DB: faith_db
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "faith_user", "-d", "faith_db"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
   etcd:
     container_name: milvus-etcd-faith
     image: milvusdb/etcd:latest
