@@ -10,6 +10,12 @@ if str(PROJECT_ROOT) not in sys.path:
 
 load_dotenv()
 
+# Postgres specific things
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "faith_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")
+POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "faith_db")
+
 # Milvus specific things
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 
@@ -85,6 +91,8 @@ Drivers:
 
 DOCKER_COMPOSE_TPL = """
 services:
+{postgres_setup}
+
 {milvus_setup}
 
 {embedding_setup}
@@ -118,6 +126,26 @@ INTEL_SETUP = \
     devices:
       - /dev/dri
     group_add: [video, render]
+""".lstrip('\n')
+
+POSTGRES_SETUP = \
+"""
+  postgres:
+    container_name: postgres-faith
+    image: postgres:latest
+    ports:
+      - "{postgres_port}:5432"
+    environment:
+      POSTGRES_USER: {postgres_user}
+      POSTGRES_PASSWORD: {postgres_password}
+      POSTGRES_DB: {postgres_database}
+    volumes:
+      - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "{postgres_user}", "-d", "{postgres_database}"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 """.lstrip('\n')
 
 MILVUS_SETUP = \
@@ -398,11 +426,13 @@ if __name__ == "__main__":
     LLM_LLAMA_CPP_CONCURRENCY = int(os.getenv("LLM_LLAMA_CPP_CONCURRENCY", 2))
     LLM_VLLM_ENFORCE_EAGER = os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")
 
+    postgres_block = POSTGRES_SETUP.format(postgres_port=POSTGRES_PORT, postgres_user=POSTGRES_USER, postgres_password=POSTGRES_PASSWORD, postgres_database=POSTGRES_DATABASE)
     milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT)
     embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER)
     llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER)
     
     docker_compose_str = DOCKER_COMPOSE_TPL.format(
+        postgres_setup=postgres_block.lstrip('\n').rstrip('\n'),
         milvus_setup=milvus_block.lstrip('\n').rstrip('\n'),
         embedding_setup=embedding_block.lstrip('\n').rstrip('\n'),
         llm_setup=llm_block.lstrip('\n').rstrip('\n'),

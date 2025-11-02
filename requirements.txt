@@ -3,6 +3,7 @@ Django==5.2.7
 djangorestframework==3.16.1
 python-dotenv==1.1.1
 whitenoise==6.11.0
+psycopg==3.2.12
 
 # ASGI Server Dependencies
 adrf==0.1.10
