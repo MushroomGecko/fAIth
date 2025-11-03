@@ -46,14 +46,13 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Prevents Python from buffering stdout and stderr
 ENV PYTHONUNBUFFERED=1
 
-# Switch to non-root user
-USER appuser
-
 # Expose the application port
 EXPOSE 8000
 
-# Collect static files during build
-RUN python fAIth/manage.py collectstatic --noinput
+RUN chown -R appuser:appuser /app
 
-# Start uvicorn (migrations will run via docker-compose when services are networked)
-CMD ["sh", "-c", "python fAIth/manage.py migrate && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000"]
+# Switch to non-root user
+USER appuser
+
+# Start uvicorn
+CMD ["sh", "-c", "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000"]

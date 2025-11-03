@@ -125,3 +125,30 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: webapp-faith
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      MILVUS_URL: http://milvus
+      EMBEDDING_URL: http://embedding
+      LLM_URL: http://llm
+    depends_on:
+      postgres:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+      llm:
+        condition: service_healthy
+    volumes:
+      - .:/app
+  
