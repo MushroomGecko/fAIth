@@ -27,7 +27,7 @@ from ai.vdb.milvus_db import AsyncVectorDatabase
 
 async def main():
     # Get DB object
-    vector_database = await AsyncVectorDatabase.load_database()
+    vector_database = await AsyncVectorDatabase.load_database_and_collections()
     
     # Print the collection names
     logger.info(await vector_database.list_collections_in_database())

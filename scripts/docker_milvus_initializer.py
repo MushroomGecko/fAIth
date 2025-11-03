@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 # Configure Django so modules that depend on settings can import
 if "DJANGO_SETTINGS_MODULE" not in os.environ:
-    os.environ["DJANGO_SETTINGS_MODULE"] = "fAIth.fAIth.settings"
+    os.environ["DJANGO_SETTINGS_MODULE"] = "fAIth.settings"
 
 # Start Django
 try:
@@ -24,9 +24,9 @@ except Exception as e:
     logger.warning(f"Warning: Django setup failed: {e}")
 
 # Get the version selection
-from fAIth.frontend.globals import VERSION_SELECTION
+from frontend.globals import VERSION_SELECTION
 # Import the Milvus database class
-from fAIth.ai.vdb.milvus_db import VectorDatabase
+from ai.vdb.milvus_db import VectorDatabase
 
 # Get DB object
 try:

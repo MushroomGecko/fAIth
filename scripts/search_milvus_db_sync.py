@@ -30,6 +30,7 @@ def main():
 
     # Load the database
     vector_database.load_database()
+    vector_database.load_collections_in_database()
 
     # Print the collection names
     logger.info(vector_database.list_collections_in_database())
