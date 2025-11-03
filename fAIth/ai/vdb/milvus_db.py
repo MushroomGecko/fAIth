@@ -38,36 +38,88 @@ class VectorDatabase:
         # Establish a connection to the Milvus database
         self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
 
-    def db_exists(self):
-        return self.milvus_database_name in self.client.list_databases()
-
     def load_database(self):
-        # Build the database if it doesn't exist
-        if self.milvus_database_name not in self.client.list_databases():
-            logger.info(f"Database {self.milvus_database_name} does not exist. Building database.")
-            self.build_database()
-        # Use the database if it exists and load the collections
-        else:
-            logger.info(f"Database {self.milvus_database_name} exists. Loading collections: {self.client.list_collections()}")
+        """Load the database."""
+        # Use the database if it exists
+        try:
             self.client.use_database(self.milvus_database_name)
-            for collection in self.client.list_collections():
-                self.client.load_collection(collection_name=collection)
+        except Exception as e:
+            logger.error(f"Error loading database: {e}")
+            raise e
 
-    def build_database(self):
-        logger.info(f"Building database {self.milvus_database_name}")
-        # Rebuild the database
+    def load_or_create_database(self):
+        """Get or create the database."""
+        # Check if the database exists
         if self.milvus_database_name not in self.client.list_databases():
-            logger.info(f"Database {self.milvus_database_name} does not exist. Creating database.")
-            self.client.create_database(self.milvus_database_name)
-            self.client.use_database(self.milvus_database_name)
+            # Create the database
+            try:
+                logger.info(f"Database {self.milvus_database_name} does not exist. Creating database.")
+                self.client.create_database(self.milvus_database_name)
+                self.client.use_database(self.milvus_database_name)
+                logger.info(f"Database {self.milvus_database_name} successfully created.")
+            except Exception as e:
+                logger.error(f"Error creating database: {e}")
+                raise e
         else:
-            self.client.use_database(self.milvus_database_name)
-            logger.info(f"Database {self.milvus_database_name} exists. Dropping collections: {self.client.list_collections()}")
-            for collection in self.client.list_collections():
-                self.client.drop_collection(collection)
+            # Use the database if it exists
+            try:
+                logger.info(f"Database {self.milvus_database_name} exists. Using database.")
+                self.load_database()
+                logger.info(f"Database {self.milvus_database_name} successfully loaded.")
+            except Exception as e:
+                logger.error(f"Error loading database: {e}")
+                raise e
+
+    def list_collections_in_database(self):
+        """List the collections in the database."""
+        try:
+            return self.client.list_collections(db_name=self.milvus_database_name)
+        except Exception as e:
+            logger.error(f"Error listing collections in database: {e}")
+            raise e
+
+    def load_collections_in_database(self):
+        """Load the collections in the database."""
+        try:
+            for collection in self.list_collections_in_database():
+                self.client.load_collection(collection_name=collection)
+        except Exception as e:
+            logger.error(f"Error loading collections in database: {e}")
+            raise e
+
+    def drop_collection(self, collection_name: str):
+        """Drop the collection."""
+        try:
+            self.client.drop_collection(collection_name=collection_name)
+        except Exception as e:
+            logger.warning(f"Error dropping collection or collection does not exist: {e}")
+
+    def create_collections(self, collection_names: list[str] = []):
+        """Create the collections."""
+        # Rebuild the database
+        collections_to_create = []
+
+        # Create all collections in VERSION_SELECTION
+        if not collection_names:
+            logger.info(f"Creating collections: {VERSION_SELECTION}")
+            for collection_name in VERSION_SELECTION:
+                self.drop_collection(collection_name)
+                collections_to_create.append(collection_name)
+        # Create specific collections
+        else:
+            logger.info(f"Checking validity of collections: {collection_names}")
+            for collection_name in collection_names:
+                if collection_name not in VERSION_SELECTION:
+                    logger.error(f"Collection {collection_name} does not exist. Skipping.")
+                    raise ValueError(f"Collection {collection_name} does not exist.")
+            logger.info(f"All collections are valid. Creating collections: {collection_names}")
+            for collection_name in collection_names:
+                self.drop_collection(collection_name)
+                collections_to_create.append(collection_name)
 
         # Create a schema for the collection
         logger.info(f"Creating schema for {self.milvus_database_name}")
+
         # Sparse database
         if self.database_type == "sparse":
             schema = CollectionSchema(
@@ -113,7 +165,7 @@ class VectorDatabase:
             )
 
         # Make the Index Params
-        index_params = MilvusClient.prepare_index_params()
+        index_params = self.client.prepare_index_params()
 
         # Sparse embedding
         if self.database_type == "sparse" or self.database_type == "hybrid":
@@ -146,20 +198,24 @@ class VectorDatabase:
             )
 
         # Create the collection for each version
-        logger.info(f"Creating collections for {VERSION_SELECTION}")
-        for version in VERSION_SELECTION:
-            self.client.create_collection(collection_name=version, schema=schema)
-            self.client.create_index(collection_name=version, index_params=index_params, sync=True)
-        logger.info(f"Collections created: {self.client.list_collections()}")
+        logger.info(f"Creating collections for {collections_to_create}")
+        for collection_name in collections_to_create:
+            self.client.create_collection(collection_name=collection_name, schema=schema)
+            self.client.create_index(collection_name=collection_name, index_params=index_params, sync=True)
+        logger.info(f"Collections created: {collections_to_create}")
 
         # Add things to the collections
         # Get the Bible version
-        for version in VERSION_SELECTION:
+        for collection_name in collections_to_create:
             # Get the books in order
             for book in IN_ORDER_BOOKS:
                 for chapter in range(1, CHAPTER_SELECTION[book] + 1):
                     # Get the verses for the book and chapter
-                    with open(BIBLE_DATA_ROOT / version / book / f"{chapter}.json", "r", encoding="utf-8") as file:
+                    path = os.path.join(BIBLE_DATA_ROOT, collection_name, book, f"{chapter}.json")
+                    if not os.path.exists(path):
+                        logger.error(f"Bible data file not found: {path}")
+                        continue
+                    with open(path, "r", encoding="utf-8") as file:
                         verse_numbers = []
                         verse_texts = []
                         # Load the JSON data
@@ -177,20 +233,29 @@ class VectorDatabase:
                             if self.database_type == "dense" or self.database_type == "hybrid":
                                 data.append({"dense_embedding": verse_embedding, 
                                             "text": verse_text, 
-                                            "version": version, 
+                                            "version": collection_name, 
                                             "book": book, 
                                             "chapter": chapter, 
                                             "verse": verse_number})
                             elif self.database_type == "sparse":
                                 data.append({"text": verse_text, 
-                                            "version": version, 
+                                            "version": collection_name, 
                                             "book": book, 
                                             "chapter": chapter, 
                                             "verse": verse_number})
-                        self.client.insert(collection_name=version, data=data)
-                        logger.info(f"Added {book} {chapter} to {version} collection")
+                        self.client.insert(collection_name=collection_name, data=data)
+                        logger.info(f"Added {book} {chapter} to {collection_name} collection")
+
+    def count_entities_in_collection(self, collection_name: str):
+        """Count the entities in the collection."""
+        try:
+            return self.client.count(collection_name=collection_name, db_name=self.milvus_database_name)
+        except Exception as e:
+            logger.error(f"Error counting entities in collection: {e}")
+            raise e
 
     def search(self, collection_name: str, query: str, limit: int = 10):
+        """Search the database."""
         if self.database_type == "dense" or self.database_type == "hybrid":
             # Get query embedding (single vector)
             query_embedding = self.embedding_engine.embed([query], prompt_type="query", normalize=False)[0]
@@ -255,11 +320,13 @@ class VectorDatabase:
             )
             return hybrid_results[0]
 
-    def get_collection_names(self):
-        return self.client.list_collections()
-
     def close(self):
-        self.client.close()
+        """Close the database."""
+        try:
+            self.client.close()
+        except Exception as e:
+            logger.error(f"Error closing database: {e}")
+            raise e
 
 class AsyncVectorDatabase:
     """Async Milvus standalone client."""
@@ -283,16 +350,20 @@ class AsyncVectorDatabase:
         self.async_client = None
 
     @classmethod
-    async def load_database(cls):
-        """Async factory to instantiate and initialize the database client. Does not build the database; it expects the database to already exist."""
+    async def load_database_and_collections(cls):
+        """Async factory to instantiate and initialize the database client and load the collections."""
         self = cls()
+
+        # Make a dummy client to check if the database exists
         temp_client = AsyncMilvusClient(
             uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
             token=f"{self.milvus_username}:{self.milvus_password}",
         )
+        # List the databases
         databases = await temp_client.list_databases()
         logger.info(f"Databases: {databases}")
 
+        # Check if the database exists
         if self.milvus_database_name not in databases:
             raise ValueError(f"Database {self.milvus_database_name} does not exist")
         else:
@@ -313,8 +384,15 @@ class AsyncVectorDatabase:
             await self.async_client.load_collection(collection_name=collection)
             logger.info(f"Loaded collection: {collection}")
 
-
         return self
+    
+    async def list_collections_in_database(self):
+        """List the collections in the database."""
+        try:
+            return await self.async_client.list_collections()
+        except Exception as e:
+            logger.error(f"Error listing collections in database: {e}")
+            raise e
 
     async def search(self, collection_name: str, query: str, limit: int = 10):
         if self.database_type == "dense" or self.database_type == "hybrid":
@@ -380,9 +458,6 @@ class AsyncVectorDatabase:
                 output_fields=["version", "book", "chapter", "verse", "text"]
             )
             return hybrid_results[0]
-
-    async def get_collection_names(self):
-        return await self.async_client.list_collections()
 
     async def close(self):
         if self.async_client is None:

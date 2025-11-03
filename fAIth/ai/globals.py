@@ -13,7 +13,7 @@ async def milvus_db_lifespan_manager() -> LifespanManager:
     logger.info("Initializing Async Milvus database lifecycle manager")
 
     # Load the Async Milvus database
-    milvus_db = await AsyncVectorDatabase.load_database()
+    milvus_db = await AsyncVectorDatabase.load_database_and_collections()
     state = {
         "milvus_db": milvus_db
     }

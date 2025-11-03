@@ -38,7 +38,7 @@ except Exception as e:
 # Log the collection names
 try:
     logger.info("Getting collection names")
-    logger.info(vector_database.get_collection_names())
+    logger.info(vector_database.list_collections_in_database())
     logger.info("Collection names obtained")
 except Exception as e:
     logger.error(f"Error getting collection names: {e}")
@@ -56,7 +56,7 @@ except Exception as e:
 # Log the collection names
 try:
     logger.info("Getting collection names")
-    logger.info(vector_database.get_collection_names())
+    logger.info(vector_database.list_collections_in_database())
     logger.info("Collection names obtained")
 except Exception as e:
     logger.error(f"Error getting collection names: {e}")

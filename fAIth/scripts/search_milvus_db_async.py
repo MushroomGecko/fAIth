@@ -30,7 +30,7 @@ async def main():
     vector_database = await AsyncVectorDatabase.load_database()
     
     # Print the collection names
-    logger.info(await vector_database.get_collection_names())
+    logger.info(await vector_database.list_collections_in_database())
 
     collection_name = "bsb"
     queries = ["In the beginning", "Sodom and Gomorrah", "Garden of Eden", "Tower of Babel", "Adam and Eve", "What was the name of the first man?", "Noah's Arc", "Noah's Ark"]
