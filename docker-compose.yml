@@ -78,7 +78,7 @@ services:
 
   embedding:
     container_name: llama-cpp-embedding-faith
-    image: ghcr.io/ggml-org/llama.cpp:server
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     ports:
@@ -93,10 +93,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   llm:
     container_name: llama-cpp-llm-faith
-    image: ghcr.io/ggml-org/llama.cpp:server
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     ports:
@@ -111,3 +118,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
