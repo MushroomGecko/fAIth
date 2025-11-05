@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.13-slim
 
 # Create non-root user
-RUN useradd -m -r appuser && mkdir /app && chown -R appuser /app
+RUN useradd -m -r faith_user && mkdir /app && chown -R faith_user /app
 
 # Copy the Python dependencies from the builder stage
 COPY --from=builder /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
@@ -38,7 +38,10 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 WORKDIR /app
 
 # Copy application code
-COPY --chown=appuser:appuser . .
+COPY --chown=faith_user:faith_user . .
+
+# Ensure entrypoint script is executable
+RUN chmod +x /app/webapp_entrypoint.sh
 
 # Set environment variables to optimize Python
 # Prevents Python from writing pyc files
@@ -49,10 +52,7 @@ ENV PYTHONUNBUFFERED=1
 # Expose the application port
 EXPOSE 8000
 
-RUN chown -R appuser:appuser /app
+RUN chown -R faith_user:faith_user /app
 
-# Switch to non-root user
-USER appuser
-
-# Start uvicorn
-CMD ["sh", "-c", "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000"]
+# Start application through entrypoint script
+ENTRYPOINT ["sh", "/app/webapp_entrypoint.sh"]

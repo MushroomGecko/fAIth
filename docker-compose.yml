@@ -72,9 +72,12 @@ services:
     security_opt:
       - seccomp:unconfined
     depends_on:
-      - "etcd"
-      - "minio"
-      - "embedding"
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
 
   embedding:
     container_name: llama-cpp-embedding-faith
@@ -87,7 +90,7 @@ services:
       HF_TOKEN: 
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
-    command: ["-hf", "Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0", "-c", "4096", "-ngl", "9999", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "11435", "--cont-batching", "-np", "1", --embedding]
+    command: ["-hf", "Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0", "-c", "4096", "-ngl", "9999", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "11435", "--cont-batching", "-np", "1", "--embedding"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11435/health"]
       interval: 30s
@@ -140,6 +143,12 @@ services:
       MILVUS_URL: http://milvus
       EMBEDDING_URL: http://embedding
       LLM_URL: http://llm
+    command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000 --workers 1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,4 +160,3 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
-  

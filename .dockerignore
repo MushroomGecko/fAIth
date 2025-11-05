@@ -30,6 +30,7 @@ pyvenv.cfg
 *.egg
 MANIFEST
 share/
+staticfiles/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

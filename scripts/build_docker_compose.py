@@ -256,7 +256,7 @@ LLAMA_CPP_SETUP = \
       HF_TOKEN: {hf_token}
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
-    command: ["-hf", "{model_id}", "-c", "{max_context_length}", "-ngl", "{llama_cpp_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", "--cont-batching", "-np", "{llama_cpp_concurrency}", "{embedding}"]
+    command: ["-hf", "{model_id}", "-c", "{max_context_length}", "-ngl", "{llama_cpp_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", "--cont-batching", "-np", "{llama_cpp_concurrency}", {embedding}]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
@@ -348,14 +348,38 @@ WEBAPP_SETUP = \
       - .:/app
 """.lstrip('\n')
 
+SHELL_ENTRYPOINT = \
+"""
+#!/bin/sh
+
+set -euo
+
+log() {{
+    printf '[ENTRYPOINT] %s\n' "$1"
+}}
+
+log "Running Milvus initialization"
+python scripts/docker_milvus_initializer.py
+
+log "Running database migrations"
+python manage.py migrate
+
+log "Collecting static files"
+python manage.py collectstatic --noinput --clear
+
+log "Fixing permissions on /app/staticfiles"
+if [ -d /app/staticfiles ]; then
+    chown -R faith_user:faith_user /app/staticfiles
+fi
+
+log "Starting application server as faith_user"
+exec su faith_user -c "uvicorn fAIth.asgi:application --host 0.0.0.0 --port {webapp_port} --workers {uvicorn_workers}"
+""".lstrip('\n')
+
 def build_docker_compose(llm_port, model_id, embedding, max_context_length, runner, gpu_type, driver, llama_cpp_gpu_layers, llama_cpp_concurrency, vllm_enforce_eager):
     """Build the docker compose file."""
-    if embedding:
-        embedding_setup = "--embedding"
-        model_type = "embedding"
-    else:
-        embedding_setup = ""
-        model_type = "llm"
+    embedding_setup = '"--embedding"' if embedding else ''
+    model_type = "embedding" if embedding else "llm"
     
     if runner == "llama_cpp":
         runner_setup = LLAMA_CPP_SETUP
@@ -483,6 +507,11 @@ if __name__ == "__main__":
         llm_setup=llm_block.lstrip('\n').rstrip('\n'),
         webapp_setup=webapp_block.lstrip('\n').rstrip('\n')
     )
+    
+    shell_entrypoint_str = SHELL_ENTRYPOINT.format(webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS).lstrip('\n').rstrip('\n')
 
     with open("docker-compose.yml", "w") as f:
         f.write(docker_compose_str)
+
+    with open("webapp_entrypoint.sh", "w") as f:
+      f.write(shell_entrypoint_str)
