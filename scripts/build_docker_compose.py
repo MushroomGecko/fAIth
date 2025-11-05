@@ -304,6 +304,41 @@ SGLANG_SETUP = \
 {gpu_setup}
 """.lstrip('\n')
 
+WEBAPP_SETUP = \
+"""
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: webapp-faith
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      MILVUS_URL: http://milvus
+      EMBEDDING_URL: http://embedding
+      LLM_URL: http://llm
+    command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+      llm:
+        condition: service_healthy
+    volumes:
+      - .:/app
+""".lstrip('\n')
+
 def build_docker_compose(llm_port, model_id, embedding, max_context_length, runner, gpu_type, driver, llama_cpp_gpu_layers, llama_cpp_concurrency, vllm_enforce_eager):
     """Build the docker compose file."""
     if embedding:
