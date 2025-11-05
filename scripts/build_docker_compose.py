@@ -256,7 +256,7 @@ LLAMA_CPP_SETUP = \
       HF_TOKEN: {hf_token}
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
-    command: ["-hf", "{model_id}", "-c", "{max_context_length}", "-ngl", "{llama_cpp_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", "--cont-batching", "-np", "{llama_cpp_concurrency}", {embedding}]
+    command: ["-hf", "{model_id}", "-c", "{max_context_length}", "-ngl", "{llama_cpp_gpu_layers}", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "{llm_port}", "--cont-batching", "-np", "{llama_cpp_concurrency}", "{embedding}"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{llm_port}/health"]
       interval: 30s
@@ -417,13 +417,13 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
 
         if runner == "ollama":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup=ROCM_SETUP, ollama_force_cpu="", ollama_image="ollama/ollama:rocm", model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup=AMD_SETUP, ollama_force_cpu="", ollama_image="ollama/ollama:rocm", model_type=model_type)
         elif runner == "llama_cpp":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=ROCM_SETUP, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-rocm", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=AMD_SETUP, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-rocm", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type)
         elif runner == "vllm":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=ROCM_SETUP, vllm_enforce_eager=vllm_enforce_eager, hf_token=HF_TOKEN, vllm_image="rocm/vllm:latest", model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=AMD_SETUP, vllm_enforce_eager=vllm_enforce_eager, hf_token=HF_TOKEN, vllm_image="rocm/vllm:latest", model_type=model_type)
         elif runner == "sglang":
-            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=ROCM_SETUP, hf_token=HF_TOKEN, sglang_image="lmsysorg/sglang:dsv32-rocm", model_type=model_type)
+            runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=AMD_SETUP, hf_token=HF_TOKEN, sglang_image="lmsysorg/sglang:dsv32-rocm", model_type=model_type)
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
     
