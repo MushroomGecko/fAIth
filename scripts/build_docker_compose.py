@@ -10,6 +10,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 load_dotenv()
 
+# Webapp specific things
+WEBAPP_PORT = os.getenv("WEBAPP_PORT", 8000)
+UVICORN_WORKERS = os.getenv("UVICORN_WORKERS", 1)
+
 # Postgres specific things
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "faith_user")
@@ -98,6 +102,8 @@ services:
 {embedding_setup}
 
 {llm_setup}
+
+{webapp_setup}
 """.lstrip('\n')
 
 NVIDIA_SETUP = \
@@ -206,9 +212,12 @@ MILVUS_SETUP = \
     security_opt:
       - seccomp:unconfined
     depends_on:
-      - "etcd"
-      - "minio"
-      - "embedding"
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
 """.lstrip('\n')
 
 OLLAMA_SETUP = \
@@ -312,7 +321,7 @@ WEBAPP_SETUP = \
       dockerfile: Dockerfile
     container_name: webapp-faith
     ports:
-      - "8000:8000"
+      - "{webapp_port}:{webapp_port}"
     env_file:
       - .env
     environment:
@@ -320,9 +329,9 @@ WEBAPP_SETUP = \
       MILVUS_URL: http://milvus
       EMBEDDING_URL: http://embedding
       LLM_URL: http://llm
-    command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000"
+    command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port {webapp_port} --workers {uvicorn_workers}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck/"]
+      test: ["CMD", "curl", "-f", "http://localhost:{webapp_port}/healthcheck/"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -465,12 +474,14 @@ if __name__ == "__main__":
     milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT)
     embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER)
     llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER)
-    
+    webapp_block = WEBAPP_SETUP.format(webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS)
+
     docker_compose_str = DOCKER_COMPOSE_TPL.format(
         postgres_setup=postgres_block.lstrip('\n').rstrip('\n'),
         milvus_setup=milvus_block.lstrip('\n').rstrip('\n'),
         embedding_setup=embedding_block.lstrip('\n').rstrip('\n'),
         llm_setup=llm_block.lstrip('\n').rstrip('\n'),
+        webapp_setup=webapp_block.lstrip('\n').rstrip('\n')
     )
 
     with open("docker-compose.yml", "w") as f:
