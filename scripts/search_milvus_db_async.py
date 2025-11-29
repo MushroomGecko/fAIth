@@ -33,7 +33,7 @@ async def main():
     logger.info(await vector_database.list_collections_in_database())
 
     collection_name = "bsb"
-    queries = ["In the beginning", "Sodom and Gomorrah", "Garden of Eden", "Tower of Babel", "Adam and Eve", "What was the name of the first man?", "Noah's Arc", "Noah's Ark"]
+    queries = ["In the beginning", "Sodom and Gomorrah", "Garden of Eden", "Tower of Babel", "Adam and Eve", "What was the name of the first man?", "Noah's Arc", "Noah's Ark", "For God so loves the world", "Jesus said"]
     limit = 10
     for query in queries:
         # Get results
