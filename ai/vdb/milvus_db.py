@@ -225,7 +225,10 @@ class VectorDatabase:
                             if "header_" in verse:
                                 continue
                             verse_numbers.append(int(verse))
-                            verse_texts.append(json_data[verse])
+                            verse_clean_text = json_data[verse]
+                            # Remove the HTML tags to have cleaner database entries
+                            verse_clean_text = verse_clean_text.replace("<span class=\"wj\">", "").replace("</span>", "").strip()
+                            verse_texts.append(verse_clean_text)
                         verse_embeddings = self.embedding_engine.embed(verse_texts, prompt_type="document", normalize=False)
 
                         data = []
