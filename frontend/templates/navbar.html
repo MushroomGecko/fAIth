@@ -1,0 +1,64 @@
+<nav class="navbar navbar-expand navbar-light bg-light flex-column">
+    <!-- Title -->
+    <div class="container-fluid">
+        <div class="col-12 d-flex justify-content-center">
+            <a class="navbar-brand m-0" href="{{ current_url }}">fAIth - AI Powered Study Bible</a>
+        </div>
+    </div>
+    <!-- Navigation -->
+    <div class="container-fluid d-flex flex-wrap">
+        <!-- Bible Selection -->
+        <div class="navbar-nav flex-row flex-wrap justify-content-center justify-content-lg-start flex-grow-1">
+            <!-- Book Dropdown -->
+            <div class="dropdown ms-2">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="bookDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 10vw;">
+                    {{ book }}
+                </button>
+                <ul class="dropdown-menu overflow-auto" style="max-height: 50vh; min-width: 10vw;" aria-labelledby="bookDropdown">
+                    {% for book_title in in_order %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'full_view' book_title 1 version %}">
+                                {{ book_title }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <!-- Chapter Dropdown -->
+            <div class="dropdown ms-2">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="chapterDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 5vw;">
+                    {{ chapter }}
+                </button>
+                <ul class="dropdown-menu overflow-auto" style="max-height: 50vh; min-width: 5vw;" aria-labelledby="chapterDropdown">
+                    {% for chapter_num in current_book_chapters %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'full_view' book chapter_num version %}">
+                                {{ chapter_num }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <!-- Version Dropdown -->
+            <div class="dropdown ms-2">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="versionDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 5vw;">
+                    {{ version }}
+                </button>
+                <ul class="dropdown-menu overflow-auto" style="max-height: 50vh; min-width: 5vw;" aria-labelledby="versionDropdown">
+                    {% for version_title in version_selection %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'full_view' book chapter version_title %}">
+                                {{ version_title }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <!-- Previous and Next Buttons -->
+        <div class="navbar-nav flex-row flex-wrap justify-content-center justify-content-lg-end flex-grow-1">
+            <a class="nav-link" href="{% url 'full_view' previous_book previous_chapter version %}">Previous</a>
+            <a class="nav-link" href="{% url 'full_view' next_book next_chapter version %}">Next</a>
+        </div>
+    </div>
+</nav>
