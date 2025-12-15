@@ -11,83 +11,23 @@
         <!-- Installed CSS -->
         <link rel="stylesheet" href="{% static 'css/installed/bootstrap.min.css' %}">
         <link rel="stylesheet" href="{% static 'css/installed/bootstrap-theme.min.css' %}">
+        <!-- Bootstrap Icons -->
+        <link rel="stylesheet" href="{% static 'bootstrap/icons/bootstrap-icons.min.css' %}">
         <!-- Custom CSS -->
         <link rel="stylesheet" href="{% static 'css/installed/verse_styling.css' %}">
     </head>
     <body class="d-flex flex-column vh-100">
         <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 flex-column">
-            <!-- Title -->
-            <div class="container-fluid">
-                <div class="col-12 text-center">
-                    <a class="navbar-brand" href="{{ current_url }}">fAIth - AI Powered Study Bible</a>
-                </div>
-            </div>
-            <!-- Navigation -->
-            <div class="container-fluid">
-                <!-- Bible Selection -->
-                <div class="navbar-nav">
-                    <!-- Book Dropdown -->
-                    <div class="dropdown ms-2">
-                        <button class="btn btn-secondary dropdown-toggle" type="button" id="bookDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 10vw;">
-                            {{ book }}
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end overflow-auto" style="max-height: 50vh; min-width: 10vw;" aria-labelledby="bookDropdown">
-                            {% for book_title in in_order %}
-                                <li><a class="dropdown-item" href="{% url 'full_view' book_title 1 version %}">{{ book_title }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <!-- Chapter Dropdown -->
-                    <div class="dropdown ms-2">
-                        <button class="btn btn-secondary dropdown-toggle" type="button" id="chapterDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 5vw;">
-                            {{ chapter }}
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end overflow-auto" style="max-height: 50vh; min-width: 5vw;" aria-labelledby="chapterDropdown">
-                            {% for chapter_num in current_book_chapters %}
-                                <li><a class="dropdown-item" href="{% url 'full_view' book chapter_num version %}">{{ chapter_num }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <!-- Version Dropdown -->
-                    <div class="dropdown ms-2">
-                        <button class="btn btn-secondary dropdown-toggle" type="button" id="versionDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 5vw;">
-                            {{ version }}
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end overflow-auto" style="max-height: 50vh; min-width: 5vw;" aria-labelledby="versionDropdown">
-                            {% for version_title in version_selection %}
-                                <li><a class="dropdown-item" href="{% url 'full_view' book chapter version_title %}">{{ version_title }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-                <!-- Previous and Next Buttons -->
-                <div class="navbar-nav">
-                    <a class="nav-link" href="{% url 'full_view' previous_book previous_chapter version %}">Previous</a>
-                    <a class="nav-link" href="{% url 'full_view' next_book next_chapter version %}">Next</a>
-                </div>
-            </div>
-        </nav>
+        {% include 'navbar.html' %}
 
-        <!-- Main -->
-        <main class="container-fluid flex-grow-1 d-flex flex-column mb-4">
-            <div class="row flex-grow-1">
-                <!-- Verses Container -->
-                <div class="col-md-10 d-flex flex-column">
-                    <div class="overflow-auto flex-grow-1" style="min-height: 0; height: 0;">
-                        {% for verse_num, verse in verses.items %}
-                            <p id="{{ verse_num }}">
-                                {{ verse|safe }}<br>
-                            </p>
-                        {% endfor %}
-                    </div>
-                </div>
-                <!-- Notes Container -->
-                <div class="col-md-2 d-flex flex-column">
-                    <textarea class="form-control flex-grow-1" placeholder="Notes" style="resize: none;"></textarea>
-                </div>
-            </div>
-        </main>
+        <!-- Content -->
+        <div class="d-flex flex-grow-1" style="overflow: hidden;">
+            <!-- Sidebar -->
+            {% include 'sidebar.html' %}
+
+            <!-- Main -->
+            {% include 'main.html' %}
+        </div>
 
         <!-- Installed JS -->
         <script src="{% static 'js/installed/htmx.min.js' %}"></script>

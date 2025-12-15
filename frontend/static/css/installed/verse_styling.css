@@ -6,3 +6,38 @@
 .wj {
     color: #ff0000;
 }
+
+/* Applies to both orientations */
+.verses-container {
+    flex: 1;
+}
+
+/* Portrait layout */
+@media (orientation: portrait) 
+{
+    .main-layout-container 
+    {
+        flex-direction: column;
+    }
+
+    .notes-container 
+    {
+        /* Portrait: Takes up 20% of vertical space */
+        flex: 0 0 20%;
+    }
+}
+
+/* Landscape layout */
+@media (orientation: landscape) 
+{
+    .main-layout-container 
+    {
+        flex-direction: row;
+    }
+
+    .notes-container 
+    {
+        /* Landscape/Desktop: Takes up 20% of horizontal space */
+        flex: 0 0 20%;
+    }
+}
