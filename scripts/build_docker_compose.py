@@ -103,6 +103,10 @@ DOCKER_COMPOSE_TPL = """
 services:
 {postgres_setup}
 
+{etcd_setup}
+
+{seaweedfs_setup}
+
 {milvus_setup}
 
 {embedding_setup}
@@ -160,10 +164,10 @@ POSTGRES_SETUP = \
       retries: {retries}
 """.lstrip('\n')
 
-MILVUS_SETUP = \
+ETCD_SETUP = \
 """
   etcd:
-    container_name: milvus-etcd-faith
+    container_name: etcd-faith
     image: milvusdb/etcd:latest
     environment:
       - ALLOW_NONE_AUTHENTICATION=yes
@@ -181,23 +185,124 @@ MILVUS_SETUP = \
       interval: {interval}
       timeout: {timeout}
       retries: {retries}
+""".lstrip('\n')
 
-  minio:
-    container_name: milvus-minio-faith
-    image: minio/minio:latest
-    environment:
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      MINIO_LOG_LEVEL: warn
+SEAWEEDFS_SETUP = \
+"""
+  seaweedfs-master:
+    container_name: seaweedfs-master-faith
+    image: chrislusf/seaweedfs:4.03
+    ports:
+      - 9333:9333
+      - 19333:19333
+      - 9324:9324
+    command: 'master -ip=seaweedfs-master -ip.bind=0.0.0.0 -metricsPort=9324 -mdir=/data'
     volumes:
-      - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/minio:/minio_data
-    command: minio server /minio_data
+      - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/seaweedfs/master:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9333/cluster/status"]
       interval: {interval}
       timeout: {timeout}
       retries: {retries}
 
+  seaweedfs-volume:
+    container_name: seaweedfs-volume-faith
+    image: chrislusf/seaweedfs:4.03
+    ports:
+      - 8080:8080
+      - 18080:18080
+      - 9325:9325
+    volumes:
+      - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/seaweedfs/volume:/data
+    command: 'volume -ip=seaweedfs-volume -master="seaweedfs-master:9333" -ip.bind=0.0.0.0 -port=8080 -metricsPort=9325 -dir=/data'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      interval: {interval}
+      timeout: {timeout}
+      retries: {retries}
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+
+  seaweedfs-filer:
+    container_name: seaweedfs-filer-faith
+    image: chrislusf/seaweedfs:4.03
+    ports:
+      - 8888:8888
+      - 18888:18888
+      - 9326:9326
+    command: 'filer -ip=seaweedfs-filer -master="seaweedfs-master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/"]
+      interval: {interval}
+      timeout: {timeout}
+      retries: {retries}
+    tty: true
+    stdin_open: true
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+      seaweedfs-volume:
+        condition: service_healthy
+
+  seaweedfs-s3:
+    container_name: seaweedfs-s3-faith
+    image: chrislusf/seaweedfs:4.03
+    ports:
+      - 8333:8333
+      - 9327:9327
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    command: 's3 -filer="seaweedfs-filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8333/"]
+      interval: {interval}
+      timeout: {timeout}
+      retries: {retries}
+    depends_on:
+      seaweedfs-master:
+        condition: service_healthy
+      seaweedfs-volume:
+        condition: service_healthy
+      seaweedfs-filer:
+        condition: service_healthy
+
+  seaweedfs-init:
+    container_name: seaweedfs-init-faith
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for SeaweedFS S3 to be ready..."
+        until aws --endpoint-url=http://seaweedfs-s3:8333 s3 ls 2>/dev/null; do
+          echo "SeaweedFS S3 not ready yet, waiting..."
+          sleep 2
+        done
+        echo "Checking if milvus-bucket exists..."
+        if aws --endpoint-url=http://seaweedfs-s3:8333 s3api head-bucket --bucket milvus-bucket 2>/dev/null; then
+          echo "Bucket milvus-bucket already exists"
+        else
+          echo "Creating milvus-bucket..."
+          if aws --endpoint-url=http://seaweedfs-s3:8333 s3 mb s3://milvus-bucket; then
+            echo "Bucket milvus-bucket created successfully"
+          else
+            echo "ERROR: Failed to create bucket milvus-bucket. Try: docker compose down -v && sudo rm -rf ./volumes"
+            exit 1
+          fi
+        fi
+        echo "Bucket initialization complete"
+    depends_on:
+      seaweedfs-s3:
+        condition: service_healthy
+""".lstrip('\n')
+
+MILVUS_SETUP = \
+"""
   milvus:
     container_name: milvus-faith
     image: milvusdb/milvus:latest
@@ -205,7 +310,12 @@ MILVUS_SETUP = \
       - "{milvus_port}:{milvus_port}"
     environment:
       ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
+      MINIO_ADDRESS: seaweedfs-s3:8333
+      MINIO_ACCESS_KEY_ID: minioadmin
+      MINIO_SECRET_ACCESS_KEY: minioadmin
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_NAME: milvus-bucket
+      MINIO_ROOT_PATH: milvus/data
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/milvus:/var/lib/milvus
     command: ["milvus", "run", "standalone"]
@@ -220,8 +330,10 @@ MILVUS_SETUP = \
     depends_on:
       etcd:
         condition: service_healthy
-      minio:
+      seaweedfs-s3:
         condition: service_healthy
+      seaweedfs-init:
+        condition: service_completed_successfully
       embedding:
         condition: service_healthy
 """.lstrip('\n')
@@ -506,6 +618,8 @@ if __name__ == "__main__":
     LLM_VLLM_ENFORCE_EAGER = os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")
 
     postgres_block = POSTGRES_SETUP.format(postgres_port=POSTGRES_PORT, postgres_user=POSTGRES_USER, postgres_password=POSTGRES_PASSWORD, postgres_database=POSTGRES_DATABASE, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
+    etcd_block = ETCD_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
+    seaweedfs_block = SEAWEEDFS_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
@@ -513,6 +627,8 @@ if __name__ == "__main__":
 
     docker_compose_str = DOCKER_COMPOSE_TPL.format(
         postgres_setup=postgres_block.lstrip('\n').rstrip('\n'),
+        etcd_setup=etcd_block.lstrip('\n').rstrip('\n'),
+        seaweedfs_setup=seaweedfs_block.lstrip('\n').rstrip('\n'),
         milvus_setup=milvus_block.lstrip('\n').rstrip('\n'),
         embedding_setup=embedding_block.lstrip('\n').rstrip('\n'),
         llm_setup=llm_block.lstrip('\n').rstrip('\n'),
