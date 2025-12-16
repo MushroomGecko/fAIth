@@ -53,7 +53,7 @@ The current version of Nvidia 580.XX breaks and no longer supports legacy mode. 
 - SGLang - https://github.com/sgl-project/sglang
 #### Other
 - etcd (Milvus metadata storage) - https://github.com/etcd-io/etcd
-- MinIO (persistant storage for large-scale files) - https://github.com/minio/minio
+- SeaweedFS (S3-compatible database) - https://github.com/seaweedfs/seaweedfs
 
 ## Licensing
 fAIth is released under the GNU General Public License v3.0 (GPLv3). We believe that just as God's Word is a gift freely given to all, the tools used to interact with it should remain free for everyone to use, study, and share.
