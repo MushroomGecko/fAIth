@@ -1,8 +1,7 @@
 from django.urls import path
-from .views import VDBSearchView, LLMCompletionsView
+from .views import GeneralQuestionView
 
 urlpatterns = [
-    path('vdb_search/', VDBSearchView.as_view(), name='vdb_search'),
-    path('llm_completions/', LLMCompletionsView.as_view(), name='llm_completions'),
+    path('general_question/', GeneralQuestionView.as_view(), name='general_question'),
 ]
 

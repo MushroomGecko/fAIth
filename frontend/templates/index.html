@@ -29,11 +29,16 @@
             {% include 'main.html' %}
         </div>
 
+        <!-- Modals -->
+        {% include 'modals/prompt_user.html' %}
+        {% include 'modals/server_response.html' %}
+
         <!-- Installed JS -->
         <script src="{% static 'js/installed/htmx.min.js' %}"></script>
         <script src="{% static 'js/installed/popper.min.js' %}"></script>
         <script src="{% static 'js/installed/bootstrap.min.js' %}"></script>
         <!-- Custom JS -->
+        <script src="{% static 'js/fAIth/htmx_updates.js' %}"></script>
     </body>
 </html>
 
