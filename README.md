@@ -13,8 +13,8 @@ The current version of Nvidia 580.XX breaks and no longer supports legacy mode. 
 
 ## Steps to run fAIth
 1. Go into the fAIth directory with `cd fAIth`
-2. Make a venv with `python -m venv .`
-3. Activate the venv with `./bin/activate`
+2. Make a venv with `python -m venv .venv`
+3. Activate the venv with `.venv/bin/activate`
 4. Install required packages with `pip install -r requirements.txt`
 5. Copy `.env_template` to `.env`
 6. Edit `.env` to fit your environment
