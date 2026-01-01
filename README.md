@@ -21,7 +21,7 @@ The current version of Nvidia 580.XX breaks and no longer supports legacy mode. 
 
 **NOTE: Before running fAIth, if you plan to use the default options provided in the `.env` file, please ensure you have at least 6GB of available VRAM or shared system memory to provide ample room for the AI models used. If you do not have at least 6GB of memory, please edit the `.env` file to use models that support your memory size.**
 
-7. Run the Docker YML generator with `python ./scripts/build_docker_compose`
+7. Run the Docker YML generator with `python ./scripts/build_docker_compose.py`
 8. Start fAIth by running `docker compose up -d`. You may want to use this time to grab a coffee and/or read your Bible. This step may take a while. This step involves downloading all of the required Docker containers, downloading the AI models, and loading the vector database. After these steps complete, fAIth should automatically run via uvicorn.
 9. Visit `http://localhost:8000` to access fAIth
 
