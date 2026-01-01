@@ -203,8 +203,9 @@ services:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
+            - driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
               capabilities: [gpu]
 
   llm:
@@ -229,8 +230,9 @@ services:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
+            - driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
               capabilities: [gpu]
 
   webapp:

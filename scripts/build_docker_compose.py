@@ -122,8 +122,9 @@ NVIDIA_SETUP = \
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
+            - driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
               capabilities: [gpu]
 """.lstrip('\n')
 
