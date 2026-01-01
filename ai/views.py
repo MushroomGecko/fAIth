@@ -3,6 +3,7 @@ from ai.serializers import GeneralQuestionSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 import logging
 from rest_framework.permissions import IsAuthenticated
 import asyncio
@@ -42,20 +43,25 @@ class GeneralQuestionView(APIView):
         logger.info(f"Vector results:\n{stringified_vector_results}")
 
         # Get the system and user prompts
-        system_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "system.txt"))
-        user_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "user.txt"))
+        system_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "system.md"))
+        user_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "user.md"))
         user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
 
         # Get the pre-initialized Completions object from lifespan state
         completions_obj = request.state["completions_obj"]
         result = await completions_obj.async_completions(system_prompt, user_prompt, query)
-
         logger.info(f"LLM result:\n{result}")
 
         # Convert any resulting markdown to HTML
         cleaned_result = await clean_llm_output(result)
-
         logger.info(f"Cleaned result:\n{cleaned_result}")
 
+        # Render the result to a template
+        template_name = "partials/general_question.html"
+        context = {
+            "response_content": cleaned_result,
+        }
+        rendered_template = render_to_string(template_name, context)
+
         # Return the result back to the client
-        return HttpResponse(cleaned_result, status=status.HTTP_200_OK, content_type="text/html")
+        return HttpResponse(rendered_template, status=status.HTTP_200_OK, content_type="text/html")
