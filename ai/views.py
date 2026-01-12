@@ -8,14 +8,15 @@ import logging
 from rest_framework.permissions import IsAuthenticated
 import asyncio
 from pathlib import Path
-
+import os
+from django.utils.safestring import mark_safe
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
-VDB_SEARCH_LIMIT = 10
+VDB_SEARCH_LIMIT = int(os.getenv("VDB_SEARCH_LIMIT", 10))
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
@@ -59,7 +60,7 @@ class GeneralQuestionView(APIView):
         # Render the result to a template
         template_name = "partials/general_question.html"
         context = {
-            "response_content": cleaned_result,
+            "response_content": mark_safe(cleaned_result),
         }
         rendered_template = render_to_string(template_name, context)
 
