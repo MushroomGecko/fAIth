@@ -16,7 +16,7 @@ from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
 logger = logging.getLogger(__name__)
 
 
-VDB_SEARCH_LIMIT = int(os.getenv("VDB_SEARCH_LIMIT", 10))
+MILVUS_SEARCH_LIMIT = int(os.getenv("MILVUS_SEARCH_LIMIT", 10))
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
@@ -39,7 +39,7 @@ class GeneralQuestionView(APIView):
 
         # Get the pre-initialized Milvus database from lifespan state
         vector_database = request.state["milvus_db"]
-        vector_results = await vector_database.search(collection_name=collection_name, query=query, limit=VDB_SEARCH_LIMIT)
+        vector_results = await vector_database.search(collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT)
         stringified_vector_results = await stringify_vdb_results(vector_results)
         logger.info(f"Vector results:\n{stringified_vector_results}")
 
