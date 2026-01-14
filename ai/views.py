@@ -47,6 +47,11 @@ class GeneralQuestionView(APIView):
         system_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "system.md"))
         user_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "user.md"))
         user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
+        # Remove whitespace from the prompts
+        system_prompt = system_prompt.strip()
+        user_prompt = user_prompt.strip()
+        logger.info(f"System prompt:\n{system_prompt}")
+        logger.info(f"User prompt:\n{user_prompt}")
 
         # Get the pre-initialized Completions object from lifespan state
         completions_obj = request.state["completions_obj"]
