@@ -1,0 +1,5 @@
+{% if response_status == status.HTTP_200_OK %}
+    <p>{{ response_content|safe }}</p>
+{% else %}
+    <p>Could not generate response</p>
+{% endif %}

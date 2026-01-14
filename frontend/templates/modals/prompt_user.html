@@ -1,0 +1,21 @@
+<div id="promptUserModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Please enter your question</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="promptUserForm" hx-post="{% url 'general_question' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="collection_name" value="{{ version }}">
+                    <div class="mb-3">
+                        <label for="query" class="form-label">Question</label>
+                        <input id="query" name="query" type="text" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

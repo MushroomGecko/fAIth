@@ -1,27 +1,39 @@
 # fAIth - AI-Powered Study Bible
 
 ## What is fAIth?
-fAIth is an open-source study Bible that supercharges your Bible-reading experience. Take notes on what you read, highlight verses, ask questions, and get quizzed to test your knowledge all in one place!
+fAIth is an open-source AI-powered study Bible that supercharges your Bible-reading experience. Take notes on what you read, highlight verses, ask questions, and get quizzed to test your knowledge all in one place!
 
-## If using CUDA
-The current version of Nvidia 580.XX breaks and no longer supports legacy mode. Use the CDI runtime instead.
+## If using CUDA (NVIDIA 580.XX+ Drivers)
+Modern NVIDIA drivers (580.XX+) have deprecated the "legacy" hook mode. To use GPUs with Docker Compose, you must switch to the CDI (Container Device Interface) runtime.
 
+### 1. Configure the Docker Runtime
 ```
-> sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
-> sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && systemctl restart docker
+sudo nvidia-ctk runtime configure --runtime=docker
 ```
+
+### 2. Generate the CDI Device Map
+```
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+```
+
+### 3. Enable the CDI Mode and Restart Docker
+```
+sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sudo systemctl restart docker
+```
+
+**IMPORTANT**: Ensure your `docker-compose.yml` uses `driver: cdi` and `nvidia.com/gpu=all` for device reservations. Legacy driver: nvidia blocks will trigger an OCI runtime error in CDI mode.
 
 ## Steps to run fAIth
 1. Go into the fAIth directory with `cd fAIth`
-2. Make a venv with `python -m venv .`
-3. Activate the venv with `./bin/activate`
+2. Make a venv with `python -m venv .venv`
+3. Activate the venv with `.venv/bin/activate`
 4. Install required packages with `pip install -r requirements.txt`
 5. Copy `.env_template` to `.env`
 6. Edit `.env` to fit your environment
 
 **NOTE: Before running fAIth, if you plan to use the default options provided in the `.env` file, please ensure you have at least 6GB of available VRAM or shared system memory to provide ample room for the AI models used. If you do not have at least 6GB of memory, please edit the `.env` file to use models that support your memory size.**
 
-7. Run the Docker YML generator with `python ./scripts/build_docker_compose`
+7. Run the Docker YML generator with `python ./scripts/build_docker_compose.py`
 8. Start fAIth by running `docker compose up -d`. You may want to use this time to grab a coffee and/or read your Bible. This step may take a while. This step involves downloading all of the required Docker containers, downloading the AI models, and loading the vector database. After these steps complete, fAIth should automatically run via uvicorn.
 9. Visit `http://localhost:8000` to access fAIth
 
