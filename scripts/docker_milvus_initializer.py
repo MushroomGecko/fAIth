@@ -26,21 +26,21 @@ except Exception as e:
 # Get the version selection
 from frontend.globals import VERSION_SELECTION
 # Import the Milvus database class
-from ai.vdb.milvus_db import VectorDatabase
+from ai.vdb.milvus_db import VectorDatabaseBuilder
 
 # Get DB object
 try:
-    logger.info("Getting Milvus database object")
-    vector_database = VectorDatabase()
-    logger.info("Milvus database object obtained")
+    logger.info("Getting Milvus database builder object")
+    vector_database_builder = VectorDatabaseBuilder()
+    logger.info("Milvus database builder object obtained")
 except Exception as e:
-    logger.error(f"Error getting Milvus database object: {e}")
+    logger.error(f"Error getting Milvus database builder object: {e}")
     raise e
 
 # See if the database exists
 try:
     logger.info("Loading or creating database")
-    vector_database.load_or_create_database()
+    vector_database_builder.load_or_create_database()
     logger.info("Database loaded or created")
 except Exception as e:
     logger.error(f"Error loading or creating database: {e}")
@@ -49,7 +49,7 @@ except Exception as e:
 # See if the collections exist
 try:
     logger.info("Checking if collections exist")
-    existing_collections = vector_database.list_collections_in_database()
+    existing_collections = vector_database_builder.list_collections_in_database()
     logger.info(f"Existing collections: {existing_collections}")
     collections_to_create = []
     # Get the collections that do not exist
@@ -59,7 +59,7 @@ try:
     # Create the collections that do not exist
     if collections_to_create:
         logger.info(f"The following collections do not exist: {collections_to_create}. Creating them.")
-        vector_database.create_collections(collections_to_create)
+        vector_database_builder.create_collections(collections_to_create)
         logger.info("Collections created.")
     # All collections exist
     else:
@@ -71,7 +71,7 @@ except Exception as e:
 # Close the database
 try:
     logger.info("Closing Milvus database")
-    vector_database.close()
+    vector_database_builder.close()
     logger.info("Milvus database closed")
 except Exception as e:
     logger.warning(f"Milvus database was not closed gracefully: {e}")

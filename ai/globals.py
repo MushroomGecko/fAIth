@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from django_asgi_lifespan.types import LifespanManager
-from ai.vdb.milvus_db import AsyncVectorDatabase
+from ai.vdb.milvus_db import VectorDatabaseQuerier
 from ai.llm.completions import Completions
 import logging
 
@@ -13,7 +13,7 @@ async def milvus_db_lifespan_manager() -> LifespanManager:
     logger.info("Initializing Async Milvus database lifecycle manager")
 
     # Load the Async Milvus database
-    milvus_db = await AsyncVectorDatabase.load_database_and_collections()
+    milvus_db = await VectorDatabaseQuerier.load_database_and_collections()
     state = {
         "milvus_db": milvus_db
     }
