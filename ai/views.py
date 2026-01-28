@@ -7,7 +7,6 @@ from django.template.loader import render_to_string
 import logging
 from rest_framework.permissions import IsAuthenticated
 import asyncio
-from pathlib import Path
 import os
 from django.utils.safestring import mark_safe
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 MILVUS_SEARCH_LIMIT = int(os.getenv("MILVUS_SEARCH_LIMIT", 10))
-RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
+RAW_PROMPTS_DIRECTORY = os.path.join("ai", "llm", "prompts")
 
 
 class GeneralQuestionView(APIView):
@@ -44,8 +43,8 @@ class GeneralQuestionView(APIView):
         logger.info(f"Vector results:\n{stringified_vector_results}")
 
         # Get the system and user prompts
-        system_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "system.md"))
-        user_prompt = await async_read_file(Path(RAW_PROMPTS_DIRECTORY, file_directory, "user.md"))
+        system_prompt = await async_read_file(os.path.join(RAW_PROMPTS_DIRECTORY, file_directory, "system.md"))
+        user_prompt = await async_read_file(os.path.join(RAW_PROMPTS_DIRECTORY, file_directory, "user.md"))
         user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
         # Remove whitespace from the prompts
         system_prompt = system_prompt.strip()

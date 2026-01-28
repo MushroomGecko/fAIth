@@ -31,6 +31,11 @@ class Embedding:
         self.query_template = os.getenv("EMBEDDING_MODEL_QUERY_PROMPT", "")
         self.document_template = os.getenv("EMBEDDING_MODEL_DOCUMENT_PROMPT", "")
 
+    def embedding_size(self):
+        """Get the embedding size."""
+        response = self.client.embeddings.create(model=self.model_name, input=["Hello, world!"])
+        return len(response.data[0].embedding)
+
     def embed(self, batch: list[str], prompt_type: str = "document", normalize: bool = False):
         """Embed a batch of text."""
         # If the prompt type is query, we need to use the query template
@@ -65,11 +70,6 @@ class Embedding:
 
         # Return the normalized embeddings
         return normalized
-
-    def embedding_size(self):
-        """Get the embedding size."""
-        response = self.client.embeddings.create(model=self.model_name, input=["Hello, world!"])
-        return len(response.data[0].embedding)
 
     async def async_embed(self, batch: list[str], prompt_type: str = "document", normalize: bool = False):
         """Embed a batch of text."""

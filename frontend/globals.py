@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from django_asgi_lifespan.types import LifespanManager
 import os
-from pathlib import Path
 import json
 from django.conf import settings
 import logging
@@ -22,7 +21,7 @@ def set_bible_data_root():
     """Set the root directory for the Bible data."""
     global BIBLE_DATA_ROOT
     try:
-        BIBLE_DATA_ROOT = Path(settings.BASE_DIR) / 'frontend' / 'bible_data'
+        BIBLE_DATA_ROOT = os.path.join(str(settings.BASE_DIR), 'frontend', 'bible_data')
     except Exception as e:
         logger.error(f"Error: {e}. 'BIBLE_DATA_ROOT' cannot be set.")
         raise ValueError(f"Error: {e}. 'BIBLE_DATA_ROOT' cannot be set.")
@@ -32,10 +31,24 @@ def set_version_selection():
     global VERSION_SELECTION
     logger.info("Setting available versions.")
     try:
-        VERSION_SELECTION = os.listdir(BIBLE_DATA_ROOT)
+        enabled_versions = json.loads(os.getenv("ENABLED_VERSIONS", "[]"))
+        available_versions = os.listdir(BIBLE_DATA_ROOT)
+        
+        # Filter out versions that don't exist in the filesystem
+        valid_versions = []
+        for version in enabled_versions:
+            if version in available_versions:
+                valid_versions.append(version)
+            else:
+                logger.warning(f"Version {version} not found in the filesystem. Not including in the list of valid versions.")
+        
+        if not valid_versions:
+            logger.warning("No valid versions found in `ENABLED_VERSIONS` environment variable. Including all versions in the filesystem.")
+            valid_versions = available_versions
+        VERSION_SELECTION = valid_versions
     except Exception as e:
-        logger.error(f"Error: {e}. 'VERSION_SELECTION' cannot be set.")
-        raise ValueError(f"Error: {e}. 'VERSION_SELECTION' cannot be set.")
+        logger.error(f"Error: {e}. Global variable 'VERSION_SELECTION' cannot be set.")
+        raise ValueError(f"Error: {e}. Global variable 'VERSION_SELECTION' cannot be set.")
     logger.info(f"Available versions successfully set to {VERSION_SELECTION}.")
 
 def set_default_version():
@@ -90,10 +103,11 @@ def set_chapter_selection():
     """Set the number of chapters in each book."""
     global CHAPTER_SELECTION
     logger.info("Setting number of chapters in each book.")
-    if BIBLE_DATA_ROOT is not None and BIBLE_DATA_ROOT.exists() and (BIBLE_DATA_ROOT / DEFAULT_VERSION).exists():
+    default_version_path = os.path.join(BIBLE_DATA_ROOT, DEFAULT_VERSION)
+    if BIBLE_DATA_ROOT is not None and os.path.exists(BIBLE_DATA_ROOT) and os.path.exists(default_version_path):
         for book_title in IN_ORDER_BOOKS:
-            book_path = BIBLE_DATA_ROOT / DEFAULT_VERSION / book_title
-            if book_path.exists() and book_path.is_dir():
+            book_path = os.path.join(BIBLE_DATA_ROOT, DEFAULT_VERSION, book_title)
+            if os.path.exists(book_path) and os.path.isdir(book_path):
                 try:
                     # Count JSON files (chapters) in the book directory
                     json_files = [file for file in os.listdir(book_path) if file.endswith('.json') and file.split('.')[0].isdigit()]
@@ -109,12 +123,12 @@ def set_chapter_selection():
         if not BIBLE_DATA_ROOT:
             logger.error(f"BIBLE_DATA_ROOT is None. 'CHAPTER_SELECTION' cannot be set.")
             raise ValueError(f"BIBLE_DATA_ROOT is None. 'CHAPTER_SELECTION' cannot be set.")
-        elif not BIBLE_DATA_ROOT.exists():
+        elif not os.path.exists(BIBLE_DATA_ROOT):
             logger.error(f"Bible data directory not found at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' cannot be set.")
             raise ValueError(f"Bible data directory not found at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' cannot be set.")
-        elif not (BIBLE_DATA_ROOT / DEFAULT_VERSION).exists():
-            logger.error(f"Default version directory not found at {BIBLE_DATA_ROOT / DEFAULT_VERSION}. 'CHAPTER_SELECTION' cannot be set.")
-            raise ValueError(f"Default version directory not found at {BIBLE_DATA_ROOT / DEFAULT_VERSION}. 'CHAPTER_SELECTION' cannot be set.")
+        elif not os.path.exists(default_version_path):
+            logger.error(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
+            raise ValueError(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
     logger.info("Number of chapters in each book successfully set.")
 
 def set_default_chapter():
@@ -148,8 +162,8 @@ def set_all_verses():
                 ALL_VERSES[version][book] = {}
                 for chapter in range(1, CHAPTER_SELECTION[book] + 1):
                     ALL_VERSES[version][book][chapter] = {}
-                    file_path = BIBLE_DATA_ROOT / version / book / f"{chapter}.json"
-                    if file_path.exists():
+                    file_path = os.path.join(BIBLE_DATA_ROOT, version, book, f"{chapter}.json")
+                    if os.path.exists(file_path):
                         with open(file_path, "r", encoding="utf-8") as file:
                             json_data = json.load(file)
                             for verse_num, verse_text in json_data.items():
