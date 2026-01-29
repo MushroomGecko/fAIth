@@ -4,11 +4,12 @@ import os
 import json
 from django.conf import settings
 import logging
+from pathlib import Path
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-BIBLE_DATA_ROOT = ''
+BIBLE_DATA_ROOT = Path()
 DEFAULT_VERSION = ''
 DEFAULT_BOOK = ''
 DEFAULT_CHAPTER = ''
@@ -21,7 +22,7 @@ def set_bible_data_root():
     """Set the root directory for the Bible data."""
     global BIBLE_DATA_ROOT
     try:
-        BIBLE_DATA_ROOT = os.path.join(str(settings.BASE_DIR), 'frontend', 'bible_data')
+        BIBLE_DATA_ROOT = settings.BASE_DIR.joinpath('frontend', 'bible_data')
     except Exception as e:
         logger.error(f"Error: {e}. 'BIBLE_DATA_ROOT' cannot be set.")
         raise ValueError(f"Error: {e}. 'BIBLE_DATA_ROOT' cannot be set.")
@@ -32,7 +33,7 @@ def set_version_selection():
     logger.info("Setting available versions.")
     try:
         enabled_versions = json.loads(os.getenv("ENABLED_VERSIONS", "[]"))
-        available_versions = os.listdir(BIBLE_DATA_ROOT)
+        available_versions = [item.name for item in BIBLE_DATA_ROOT.iterdir()]
         
         # Filter out versions that don't exist in the filesystem
         valid_versions = []
@@ -103,14 +104,14 @@ def set_chapter_selection():
     """Set the number of chapters in each book."""
     global CHAPTER_SELECTION
     logger.info("Setting number of chapters in each book.")
-    default_version_path = os.path.join(BIBLE_DATA_ROOT, DEFAULT_VERSION)
-    if BIBLE_DATA_ROOT is not None and os.path.exists(BIBLE_DATA_ROOT) and os.path.exists(default_version_path):
+    default_version_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION)
+    if BIBLE_DATA_ROOT is not None and BIBLE_DATA_ROOT.exists() and default_version_path.exists():
         for book_title in IN_ORDER_BOOKS:
-            book_path = os.path.join(BIBLE_DATA_ROOT, DEFAULT_VERSION, book_title)
-            if os.path.exists(book_path) and os.path.isdir(book_path):
+            book_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION, book_title)
+            if book_path.exists() and book_path.is_dir():
                 try:
                     # Count JSON files (chapters) in the book directory
-                    json_files = [file for file in os.listdir(book_path) if file.endswith('.json') and file.split('.')[0].isdigit()]
+                    json_files = [file for file in book_path.iterdir() if file.suffix == '.json' and file.stem.isdigit()]
                     CHAPTER_SELECTION[book_title] = len(json_files)
                 # Catch potential errors during listdir
                 except Exception as e:
@@ -123,10 +124,10 @@ def set_chapter_selection():
         if not BIBLE_DATA_ROOT:
             logger.error(f"BIBLE_DATA_ROOT is None. 'CHAPTER_SELECTION' cannot be set.")
             raise ValueError(f"BIBLE_DATA_ROOT is None. 'CHAPTER_SELECTION' cannot be set.")
-        elif not os.path.exists(BIBLE_DATA_ROOT):
+        elif not BIBLE_DATA_ROOT.exists():
             logger.error(f"Bible data directory not found at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' cannot be set.")
             raise ValueError(f"Bible data directory not found at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' cannot be set.")
-        elif not os.path.exists(default_version_path):
+        elif not default_version_path.exists():
             logger.error(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
             raise ValueError(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
     logger.info("Number of chapters in each book successfully set.")
@@ -162,9 +163,9 @@ def set_all_verses():
                 ALL_VERSES[version][book] = {}
                 for chapter in range(1, CHAPTER_SELECTION[book] + 1):
                     ALL_VERSES[version][book][chapter] = {}
-                    file_path = os.path.join(BIBLE_DATA_ROOT, version, book, f"{chapter}.json")
-                    if os.path.exists(file_path):
-                        with open(file_path, "r", encoding="utf-8") as file:
+                    file_path = BIBLE_DATA_ROOT.joinpath(version, book, f"{chapter}.json")
+                    if file_path.exists():
+                        with file_path.open("r", encoding="utf-8") as file:
                             json_data = json.load(file)
                             for verse_num, verse_text in json_data.items():
                                 # The text is already properly formatted, no parsing needed, just add the verse number and get headers

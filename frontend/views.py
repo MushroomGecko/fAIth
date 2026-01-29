@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from frontend.globals import BIBLE_DATA_ROOT, DEFAULT_VERSION, DEFAULT_BOOK, DEFAULT_CHAPTER, IN_ORDER_BOOKS, CHAPTER_SELECTION, VERSION_SELECTION, ALL_VERSES
 import asyncio
 from frontend.utils import async_parse_verses, async_redirect, async_render
@@ -33,10 +33,10 @@ async def full_view(request, book, chapter, version):
             return await async_redirect('full_view', args=[book, chapter, DEFAULT_VERSION])
 
         # Get the file path
-        file_path = os.path.join(BIBLE_DATA_ROOT, processed_version, book, f"{chapter}.json")
+        file_path = BIBLE_DATA_ROOT.joinpath(processed_version, book, f"{chapter}.json")
 
         # Check if the file exists
-        file_exists = await asyncio.to_thread(os.path.exists, file_path)
+        file_exists = await asyncio.to_thread(file_path.exists)
         if not file_exists:
             logger.error(f"Error: Bible data file not found at {file_path}")
             return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])

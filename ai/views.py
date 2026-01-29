@@ -10,13 +10,14 @@ import asyncio
 import os
 from django.utils.safestring import mark_safe
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
+from pathlib import Path
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
 MILVUS_SEARCH_LIMIT = int(os.getenv("MILVUS_SEARCH_LIMIT", 10))
-RAW_PROMPTS_DIRECTORY = os.path.join("ai", "llm", "prompts")
+RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 class GeneralQuestionView(APIView):
@@ -43,8 +44,8 @@ class GeneralQuestionView(APIView):
         logger.info(f"Vector results:\n{stringified_vector_results}")
 
         # Get the system and user prompts
-        system_prompt = await async_read_file(os.path.join(RAW_PROMPTS_DIRECTORY, file_directory, "system.md"))
-        user_prompt = await async_read_file(os.path.join(RAW_PROMPTS_DIRECTORY, file_directory, "user.md"))
+        system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
+        user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
         user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
         # Remove whitespace from the prompts
         system_prompt = system_prompt.strip()
@@ -54,7 +55,7 @@ class GeneralQuestionView(APIView):
 
         # Get the pre-initialized Completions object from lifespan state
         completions_obj = request.state["completions_obj"]
-        result = await completions_obj.async_completions(system_prompt, user_prompt, query)
+        result = await completions_obj.completions(system_prompt, user_prompt, query)
         logger.info(f"LLM result:\n{result}")
 
         # Convert any resulting markdown to HTML

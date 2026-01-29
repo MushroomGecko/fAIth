@@ -8,6 +8,7 @@ import json
 from frontend.globals import BIBLE_DATA_ROOT, VERSION_SELECTION, IN_ORDER_BOOKS, CHAPTER_SELECTION
 from ai.vdb.embedding import Embedding
 import logging
+from pathlib import Path
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -201,11 +202,11 @@ class VectorDatabaseBuilder:
             for book in IN_ORDER_BOOKS:
                 for chapter in range(1, CHAPTER_SELECTION[book] + 1):
                     # Get the verses for the book and chapter
-                    path = os.path.join(BIBLE_DATA_ROOT, collection_name, book, f"{chapter}.json")
-                    if not os.path.exists(path):
+                    path = BIBLE_DATA_ROOT.joinpath(collection_name, book, f"{chapter}.json")
+                    if not path.exists():
                         logger.error(f"Bible data file not found: {path}")
                         continue
-                    with open(path, "r", encoding="utf-8") as file:
+                    with path.open("r", encoding="utf-8") as file:
                         verse_numbers = []
                         verse_texts = []
                         # Load the JSON data

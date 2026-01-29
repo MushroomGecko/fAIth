@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+from pathlib import Path
 from asgiref.sync import sync_to_async
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -15,7 +16,7 @@ def sync_parse_verses(file_path):
     try:
         logger.debug(f"Parsing verses from {file_path}")
         # Read the JSON file and parse the verses of the book and chapter
-        with open(file_path, "r", encoding='utf-8') as file: # Added encoding
+        with Path(file_path).open("r", encoding='utf-8') as file:
             json_data = json.load(file)
             for verse_num, verse_text in json_data.items():
                 # The text is already properly formatted, no parsing needed, just add the verse number and get headers

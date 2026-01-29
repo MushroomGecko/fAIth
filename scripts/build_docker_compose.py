@@ -638,8 +638,8 @@ if __name__ == "__main__":
     
     shell_entrypoint_str = SHELL_ENTRYPOINT.format(webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS).lstrip('\n').rstrip('\n')
 
-    with open("docker-compose.yml", "w") as f:
+    with Path("docker-compose.yml").open("w", encoding="utf-8") as f:
         f.write(docker_compose_str)
 
-    with open("webapp_entrypoint.sh", "w") as f:
-      f.write(shell_entrypoint_str)
+    with Path("webapp_entrypoint.sh").open("w", encoding="utf-8") as f:
+        f.write(shell_entrypoint_str)

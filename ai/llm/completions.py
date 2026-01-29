@@ -26,41 +26,22 @@ class Completions:
         base_url = f"{llm_url}{':' if llm_port else ''}{llm_port}/v1"
         api_key = os.getenv("OPENAI_API_KEY", "sk-noauth")
 
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
-        self.async_client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)
 
-    def completions(self, system_prompt: str, user_prompt: str, query: str):
-        """Generate a completion for a prompt."""
-        messages = [
-            {"role": "system", "content": system_prompt}, 
-            {"role": "user", "content": user_prompt.format(query=query)}
-        ]
-        response = self.client.chat.completions.create(model=self.model_name, messages=messages)
-        return response.choices[0].message.content
-
-    async def async_completions(self, system_prompt: str, user_prompt: str, query: str):
+    async def completions(self, system_prompt: str, user_prompt: str, query: str):
         """Generate a completion for a prompt."""
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt.format(query=query)}
         ]
-        response = await self.async_client.chat.completions.create(model=self.model_name, messages=messages)
+        response = await self.client.chat.completions.create(model=self.model_name, messages=messages)
         return response.choices[0].message.content
-
-    def close(self):
-        """Close the synchronous Completions object."""
-        logger.info("Closing synchronous Completions object")
-        try:
-            self.client.close()
-        except Exception as e:
-            logger.error(f"Error closing synchronous Completions object: {e}")
-            pass
 
     async def close(self):
         """Close the asynchronous Completions object."""
         logger.info("Closing asynchronous Completions object")
         try:
-            await self.async_client.close()
+            await self.client.close()
         except Exception as e:
             logger.error(f"Error closing asynchronous Completions object: {e}")
             pass

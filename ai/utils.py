@@ -1,11 +1,12 @@
 import asyncio
 import markdown
+from pathlib import Path
 
 async def async_read_file(file_path, encoding='utf-8'):
     """Async wrapper for reading a file."""
     try:
         def read_sync():
-            with open(file_path, "r", encoding=encoding) as file:
+            with Path(file_path).open("r", encoding=encoding) as file:
                 return file.read()
         return await asyncio.to_thread(read_sync)
     except Exception as e:

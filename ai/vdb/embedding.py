@@ -37,7 +37,7 @@ class Embedding:
         return len(response.data[0].embedding)
 
     def embed(self, batch: list[str], prompt_type: str = "document", normalize: bool = False):
-        """Embed a batch of text."""
+        """Embed a batch of text. This synchronous function is mainly used for vector database building."""
         # If the prompt type is query, we need to use the query template
 
         # Embed the batch
@@ -72,7 +72,7 @@ class Embedding:
         return normalized
 
     async def async_embed(self, batch: list[str], prompt_type: str = "document", normalize: bool = False):
-        """Embed a batch of text."""
+        """Embed a batch of text. This asynchronous function is mainly used for vector database querying."""
         # If the prompt type is query, we need to use the query template
 
         # Embed the batch
