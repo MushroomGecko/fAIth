@@ -5,11 +5,12 @@ import json
 from django.conf import settings
 import logging
 from pathlib import Path
+import sys
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-BIBLE_DATA_ROOT = Path()
+BIBLE_DATA_ROOT = None
 DEFAULT_VERSION = ''
 DEFAULT_BOOK = ''
 DEFAULT_CHAPTER = ''
@@ -32,6 +33,11 @@ def set_version_selection():
     global VERSION_SELECTION
     logger.info("Setting available versions.")
     try:
+        # Dependency checks
+        if not BIBLE_DATA_ROOT or not BIBLE_DATA_ROOT.exists():
+            logger.error("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'VERSION_SELECTION'.")
+            raise ValueError("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'VERSION_SELECTION'.")
+        
         enabled_versions = json.loads(os.getenv("ENABLED_VERSIONS", "[]"))
         available_versions = [item.name for item in BIBLE_DATA_ROOT.iterdir()]
         
@@ -57,6 +63,11 @@ def set_default_version():
     global DEFAULT_VERSION
     logger.info("Setting default version.")
     try:
+        # Dependency checks
+        if not VERSION_SELECTION:
+            logger.error("'VERSION_SELECTION' is not set. Cannot set 'DEFAULT_VERSION'.")
+            raise ValueError("'VERSION_SELECTION' is not set. Cannot set 'DEFAULT_VERSION'.")
+        
         DEFAULT_VERSION = os.getenv("DEFAULT_VERSION", "bsb")
         if DEFAULT_VERSION not in VERSION_SELECTION:
             logger.warning(f"Default version {DEFAULT_VERSION} is not in the list of available versions. Defaulting to first version in the list.")
@@ -91,6 +102,11 @@ def set_default_book():
     global DEFAULT_BOOK
     logger.info("Setting default book.")
     try:
+        # Dependency checks
+        if not IN_ORDER_BOOKS:
+            logger.error("'IN_ORDER_BOOKS' is not set. Cannot set 'DEFAULT_BOOK'.")
+            raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot set 'DEFAULT_BOOK'.")
+        
         DEFAULT_BOOK = os.getenv("DEFAULT_BOOK", "Genesis")
         if DEFAULT_BOOK not in IN_ORDER_BOOKS:
             logger.warning(f"Default book {DEFAULT_BOOK} is not in the list of available books. Defaulting to first book in the list.")
@@ -104,32 +120,37 @@ def set_chapter_selection():
     """Set the number of chapters in each book."""
     global CHAPTER_SELECTION
     logger.info("Setting number of chapters in each book.")
-    default_version_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION)
-    if BIBLE_DATA_ROOT is not None and BIBLE_DATA_ROOT.exists() and default_version_path.exists():
+    try:
+        # Dependency checks
+        if not BIBLE_DATA_ROOT or not BIBLE_DATA_ROOT.exists():
+            logger.error("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'CHAPTER_SELECTION'.")
+            raise ValueError("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'CHAPTER_SELECTION'.")
+        if not DEFAULT_VERSION:
+            logger.error("'DEFAULT_VERSION' is not set. Cannot set 'CHAPTER_SELECTION'.")
+            raise ValueError("'DEFAULT_VERSION' is not set. Cannot set 'CHAPTER_SELECTION'.")
+        if not IN_ORDER_BOOKS:
+            logger.error("'IN_ORDER_BOOKS' is not set. Cannot set 'CHAPTER_SELECTION'.")
+            raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot set 'CHAPTER_SELECTION'.")
+        
+        default_version_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION)
+        if not default_version_path.exists():
+            logger.error(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
+            raise ValueError(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
+        
         for book_title in IN_ORDER_BOOKS:
             book_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION, book_title)
             if book_path.exists() and book_path.is_dir():
-                try:
-                    # Count JSON files (chapters) in the book directory
-                    json_files = [file for file in book_path.iterdir() if file.suffix == '.json' and file.stem.isdigit()]
-                    CHAPTER_SELECTION[book_title] = len(json_files)
-                # Catch potential errors during listdir
-                except Exception as e:
-                    logger.error(f"Error: {e}")
-                    raise ValueError(f"Error: {e}")
+                # Count JSON files (chapters) in the book directory
+                json_files = [file for file in book_path.iterdir() if file.suffix == '.json' and file.stem.isdigit()]
+                CHAPTER_SELECTION[book_title] = len(json_files)
             else:
                 logger.error(f"Book directory not found at {book_path}. 'CHAPTER_SELECTION' cannot be set.")
                 raise ValueError(f"Book directory not found at {book_path}. 'CHAPTER_SELECTION' cannot be set.")
-    else:
-        if not BIBLE_DATA_ROOT:
-            logger.error(f"BIBLE_DATA_ROOT is None. 'CHAPTER_SELECTION' cannot be set.")
-            raise ValueError(f"BIBLE_DATA_ROOT is None. 'CHAPTER_SELECTION' cannot be set.")
-        elif not BIBLE_DATA_ROOT.exists():
-            logger.error(f"Bible data directory not found at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' cannot be set.")
-            raise ValueError(f"Bible data directory not found at {BIBLE_DATA_ROOT}. 'CHAPTER_SELECTION' cannot be set.")
-        elif not default_version_path.exists():
-            logger.error(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
-            raise ValueError(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {e}. 'CHAPTER_SELECTION' cannot be set.")
+        raise ValueError(f"Error: {e}. 'CHAPTER_SELECTION' cannot be set.")
     logger.info("Number of chapters in each book successfully set.")
 
 def set_default_chapter():
@@ -137,6 +158,14 @@ def set_default_chapter():
     global DEFAULT_CHAPTER
     logger.info("Setting default chapter.")
     try:
+        # Dependency checks
+        if not CHAPTER_SELECTION:
+            logger.error("'CHAPTER_SELECTION' is not set. Cannot set 'DEFAULT_CHAPTER'.")
+            raise ValueError("'CHAPTER_SELECTION' is not set. Cannot set 'DEFAULT_CHAPTER'.")
+        if not DEFAULT_BOOK:
+            logger.error("'DEFAULT_BOOK' is not set. Cannot set 'DEFAULT_CHAPTER'.")
+            raise ValueError("'DEFAULT_BOOK' is not set. Cannot set 'DEFAULT_CHAPTER'.")
+        
         DEFAULT_CHAPTER = os.getenv("DEFAULT_CHAPTER", "1")
         DEFAULT_CHAPTER = int(DEFAULT_CHAPTER)
         if DEFAULT_BOOK not in CHAPTER_SELECTION:
@@ -154,8 +183,20 @@ def set_all_verses():
     """Set the verses for each version, book, and chapter."""
     global ALL_VERSES
     logger.info("Setting verses for each version, book, and chapter.")
-    necessary_globals = [VERSION_SELECTION, IN_ORDER_BOOKS, CHAPTER_SELECTION, BIBLE_DATA_ROOT]
-    if all(global_var is not None for global_var in necessary_globals):
+    try:
+        if not BIBLE_DATA_ROOT or not BIBLE_DATA_ROOT.exists():
+            logger.error("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'ALL_VERSES'.")
+            raise ValueError("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'ALL_VERSES'.")
+        if not VERSION_SELECTION:
+            logger.error("'VERSION_SELECTION' is not set. Cannot set 'ALL_VERSES'.")
+            raise ValueError("'VERSION_SELECTION' is not set. Cannot set 'ALL_VERSES'.")
+        if not IN_ORDER_BOOKS:
+            logger.error("'IN_ORDER_BOOKS' is not set. Cannot set 'ALL_VERSES'.")
+            raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot set 'ALL_VERSES'.")
+        if not CHAPTER_SELECTION:
+            logger.error("'CHAPTER_SELECTION' is not set. Cannot set 'ALL_VERSES'.")
+            raise ValueError("'CHAPTER_SELECTION' is not set. Cannot set 'ALL_VERSES'.")
+        
         for version in VERSION_SELECTION:
             version = version.lower()
             ALL_VERSES[version] = {}
@@ -178,36 +219,45 @@ def set_all_verses():
                     else:
                         logger.error(f"File not found at {file_path}. 'ALL_VERSES' cannot be set for {book} {chapter} in the {version} version.")
                         raise ValueError(f"File not found at {file_path}. 'ALL_VERSES' cannot be set for {book} {chapter} in the {version} version.")
-    else:
-        for global_var in necessary_globals:
-            if global_var is None:
-                logger.error(f"{global_var.__name__} is None. 'ALL_VERSES' cannot be set.")
-                raise ValueError(f"{global_var.__name__} is None. 'ALL_VERSES' cannot be set.")
-        logger.error("One or more globals are not set.")
-        raise ValueError("One or more globals are not set.")
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {e}. 'ALL_VERSES' cannot be set.")
+        raise ValueError(f"Error: {e}. 'ALL_VERSES' cannot be set.")
     logger.info("Verses for each version, book, and chapter successfully set.")
 
 def check_globals():
     """Check if the globals are set."""
     logger.info("Checking if the globals are set.")
-    necessary_globals = [BIBLE_DATA_ROOT, VERSION_SELECTION, DEFAULT_VERSION, IN_ORDER_BOOKS, DEFAULT_BOOK, CHAPTER_SELECTION, DEFAULT_CHAPTER, ALL_VERSES]
-    if all(global_var is not None and global_var != '' and global_var != [] and global_var != {} for global_var in necessary_globals):
-        logger.info("All globals successfully set.")
-        return
-    else:
-        for global_var in necessary_globals:
-            if global_var is None:
-                logger.error(f"{global_var.__name__} is None. 'check_globals' cannot be set.")
-                raise ValueError(f"{global_var.__name__} is None. 'check_globals' cannot be set.")
-        logger.error("One or more globals are not set.")
-        raise ValueError("One or more globals are not set.")
-
-set_bible_data_root()
-set_version_selection()
-set_default_version()
-set_in_order_books()
-set_default_book()
-set_chapter_selection()
-set_default_chapter()
-set_all_verses()
-check_globals()
+    try:
+        if not BIBLE_DATA_ROOT or not BIBLE_DATA_ROOT.exists():
+            logger.error("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot verify globals.")
+            raise ValueError("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot verify globals.")
+        if not VERSION_SELECTION:
+            logger.error("'VERSION_SELECTION' is not set. Cannot verify globals.")
+            raise ValueError("'VERSION_SELECTION' is not set. Cannot verify globals.")
+        if not DEFAULT_VERSION:
+            logger.error("'DEFAULT_VERSION' is not set. Cannot verify globals.")
+            raise ValueError("'DEFAULT_VERSION' is not set. Cannot verify globals.")
+        if not IN_ORDER_BOOKS:
+            logger.error("'IN_ORDER_BOOKS' is not set. Cannot verify globals.")
+            raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot verify globals.")
+        if not DEFAULT_BOOK:
+            logger.error("'DEFAULT_BOOK' is not set. Cannot verify globals.")
+            raise ValueError("'DEFAULT_BOOK' is not set. Cannot verify globals.")
+        if not CHAPTER_SELECTION:
+            logger.error("'CHAPTER_SELECTION' is not set. Cannot verify globals.")
+            raise ValueError("'CHAPTER_SELECTION' is not set. Cannot verify globals.")
+        if DEFAULT_CHAPTER == '':
+            logger.error("'DEFAULT_CHAPTER' is not set. Cannot verify globals.")
+            raise ValueError("'DEFAULT_CHAPTER' is not set. Cannot verify globals.")
+        if not ALL_VERSES:
+            logger.error("'ALL_VERSES' is not set. Cannot verify globals.")
+            raise ValueError("'ALL_VERSES' is not set. Cannot verify globals.")
+        
+        logger.info("All globals successfully verified.")
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"Error: {e}. Globals cannot be verified.")
+        raise ValueError(f"Error: {e}. Globals cannot be verified.")
