@@ -12,6 +12,8 @@ from frontend import globals as globals_module
 
 def reset_globals():
     """Reset the globals to their default values."""
+
+    # Reset the globals to their default values
     globals_module.BIBLE_DATA_ROOT = None
     globals_module.DEFAULT_VERSION = ''
     globals_module.DEFAULT_BOOK = ''

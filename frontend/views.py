@@ -20,10 +20,10 @@ async def full_view(request, book, chapter, version):
         try:
             chapter = int(chapter)
             if chapter < 1 or chapter > CHAPTER_SELECTION[book]:
-                logger.warning(f"Invalid chapter: {chapter}. Redirecting to first chapter.")
+                logger.warning(f"Invalid chapter: {chapter} in book: {book}. Redirecting to first chapter.")
                 return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
         except (ValueError, TypeError):
-            logger.warning(f"Invalid chapter format: {chapter}. Expected integer. Redirecting to first chapter.")
+            logger.warning(f"Invalid chapter format: {chapter} in book: {book}. Expected integer. Redirecting to first chapter.")
             return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
 
         # Validate version
@@ -97,33 +97,40 @@ async def full_view(request, book, chapter, version):
 
 async def book_chapter_view(request, book, chapter):
     """Async view for the book and chapter view for the given book and chapter."""
-    # Validate book exists before redirecting
-    if book not in IN_ORDER_BOOKS:
-        logger.warning(f"Invalid book in book_chapter_view: {book}")
-        return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
-    
-    # Validate chapter format
     try:
-        chapter = int(chapter)
-        if chapter < 1 or chapter > CHAPTER_SELECTION[book]:
-            logger.warning(f"Invalid chapter in book_chapter_view: {chapter} for book: {book}")
-            return await async_redirect('full_view', args=[book, DEFAULT_CHAPTER, DEFAULT_VERSION])
+        # Validate book exists before redirecting
+        if book not in IN_ORDER_BOOKS:
+            logger.warning(f"Invalid book in book_chapter_view: {book}")
+            return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
+        
+        # Validate chapter format
+        try:
+            chapter = int(chapter)
+            if chapter < 1 or chapter > CHAPTER_SELECTION[book]:
+                logger.warning(f"Invalid chapter: {chapter} in book: {book}. Redirecting to first chapter.")
+                return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid chapter format: {chapter} in book: {book}. Expected integer. Redirecting to first chapter.")
+            return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
+
+        return await async_redirect('full_view', args=[book, chapter, DEFAULT_VERSION])
     except Exception as e:
-        logger.warning(f"Invalid chapter format in book_chapter_view: {chapter} for book: {book}")
-        return await async_redirect('full_view', args=[book, DEFAULT_CHAPTER, DEFAULT_VERSION])
-    
-    # Redirects to the versioned URL using the default version
-    return await async_redirect('full_view', args=[book, chapter, DEFAULT_VERSION])
+        logger.warning(f"Unexpected error in book_chapter_view for {book} {chapter}: {e}")
+        return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
 
 async def book_view(request, book):
     """Async view for the book view for the given book."""
-    # Validate book exists before redirecting
-    if book not in IN_ORDER_BOOKS:
-        logger.warning(f"Invalid book in book_view: {book}")
+    try:
+        # Validate book exists before redirecting
+        if book not in IN_ORDER_BOOKS:
+            logger.warning(f"Invalid book in book_view: {book}")
+            return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
+        
+        # Redirect to a default Bible view
+        return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
+    except Exception as e:
+        logger.error(f"Unexpected error in book_view for {book}: {e}")
         return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
-    
-    # Redirect to a default Bible view
-    return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
 
 async def default_view(request):
     """Async view for the default view for the Bible."""
