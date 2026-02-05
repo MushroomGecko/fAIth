@@ -1,6 +1,9 @@
 import asyncio
 import markdown
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def async_read_file(file_path, encoding='utf-8'):
     """Async wrapper for reading a file."""
