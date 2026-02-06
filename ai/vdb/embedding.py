@@ -14,22 +14,22 @@ class Embedding:
     """Docker Model Runner for embedding models."""
     def __init__(self):
         """Initialize the Docker Model Runner."""
-        self.model_name = os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")
+        self.model_name = str(os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")).strip()
         if not self.model_name:
             logger.error("Embedding model ID is not set")
             raise ValueError("Embedding model ID is not set")
         logger.info(f"Embedding model ID: {self.model_name}")
 
-        embedding_url = os.getenv("EMBEDDING_URL", "http://localhost")
-        embedding_port = os.getenv("EMBEDDING_PORT", "11435")
+        embedding_url = str(os.getenv("EMBEDDING_URL", "http://localhost")).strip()
+        embedding_port = str(os.getenv("EMBEDDING_PORT", "11435")).strip()
         base_url = f"{embedding_url}{':' if embedding_port else ''}{embedding_port}/v1"
-        api_key = os.getenv("OPENAI_API_KEY", "sk-noauth")
+        api_key = str(os.getenv("OPENAI_API_KEY", "sk-noauth")).strip()
 
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.async_client = AsyncOpenAI(base_url=base_url, api_key=api_key)
 
-        self.query_template = os.getenv("EMBEDDING_MODEL_QUERY_PROMPT", "")
-        self.document_template = os.getenv("EMBEDDING_MODEL_DOCUMENT_PROMPT", "")
+        self.query_template = str(os.getenv("EMBEDDING_MODEL_QUERY_PROMPT", "")).strip()
+        self.document_template = str(os.getenv("EMBEDDING_MODEL_DOCUMENT_PROMPT", "")).strip()
 
     def embedding_size(self):
         """Get the embedding size."""

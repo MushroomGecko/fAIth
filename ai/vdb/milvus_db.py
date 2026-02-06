@@ -23,17 +23,20 @@ class VectorDatabaseBuilder:
         """Initialize the Milvus standalone client. Build the database if it doesn't exist."""
 
         # Get Milvus connection information
-        self.milvus_url = os.getenv("MILVUS_URL")
-        self.milvus_port = os.getenv("MILVUS_PORT")
-        self.milvus_database_name = os.getenv("MILVUS_DATABASE_NAME")
-        self.milvus_username = os.getenv("MILVUS_USERNAME")
-        self.milvus_password = os.getenv("MILVUS_PASSWORD")
+        self.milvus_url = str(os.getenv("MILVUS_URL", "http://localhost")).strip()
+        self.milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
+        self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
+        self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
+        self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
 
         # Get the embedding engine
         self.embedding_engine = Embedding()
         
         # Get the database type
-        self.database_type = os.getenv("DATABASE_TYPE", "hybrid")
+        self.database_type = str(os.getenv("DATABASE_TYPE", "hybrid")).strip().lower()
+        if self.database_type not in ["sparse", "dense", "hybrid"]:
+            logger.error(f"Invalid database type: {self.database_type}")
+            raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
         
         # Establish a connection to the Milvus database
         self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
@@ -254,17 +257,20 @@ class VectorDatabaseQuerier:
         """Initialize the Async Milvus standalone client."""
 
         # Get Milvus connection information
-        self.milvus_url = os.getenv("MILVUS_URL")
-        self.milvus_port = os.getenv("MILVUS_PORT")
-        self.milvus_database_name = os.getenv("MILVUS_DATABASE_NAME")
-        self.milvus_username = os.getenv("MILVUS_USERNAME")
-        self.milvus_password = os.getenv("MILVUS_PASSWORD")
+        self.milvus_url = str(os.getenv("MILVUS_URL", "http://localhost")).strip()
+        self.milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
+        self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
+        self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
+        self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
 
         # Get the embedding engine
         self.embedding_engine = Embedding()
 
         # Get the database type
-        self.database_type = os.getenv("DATABASE_TYPE", "hybrid")
+        self.database_type = str(os.getenv("DATABASE_TYPE", "hybrid")).strip().lower()
+        if self.database_type not in ["sparse", "dense", "hybrid"]:
+            logger.error(f"Invalid database type: {self.database_type}")
+            raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
 
         # Establish a connection to the Milvus database with the correct DB context
         self.async_client = None
@@ -366,8 +372,8 @@ class VectorDatabaseQuerier:
 
         # Perform the hybrid search
         if self.database_type == "hybrid":
-            sparse_weight = float(os.getenv("SPARSE_WEIGHT", 0.2))
-            dense_weight = float(os.getenv("DENSE_WEIGHT", 0.8))
+            sparse_weight = float(str(os.getenv("SPARSE_WEIGHT", 0.2)).strip())
+            dense_weight = float(str(os.getenv("DENSE_WEIGHT", 0.8)).strip())
 
             # Perform hybrid search with reciprocal rank fusion
             hybrid_results = await self.async_client.hybrid_search(

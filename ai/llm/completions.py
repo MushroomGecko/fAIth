@@ -15,16 +15,16 @@ class Completions:
     """Docker Model Runner for LLM models."""
     def __init__(self):
         """Initialize the Docker Model Runner."""
-        self.model_name = os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")
+        self.model_name = str(os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")).strip()
         if not self.model_name:
             logger.error("LLM model ID is not set")
             raise ValueError("LLM model ID is not set")
         logger.info(f"LLM model ID: {self.model_name}")
 
-        llm_url = os.getenv("LLM_URL", "http://localhost")
-        llm_port = os.getenv("LLM_PORT", "11436")
+        llm_url = str(os.getenv("LLM_URL", "http://localhost")).strip()
+        llm_port = str(os.getenv("LLM_PORT", "11436")).strip()
         base_url = f"{llm_url}{':' if llm_port else ''}{llm_port}/v1"
-        api_key = os.getenv("OPENAI_API_KEY", "sk-noauth")
+        api_key = str(os.getenv("OPENAI_API_KEY", "sk-noauth")).strip()
 
         self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)
 

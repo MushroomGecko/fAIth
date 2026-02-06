@@ -16,7 +16,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-MILVUS_SEARCH_LIMIT = int(os.getenv("MILVUS_SEARCH_LIMIT", 10))
+MILVUS_SEARCH_LIMIT = int(str(os.getenv("MILVUS_SEARCH_LIMIT", 10)).strip())
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 

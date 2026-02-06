@@ -31,12 +31,12 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-d)+b7f#u@$@q)(ft*qcz1!%^uvy(_ext-^t4d6i$3l$)21__s(")
+SECRET_KEY = str(os.getenv("DJANGO_SECRET_KEY", "django-insecure-d)+b7f#u@$@q)(ft*qcz1!%^uvy(_ext-^t4d6i$3l$)21__s(")).strip()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = json.loads(os.getenv("DJANGO_ALLOWED_HOSTS", "[\"127.0.0.1\", \"localhost\"]"))
+ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS", "[\"127.0.0.1\", \"localhost\"]")).strip())
 
 
 # Application definition
@@ -94,11 +94,11 @@ ASGI_APPLICATION = "fAIth.asgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("POSTGRES_DATABASE", "faith_db"),
-        'USER': os.getenv("POSTGRES_USER", "faith_user"),
-        'PASSWORD': os.getenv("POSTGRES_PASSWORD", "postgres-secure-password"),
-        'HOST': os.getenv("POSTGRES_HOST", "localhost"),
-        'PORT': os.getenv("POSTGRES_PORT", "5432")
+        'NAME': str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip(),
+        'USER': str(os.getenv("POSTGRES_USER", "faith_user")).strip(),
+        'PASSWORD': str(os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")).strip(),
+        'HOST': str(os.getenv("POSTGRES_HOST", "localhost")).strip(),
+        'PORT': str(os.getenv("POSTGRES_PORT", "5432")).strip()
     }
 }
 

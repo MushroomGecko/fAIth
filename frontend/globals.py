@@ -38,7 +38,7 @@ def set_version_selection():
             logger.error("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'VERSION_SELECTION'.")
             raise ValueError("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'VERSION_SELECTION'.")
         
-        enabled_versions = json.loads(os.getenv("ENABLED_VERSIONS", "[]"))
+        enabled_versions = json.loads(str(os.getenv("ENABLED_VERSIONS", "[]")).strip())
         available_versions = [item.name for item in BIBLE_DATA_ROOT.iterdir()]
         
         # Filter out versions that don't exist in the filesystem
@@ -68,7 +68,7 @@ def set_default_version():
             logger.error("'VERSION_SELECTION' is not set. Cannot set 'DEFAULT_VERSION'.")
             raise ValueError("'VERSION_SELECTION' is not set. Cannot set 'DEFAULT_VERSION'.")
         
-        DEFAULT_VERSION = os.getenv("DEFAULT_VERSION", "bsb")
+        DEFAULT_VERSION = str(os.getenv("DEFAULT_VERSION", "bsb")).strip()
         if DEFAULT_VERSION not in VERSION_SELECTION:
             logger.warning(f"Default version {DEFAULT_VERSION} is not in the list of available versions. Defaulting to first version in the list.")
             DEFAULT_VERSION = VERSION_SELECTION[0]
@@ -107,7 +107,7 @@ def set_default_book():
             logger.error("'IN_ORDER_BOOKS' is not set. Cannot set 'DEFAULT_BOOK'.")
             raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot set 'DEFAULT_BOOK'.")
         
-        DEFAULT_BOOK = os.getenv("DEFAULT_BOOK", "Genesis")
+        DEFAULT_BOOK = str(os.getenv("DEFAULT_BOOK", "Genesis")).strip()
         if DEFAULT_BOOK not in IN_ORDER_BOOKS:
             logger.warning(f"Default book {DEFAULT_BOOK} is not in the list of available books. Defaulting to first book in the list.")
             DEFAULT_BOOK = IN_ORDER_BOOKS[0]
@@ -166,8 +166,7 @@ def set_default_chapter():
             logger.error("'DEFAULT_BOOK' is not set. Cannot set 'DEFAULT_CHAPTER'.")
             raise ValueError("'DEFAULT_BOOK' is not set. Cannot set 'DEFAULT_CHAPTER'.")
         
-        DEFAULT_CHAPTER = os.getenv("DEFAULT_CHAPTER", "1")
-        DEFAULT_CHAPTER = int(DEFAULT_CHAPTER)
+        DEFAULT_CHAPTER = int(str(os.getenv("DEFAULT_CHAPTER", "1")).strip())
         if DEFAULT_BOOK not in CHAPTER_SELECTION:
             logger.error(f"'DEFAULT_BOOK' {DEFAULT_BOOK} is not in the list of available books. 'DEFAULT_CHAPTER' cannot be set.")
             raise ValueError(f"'DEFAULT_BOOK' {DEFAULT_BOOK} is not in the list of available books. 'DEFAULT_CHAPTER' cannot be set.")
