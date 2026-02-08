@@ -1,6 +1,4 @@
-import os
 import pytest
-import numpy as np
 from unittest.mock import patch, MagicMock, AsyncMock
 from django.test import SimpleTestCase
 from ai.vdb.embedding import Embedding
@@ -28,8 +26,8 @@ class TestEmbeddingInit(SimpleTestCase):
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.embedding.OpenAI") as mock_openai:
-                with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
+            with patch("ai.vdb.embedding.OpenAI"):
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
                     embedding = Embedding()
                     assert embedding.model_name == "custom-model"
                     assert embedding.query_template == "Query: {text}"
@@ -47,8 +45,8 @@ class TestEmbeddingInit(SimpleTestCase):
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.embedding.OpenAI") as mock_openai:
-                with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
+            with patch("ai.vdb.embedding.OpenAI"):
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
                     embedding = Embedding()
                     assert embedding.model_name == "Qwen/Qwen3-Embedding-0.6B"
                     assert embedding.query_template == ""
@@ -65,7 +63,7 @@ class TestEmbeddingInit(SimpleTestCase):
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
             with patch("ai.vdb.embedding.OpenAI") as mock_openai:
-                with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
                     embedding = Embedding()
                     mock_openai.assert_called_once_with(
                         base_url="http://localhost:11435/v1",
@@ -83,7 +81,7 @@ class TestEmbeddingInit(SimpleTestCase):
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.embedding.OpenAI") as mock_openai:
+            with patch("ai.vdb.embedding.OpenAI"):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
                     embedding = Embedding()
                     mock_async_openai.assert_called_once_with(
@@ -290,7 +288,7 @@ class TestEmbedMethod(SimpleTestCase):
                     mock_client.embeddings.create.return_value = mock_response
 
                     embedding = Embedding()
-                    result = embedding.embed(
+                    embedding.embed(
                         ["sample text"],
                         prompt_type="document",
                         normalize=False
@@ -321,7 +319,7 @@ class TestEmbedMethod(SimpleTestCase):
                     mock_client.embeddings.create.return_value = mock_response
 
                     embedding = Embedding()
-                    result = embedding.embed(
+                    embedding.embed(
                         ["search query"],
                         prompt_type="query",
                         normalize=False
@@ -435,7 +433,7 @@ class TestAsyncEmbedMethod(SimpleTestCase):
                     mock_async_client.embeddings.create.return_value = mock_response
 
                     embedding = Embedding()
-                    result = await embedding.async_embed(
+                    await embedding.async_embed(
                         ["sample"],
                         prompt_type="document",
                         normalize=False

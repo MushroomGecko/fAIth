@@ -1,7 +1,5 @@
 import pytest
 import os
-import json
-import logging
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from django.conf import settings

@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from django.test import SimpleTestCase, RequestFactory
 from rest_framework import status

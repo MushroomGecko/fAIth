@@ -5,8 +5,6 @@ from rest_framework import status
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 import logging
-from rest_framework.permissions import IsAuthenticated
-import asyncio
 import os
 from django.utils.safestring import mark_safe
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
@@ -33,7 +31,7 @@ class GeneralQuestionView(APIView):
         query = serializer.validated_data.get("query")
         collection_name = serializer.validated_data.get("collection_name")
         if not query or not collection_name:
-            logger.error(f"query or collection_name is empty")
+            logger.error("query or collection_name is empty")
             error_message = "Please enter a question!"
             return Response(error_message, status=status.HTTP_400_BAD_REQUEST)
 

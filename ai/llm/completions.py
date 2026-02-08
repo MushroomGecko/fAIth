@@ -1,8 +1,6 @@
 import os
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
-import gc
-import numpy as np
 import logging
 
 # Set up logging

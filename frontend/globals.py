@@ -1,11 +1,7 @@
-from contextlib import asynccontextmanager
-from django_asgi_lifespan.types import LifespanManager
 import os
 import json
 from django.conf import settings
 import logging
-from pathlib import Path
-import sys
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -95,7 +91,7 @@ def set_in_order_books():
         "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John",
         "3 John", "Jude", "Revelation"
     ]
-    logger.info(f"Bible books successfully set in order.")
+    logger.info("Bible books successfully set in order.")
 
 def set_default_book():
     """Set the default book."""
@@ -212,7 +208,7 @@ def set_all_verses():
                                 try:
                                     # This should fail if verse_num is not an int (i.e. header_1, header_2, etc.)
                                     ALL_VERSES[version][book][chapter][verse_num] = f'{int(verse_num)}) {verse_text}'
-                                except Exception as e:
+                                except Exception:
                                     # If the exception occurs, we assume the verse_num is a header
                                     ALL_VERSES[version][book][chapter][verse_num] = f'<span class="header">{verse_text}</span>'
                     else:

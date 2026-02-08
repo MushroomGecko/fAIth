@@ -1,7 +1,7 @@
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output

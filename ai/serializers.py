@@ -13,6 +13,6 @@ class GeneralQuestionSerializer(Serializer):
     def validate_query(self, value: str) -> str:
         value = value.strip()
         if not value:
-            logger.error(f"query cannot be empty")
+            logger.error("query cannot be empty")
             raise serializers.ValidationError("query cannot be empty")
         return value

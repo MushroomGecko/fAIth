@@ -31,7 +31,7 @@ class TestMilvusDbLifespanManager(SimpleTestCase):
                 mock_querier_class.load_database_and_collections = AsyncMock(return_value=mock_milvus_db)
 
                 # Should not raise an exception
-                async with milvus_db_lifespan_manager() as state:
+                async with milvus_db_lifespan_manager():
                     pass
 
                 mock_milvus_db.close.assert_called_once()
@@ -45,7 +45,7 @@ class TestMilvusDbLifespanManager(SimpleTestCase):
                 mock_querier_class.load_database_and_collections = AsyncMock(return_value=mock_milvus_db)
 
                 try:
-                    async with milvus_db_lifespan_manager() as state:
+                    async with milvus_db_lifespan_manager():
                         raise ValueError("Test error")
                 except ValueError:
                     pass
@@ -81,7 +81,7 @@ class TestCompletionsLifespanManager(SimpleTestCase):
                 mock_completions_class.return_value = mock_completions_obj
 
                 # Should not raise an exception
-                async with completions_lifespan_manager() as state:
+                async with completions_lifespan_manager():
                     pass
 
                 mock_completions_obj.close.assert_called_once()
@@ -96,7 +96,7 @@ class TestCompletionsLifespanManager(SimpleTestCase):
                 mock_completions_class.return_value = mock_completions_obj
 
                 try:
-                    async with completions_lifespan_manager() as state:
+                    async with completions_lifespan_manager():
                         raise RuntimeError("Test error")
                 except RuntimeError:
                     pass
