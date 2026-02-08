@@ -27,7 +27,7 @@ class TestCompletionsInit(SimpleTestCase):
     def test_completions_init_with_default_model(self):
         """Test that Completions uses default model when not specified."""
         with patch.dict(os.environ, {}, clear=True):
-            with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
+            with patch('ai.llm.completions.AsyncOpenAI'):
                 completions = Completions()
                 
                 assert completions.model_name == "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M"

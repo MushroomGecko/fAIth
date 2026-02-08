@@ -1,8 +1,6 @@
-import os
 import pytest
-import json
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock, call
+from unittest.mock import patch, MagicMock, AsyncMock
 from django.test import SimpleTestCase
 from ai.vdb.milvus_db import VectorDatabaseBuilder, VectorDatabaseQuerier
 
@@ -30,8 +28,8 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
         }
         with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.milvus_db.Embedding") as mock_embedding:
-                with patch("ai.vdb.milvus_db.MilvusClient") as mock_client:
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
                     builder = VectorDatabaseBuilder()
                     assert builder.milvus_url == "http://localhost"
                     assert builder.milvus_port == "19530"
@@ -89,8 +87,8 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
         }
         with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.milvus_db.Embedding") as mock_embedding:
-                with patch("ai.vdb.milvus_db.MilvusClient") as mock_client:
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
                     builder = VectorDatabaseBuilder()
                     assert builder.milvus_url == "http://milvus.example.com"
                     assert builder.milvus_port == "19531"
@@ -110,7 +108,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
         }
         with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.milvus_db.Embedding") as mock_embedding:
+            with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.logger") as mock_logger:
                     with pytest.raises(ValueError, match="Invalid database type"):
                         VectorDatabaseBuilder()
@@ -129,7 +127,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
         }
         with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.milvus_db.Embedding") as mock_embedding:
+            with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     VectorDatabaseBuilder()
                     mock_client_class.assert_called_once_with(

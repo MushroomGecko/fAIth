@@ -1,11 +1,9 @@
 import pytest
-import os
 import json
-import asyncio
 import tempfile
-from unittest.mock import patch, AsyncMock, MagicMock
-from django.test import SimpleTestCase, AsyncClient, RequestFactory
-from django.http import HttpResponse, HttpResponseRedirect, HttpRequest
+from unittest.mock import patch
+from django.test import SimpleTestCase, RequestFactory
+from django.http import HttpResponse, HttpResponseRedirect
 from pathlib import Path
 
 from frontend import utils

@@ -1,6 +1,4 @@
-import sys
 import os
-import asyncio
 import inspect
 from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
 from dotenv import load_dotenv
@@ -8,7 +6,6 @@ import json
 from frontend.globals import BIBLE_DATA_ROOT, VERSION_SELECTION, IN_ORDER_BOOKS, CHAPTER_SELECTION
 from ai.vdb.embedding import Embedding
 import logging
-from pathlib import Path
 
 # Set up logging
 logger = logging.getLogger(__name__)

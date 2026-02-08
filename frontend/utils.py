@@ -23,7 +23,7 @@ def sync_parse_verses(file_path):
                 try:
                     # This should fail if verse_num is not an int (i.e. header_1, header_2, etc.)
                     verses.append(f'{int(verse_num)}) {verse_text}')
-                except Exception as e:
+                except Exception:
                     # If the exception occurs, we assume the verse_num is a header
                     verses.append(f'<span class="header">{verse_text}</span>')
         if len(verses) == 0:
