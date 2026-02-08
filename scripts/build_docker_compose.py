@@ -11,20 +11,20 @@ if str(PROJECT_ROOT) not in sys.path:
 load_dotenv()
 
 # Webapp specific things
-WEBAPP_PORT = os.getenv("WEBAPP_PORT", 8000)
-UVICORN_WORKERS = os.getenv("UVICORN_WORKERS", 1)
+WEBAPP_PORT = int(str(os.getenv("WEBAPP_PORT", 8000)).strip())
+UVICORN_WORKERS = int(str(os.getenv("UVICORN_WORKERS", 1)).strip())
 
 # Postgres specific things
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-POSTGRES_USER = os.getenv("POSTGRES_USER", "faith_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")
-POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "faith_db")
+POSTGRES_PORT = str(os.getenv("POSTGRES_PORT", "5432")).strip()
+POSTGRES_USER = str(os.getenv("POSTGRES_USER", "faith_user")).strip()
+POSTGRES_PASSWORD = str(os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")).strip()
+POSTGRES_DATABASE = str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip()
 
 # Milvus specific things
-MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+MILVUS_PORT = str(os.getenv("MILVUS_PORT", "19530")).strip()
 
 # Hugging Face specific things
-HF_TOKEN = os.getenv("HF_TOKEN", "")
+HF_TOKEN = str(os.getenv("HF_TOKEN", "")).strip()
 
 # Healthcheck specific things
 START_PERIOD = "3600s"
@@ -592,31 +592,31 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
 
 if __name__ == "__main__":
     # Embedding specific things
-    EMBEDDING_PORT = os.getenv("EMBEDDING_PORT", "11435")
-    EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")
-    EMBEDDING_MAX_CONTEXT_LENGTH = int(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH", 4096))
-    EMBEDDING_MODEL_RUNNER = os.getenv("EMBEDDING_MODEL_RUNNER", "llama_cpp")
-    EMBEDDING_GPU_TYPE = os.getenv("EMBEDDING_GPU_TYPE", "cpu")
-    EMBEDDING_DRIVER = os.getenv("EMBEDDING_DRIVER", "cpu")
-    EMBEDDING_VLLM_ENFORCE_EAGER = os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")
-    EMBEDDING_LLAMA_CPP_GPU_LAYERS = int(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS", 0))
+    EMBEDDING_PORT = str(os.getenv("EMBEDDING_PORT", "11435")).strip()
+    EMBEDDING_MODEL_ID = str(os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")).strip()
+    EMBEDDING_MAX_CONTEXT_LENGTH = int(str(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH", 4096)).strip())
+    EMBEDDING_MODEL_RUNNER = str(os.getenv("EMBEDDING_MODEL_RUNNER", "llama_cpp")).strip()
+    EMBEDDING_GPU_TYPE = str(os.getenv("EMBEDDING_GPU_TYPE", "cpu")).strip()
+    EMBEDDING_DRIVER = str(os.getenv("EMBEDDING_DRIVER", "cpu")).strip()
+    EMBEDDING_VLLM_ENFORCE_EAGER = str(os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")).strip()
+    EMBEDDING_LLAMA_CPP_GPU_LAYERS = int(str(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS", 0)).strip())
     if EMBEDDING_LLAMA_CPP_GPU_LAYERS == -1:
         EMBEDDING_LLAMA_CPP_GPU_LAYERS = 9999
-    EMBEDDING_VLLM_ENFORCE_EAGER = os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")
-    EMBEDDING_LLAMA_CPP_CONCURRENCY = int(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY", 2))
+    EMBEDDING_VLLM_ENFORCE_EAGER = str(os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")).strip()
+    EMBEDDING_LLAMA_CPP_CONCURRENCY = int(str(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY", 2)).strip())
 
     # LLM specific things
-    LLM_PORT = os.getenv("LLM_PORT", "11436")
-    LLM_MODEL_ID = os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")
-    LLM_MAX_CONTEXT_LENGTH = int(os.getenv("LLM_MAX_CONTEXT_LENGTH", 4096))
-    LLM_MODEL_RUNNER = os.getenv("LLM_MODEL_RUNNER", "llama_cpp")
-    LLM_GPU_TYPE = os.getenv("LLM_GPU_TYPE", "cpu")
-    LLM_DRIVER = os.getenv("LLM_DRIVER", "cpu")
-    LLM_LLAMA_CPP_GPU_LAYERS = int(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS", 0))
+    LLM_PORT = str(os.getenv("LLM_PORT", "11436")).strip()
+    LLM_MODEL_ID = str(os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")).strip()
+    LLM_MAX_CONTEXT_LENGTH = int(str(os.getenv("LLM_MAX_CONTEXT_LENGTH", 4096)).strip())
+    LLM_MODEL_RUNNER = str(os.getenv("LLM_MODEL_RUNNER", "llama_cpp")).strip()
+    LLM_GPU_TYPE = str(os.getenv("LLM_GPU_TYPE", "cpu")).strip()
+    LLM_DRIVER = str(os.getenv("LLM_DRIVER", "cpu")).strip()
+    LLM_LLAMA_CPP_GPU_LAYERS = int(str(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS", 0)).strip())
     if LLM_LLAMA_CPP_GPU_LAYERS == -1:
         LLM_LLAMA_CPP_GPU_LAYERS = 9999
-    LLM_LLAMA_CPP_CONCURRENCY = int(os.getenv("LLM_LLAMA_CPP_CONCURRENCY", 2))
-    LLM_VLLM_ENFORCE_EAGER = os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")
+    LLM_LLAMA_CPP_CONCURRENCY = int(str(os.getenv("LLM_LLAMA_CPP_CONCURRENCY", 2)).strip())
+    LLM_VLLM_ENFORCE_EAGER = str(os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")).strip()
 
     postgres_block = POSTGRES_SETUP.format(postgres_port=POSTGRES_PORT, postgres_user=POSTGRES_USER, postgres_password=POSTGRES_PASSWORD, postgres_database=POSTGRES_DATABASE, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     etcd_block = ETCD_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
@@ -638,8 +638,8 @@ if __name__ == "__main__":
     
     shell_entrypoint_str = SHELL_ENTRYPOINT.format(webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS).lstrip('\n').rstrip('\n')
 
-    with open("docker-compose.yml", "w") as f:
+    with Path("docker-compose.yml").open("w", encoding="utf-8") as f:
         f.write(docker_compose_str)
 
-    with open("webapp_entrypoint.sh", "w") as f:
-      f.write(shell_entrypoint_str)
+    with Path("webapp_entrypoint.sh").open("w", encoding="utf-8") as f:
+        f.write(shell_entrypoint_str)
