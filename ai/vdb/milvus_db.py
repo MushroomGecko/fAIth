@@ -3,7 +3,7 @@ import inspect
 from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
 from dotenv import load_dotenv
 import json
-from frontend.globals import BIBLE_DATA_ROOT, VERSION_SELECTION, IN_ORDER_BOOKS, CHAPTER_SELECTION
+from frontend import globals as frontend_globals
 from ai.vdb.embedding import Embedding
 import logging
 
@@ -92,15 +92,15 @@ class VectorDatabaseBuilder:
 
         # Create all collections in VERSION_SELECTION
         if not collection_names:
-            logger.info(f"Creating collections: {VERSION_SELECTION}")
-            for collection_name in VERSION_SELECTION:
+            logger.info(f"Creating collections: {frontend_globals.VERSION_SELECTION}")
+            for collection_name in frontend_globals.VERSION_SELECTION:
                 self.drop_collection(collection_name)
                 collections_to_create.append(collection_name)
         # Create specific collections
         else:
             logger.info(f"Checking validity of collections: {collection_names}")
             for collection_name in collection_names:
-                if collection_name not in VERSION_SELECTION:
+                if collection_name not in frontend_globals.VERSION_SELECTION:
                     logger.error(f"Collection {collection_name} does not exist. Skipping.")
                     raise ValueError(f"Collection {collection_name} does not exist.")
             logger.info(f"All collections are valid. Creating collections: {collection_names}")
@@ -199,10 +199,10 @@ class VectorDatabaseBuilder:
         # Get the Bible version
         for collection_name in collections_to_create:
             # Get the books in order
-            for book in IN_ORDER_BOOKS:
-                for chapter in range(1, CHAPTER_SELECTION[book] + 1):
+            for book in frontend_globals.IN_ORDER_BOOKS:
+                for chapter in range(1, frontend_globals.CHAPTER_SELECTION[book] + 1):
                     # Get the verses for the book and chapter
-                    path = BIBLE_DATA_ROOT.joinpath(collection_name, book, f"{chapter}.json")
+                    path = frontend_globals.BIBLE_DATA_ROOT.joinpath(collection_name, book, f"{chapter}.json")
                     if not path.exists():
                         logger.error(f"Bible data file not found: {path}")
                         continue

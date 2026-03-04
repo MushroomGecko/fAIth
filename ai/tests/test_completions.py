@@ -115,6 +115,10 @@ class TestCompletionsMethod(SimpleTestCase):
                 assert messages[0]['content'] == "You are helpful"
                 assert messages[1]['role'] == 'user'
                 assert messages[1]['content'] == "Answer this: Who is Jesus Christ?"
+                
+                # Verify extra_body was passed with chat_template_kwargs
+                assert 'extra_body' in call_args.kwargs
+                assert 'chat_template_kwargs' in call_args.kwargs['extra_body']
     
     async def test_completions_uses_correct_model(self):
         """Test that completions uses the correct model."""
