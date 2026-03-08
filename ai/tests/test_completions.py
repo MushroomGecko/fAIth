@@ -2,7 +2,7 @@ import pytest
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
 from django.test import SimpleTestCase
-
+import json
 from ai.llm.completions import Completions
 
 
@@ -115,10 +115,6 @@ class TestCompletionsMethod(SimpleTestCase):
                 assert messages[0]['content'] == "You are helpful"
                 assert messages[1]['role'] == 'user'
                 assert messages[1]['content'] == "Answer this: Who is Jesus Christ?"
-                
-                # Verify extra_body was passed with chat_template_kwargs
-                assert 'extra_body' in call_args.kwargs
-                assert 'chat_template_kwargs' in call_args.kwargs['extra_body']
     
     async def test_completions_uses_correct_model(self):
         """Test that completions uses the correct model."""
@@ -142,6 +138,63 @@ class TestCompletionsMethod(SimpleTestCase):
                 # Verify correct model was used
                 call_args = mock_client.chat.completions.create.call_args
                 assert call_args.kwargs['model'] == "test-model"
+    
+    async def test_completions_with_blank_extra_body(self):
+        """Test that completions handles blank extra_body (empty dict) correctly."""
+        with patch.dict(os.environ, {
+            "LLM_MODEL_ID": "test-model",
+            "LLM_MODEL_ARGUMENTS": "{}"
+        }):
+            with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
+                mock_client = AsyncMock()
+                mock_client_class.return_value = mock_client
+                
+                mock_response = MagicMock()
+                mock_response.choices = [MagicMock()]
+                mock_response.choices[0].message.content = "Response"
+                mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+                
+                completions = Completions()
+                result = await completions.completions(
+                    system_prompt="System",
+                    user_prompt="Prompt: {query}",
+                    query="test"
+                )
+                
+                # Verify extra_body is passed as empty dict when no arguments are set
+                call_args = mock_client.chat.completions.create.call_args
+                assert 'extra_body' in call_args.kwargs
+                assert call_args.kwargs['extra_body'] == {}
+                assert result == "Response"
+    
+    async def test_completions_with_filled_extra_body(self):
+        """Test that completions correctly passes filled extra_body with model arguments."""
+        model_args = {"chat_template_kwargs": {"temperature": 0.7, "max_tokens": 512}}
+        with patch.dict(os.environ, {
+            "LLM_MODEL_ID": "test-model",
+            "LLM_MODEL_ARGUMENTS": json.dumps(model_args)
+        }):
+            with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
+                mock_client = AsyncMock()
+                mock_client_class.return_value = mock_client
+                
+                mock_response = MagicMock()
+                mock_response.choices = [MagicMock()]
+                mock_response.choices[0].message.content = "Response with args"
+                mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+                
+                completions = Completions()
+                result = await completions.completions(
+                    system_prompt="System",
+                    user_prompt="Prompt: {query}",
+                    query="test"
+                )
+                
+                # Verify extra_body is passed with model arguments
+                call_args = mock_client.chat.completions.create.call_args
+                assert 'extra_body' in call_args.kwargs
+                assert call_args.kwargs['extra_body'] == model_args
+                assert result == "Response with args"
 
 
 @pytest.mark.asyncio
