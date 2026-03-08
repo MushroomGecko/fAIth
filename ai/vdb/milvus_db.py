@@ -1,11 +1,13 @@
-import os
 import inspect
-from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
-from dotenv import load_dotenv
 import json
-from frontend import globals as frontend_globals
-from ai.vdb.embedding import Embedding
 import logging
+import os
+
+from dotenv import load_dotenv
+from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
+
+from ai.vdb.embedding import Embedding
+from frontend import globals as frontend_globals
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -15,32 +17,56 @@ load_dotenv()
 
 
 class VectorDatabaseBuilder:
-    """Milvus standalone client."""
-    def __init__(self):
-        """Initialize the Milvus standalone client. Build the database if it doesn't exist."""
+    """
+    Synchronous client for building and managing Milvus vector database collections.
 
-        # Get Milvus connection information
+    This class handles database and collection creation, schema definition, and data insertion.
+    It supports three embedding strategies: sparse (BM25), dense (HNSW), or hybrid (both).
+
+    Configuration is read from environment variables:
+        - MILVUS_URL, MILVUS_PORT: Connection details
+        - MILVUS_DATABASE_NAME: Database name
+        - MILVUS_USERNAME, MILVUS_PASSWORD: Authentication credentials
+        - DATABASE_TYPE: "sparse", "dense", or "hybrid"
+    """
+
+    def __init__(self):
+        """
+        Initialize the Milvus database builder.
+
+        Loads connection configuration from environment variables and validates the database type.
+        Does not establish a database connection yet; call load_or_create_database() after init.
+
+        Raises:
+            ValueError: If DATABASE_TYPE is not one of: sparse, dense, hybrid
+        """
+        # Load Milvus connection configuration
         self.milvus_url = str(os.getenv("MILVUS_URL", "http://localhost")).strip()
         self.milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
         self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
 
-        # Get the embedding engine
+        # Initialize embedding engine for generating vector embeddings
         self.embedding_engine = Embedding()
         
-        # Get the database type
+        # Validate and load database type (determines schema and indexing strategy)
         self.database_type = str(os.getenv("DATABASE_TYPE", "hybrid")).strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
             logger.error(f"Invalid database type: {self.database_type}")
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
         
-        # Establish a connection to the Milvus database
+        # Establish synchronous connection to Milvus
         self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
 
     def load_database(self):
-        """Load the database."""
-        # Use the database if it exists
+        """
+        Switch to an existing database by name.
+
+        Raises:
+            Exception: If the database cannot be loaded.
+        """
+        # Select the target database for subsequent operations
         try:
             self.client.use_database(self.milvus_database_name)
         except Exception as e:
@@ -48,10 +74,18 @@ class VectorDatabaseBuilder:
             raise e
 
     def load_or_create_database(self):
-        """Get or create the database."""
-        # Check if the database exists
+        """
+        Ensure the database exists, creating it if necessary.
+
+        If the database doesn't exist, creates it and loads it.
+        If it exists, loads it immediately.
+
+        Raises:
+            Exception: If creation or loading fails.
+        """
+        # Check if database exists in Milvus
         if self.milvus_database_name not in self.client.list_databases():
-            # Create the database
+            # Create and switch to new database
             try:
                 logger.info(f"Database {self.milvus_database_name} does not exist. Creating database.")
                 self.client.create_database(self.milvus_database_name)
@@ -61,7 +95,7 @@ class VectorDatabaseBuilder:
                 logger.error(f"Error creating database: {e}")
                 raise e
         else:
-            # Use the database if it exists
+            # Database already exists, just switch to it
             try:
                 logger.info(f"Database {self.milvus_database_name} exists. Using database.")
                 self.load_database()
@@ -71,7 +105,15 @@ class VectorDatabaseBuilder:
                 raise e
 
     def list_collections_in_database(self):
-        """List the collections in the database."""
+        """
+        List all collections in the current database.
+
+        Returns:
+            list: Collection names.
+
+        Raises:
+            Exception: If the query fails.
+        """
         try:
             return self.client.list_collections(db_name=self.milvus_database_name)
         except Exception as e:
@@ -79,26 +121,50 @@ class VectorDatabaseBuilder:
             raise e
 
     def drop_collection(self, collection_name: str):
-        """Drop the collection."""
+        """
+        Drop a collection if it exists (non-fatal if it doesn't exist).
+
+        Parameters:
+            collection_name (str): Name of the collection to drop.
+        """
         try:
             self.client.drop_collection(collection_name=collection_name)
         except Exception as e:
             logger.warning(f"Error dropping collection or collection does not exist: {e}")
 
     def create_collections(self, collection_names: list[str] = []):
-        """Create the collections."""
-        # Rebuild the database
+        """
+        Create collections with appropriate schema and build indices for all Bible verses.
+
+        If no collection_names provided, creates collections for all enabled Bible versions.
+        For each collection, drops any existing version, creates schema/indices, then loads verse data.
+
+        Parameters:
+            collection_names (list): Specific collection names to create. If empty, uses VERSION_SELECTION.
+
+        Raises:
+            ValueError: If any collection name is not in VERSION_SELECTION.
+
+        Workflow:
+            1. Determine which collections to create (all versions or specific ones)
+            2. Create schema based on database_type (sparse/dense/hybrid)
+            3. Configure indices (BM25 for sparse, HNSW for dense)
+            4. Load verse data from Bible JSON files
+            5. Generate embeddings and insert into collections
+        """
+        # Determine which collections to create
         collections_to_create = []
 
-        # Create all collections in VERSION_SELECTION
+        # Option 1: Create all collections from VERSION_SELECTION
         if not collection_names:
             logger.info(f"Creating collections: {frontend_globals.VERSION_SELECTION}")
             for collection_name in frontend_globals.VERSION_SELECTION:
                 self.drop_collection(collection_name)
                 collections_to_create.append(collection_name)
-        # Create specific collections
+        # Option 2: Create only specified collections
         else:
             logger.info(f"Checking validity of collections: {collection_names}")
+            # Validate all collection names exist in version selection
             for collection_name in collection_names:
                 if collection_name not in frontend_globals.VERSION_SELECTION:
                     logger.error(f"Collection {collection_name} does not exist. Skipping.")
@@ -108,11 +174,11 @@ class VectorDatabaseBuilder:
                 self.drop_collection(collection_name)
                 collections_to_create.append(collection_name)
 
-        # Create a schema for the collection
+        # Define collection schema based on database type
         logger.info(f"Creating schema for {self.milvus_database_name}")
 
-        # Sparse database
         if self.database_type == "sparse":
+            # Sparse-only schema (BM25 keyword search)
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
@@ -125,8 +191,8 @@ class VectorDatabaseBuilder:
                 ],
                 auto_id=True,
             )
-        # Dense database
         elif self.database_type == "dense":
+            # Dense-only schema (semantic similarity search)
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
@@ -139,8 +205,8 @@ class VectorDatabaseBuilder:
                 ],
                 auto_id=True,
             )
-        # Hybrid database
         elif self.database_type == "hybrid":
+            # Hybrid schema (both keyword and semantic search)
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
@@ -155,31 +221,34 @@ class VectorDatabaseBuilder:
                 auto_id=True,
             )
 
-        # Make the Index Params
+        # Configure indices for the schema
         index_params = self.client.prepare_index_params()
 
-        # Sparse embedding
+        # Add sparse (BM25) index if using sparse or hybrid mode
         if self.database_type == "sparse" or self.database_type == "hybrid":
+            # BM25 function generates sparse embeddings from text field
             bm25_function = Function(
-                name="text_bm25_emb", # Function name
-                input_field_names=["text"], # Name of the VARCHAR field containing raw text data
-                output_field_names=["sparse_embedding"], # Name of the SPARSE_FLOAT_VECTOR field reserved to store generated embeddings
-                function_type=FunctionType.BM25, # Set to `BM25`
+                name="text_bm25_emb",
+                input_field_names=["text"],
+                output_field_names=["sparse_embedding"],
+                function_type=FunctionType.BM25,
             )
             schema.add_function(bm25_function)
-            # Sparse embedding
+            # Configure sparse inverted index with BM25 scoring
             index_params.add_index(
-            field_name="sparse_embedding",
-            index_type="SPARSE_INVERTED_INDEX",
-            metric_type="BM25",
-            params={
-                "inverted_index_algo": "DAAT_MAXSCORE",
-                "bm25_k1": 1.2,
-                "bm25_b": 0.75}
+                field_name="sparse_embedding",
+                index_type="SPARSE_INVERTED_INDEX",
+                metric_type="BM25",
+                params={
+                    "inverted_index_algo": "DAAT_MAXSCORE",
+                    "bm25_k1": 1.2,
+                    "bm25_b": 0.75
+                }
             )
-        # Dense embedding
+        
+        # Add dense (HNSW) index if using dense or hybrid mode
         if self.database_type == "dense" or self.database_type == "hybrid":
-            # Dense embedding
+            # HNSW index for fast approximate nearest neighbor search
             index_params.add_index(
                 field_name="dense_embedding",
                 index_type="HNSW",
@@ -188,109 +257,150 @@ class VectorDatabaseBuilder:
                 index_name="hnsw_embedding",
             )
 
-        # Create the collection for each version
+        # Create collections and indices
         logger.info(f"Creating collections for {collections_to_create}")
         for collection_name in collections_to_create:
             self.client.create_collection(collection_name=collection_name, schema=schema)
             self.client.create_index(collection_name=collection_name, index_params=index_params, sync=True)
         logger.info(f"Collections created: {collections_to_create}")
 
-        # Add things to the collections
-        # Get the Bible version
+        # Populate collections with Bible verse data
+        logger.info("Populating collections with verse data")
         for collection_name in collections_to_create:
-            # Get the books in order
+            # Iterate through all books and chapters
             for book in frontend_globals.IN_ORDER_BOOKS:
                 for chapter in range(1, frontend_globals.CHAPTER_SELECTION[book] + 1):
-                    # Get the verses for the book and chapter
+                    # Load chapter JSON file
                     path = frontend_globals.BIBLE_DATA_ROOT.joinpath(collection_name, book, f"{chapter}.json")
                     if not path.exists():
                         logger.error(f"Bible data file not found: {path}")
                         continue
+                    
                     with path.open("r", encoding="utf-8") as file:
                         verse_numbers = []
                         verse_texts = []
-                        # Load the JSON data
                         json_data = json.load(file)
-                        # Add the verses to the collection
+                        
+                        # Extract verse data, skipping headers
                         for verse in json_data.keys():
                             if "header_" in verse:
                                 continue
                             verse_numbers.append(int(verse))
                             verse_clean_text = json_data[verse]
-                            # Remove the HTML tags to have cleaner database entries
+                            # Remove HTML tags for cleaner storage (e.g., <span class="wj">...</span>)
                             verse_clean_text = verse_clean_text.replace("<span class=\"wj\">", "").replace("</span>", "").strip()
                             verse_texts.append(verse_clean_text)
+                        
+                        # Generate embeddings for all verses
                         verse_embeddings = self.embedding_engine.embed(verse_texts, prompt_type="document", normalize=False)
 
+                        # Build data records with embeddings
                         data = []
                         for verse_number, verse_text, verse_embedding in zip(verse_numbers, verse_texts, verse_embeddings):
+                            record = {
+                                "text": verse_text,
+                                "version": collection_name,
+                                "book": book,
+                                "chapter": chapter,
+                                "verse": verse_number
+                            }
+                            # Include appropriate embedding(s) based on database type
                             if self.database_type == "dense" or self.database_type == "hybrid":
-                                data.append({"dense_embedding": verse_embedding, 
-                                            "text": verse_text, 
-                                            "version": collection_name, 
-                                            "book": book, 
-                                            "chapter": chapter, 
-                                            "verse": verse_number})
-                            elif self.database_type == "sparse":
-                                data.append({"text": verse_text, 
-                                            "version": collection_name, 
-                                            "book": book, 
-                                            "chapter": chapter, 
-                                            "verse": verse_number})
+                                record["dense_embedding"] = verse_embedding
+                            data.append(record)
+                        
+                        # Insert records into collection
                         self.client.insert(collection_name=collection_name, data=data)
                         logger.info(f"Added {book} {chapter} to {collection_name} collection")
 
     def close(self):
-        """Close the database."""
+        """
+        Close the Milvus database connection.
+
+        Raises:
+            Exception: If the connection cannot be closed.
+        """
         try:
             self.client.close()
         except Exception as e:
             logger.error(f"Error closing database: {e}")
             raise e
 
-class VectorDatabaseQuerier:
-    """Async Milvus standalone client."""
-    def __init__(self):
-        """Initialize the Async Milvus standalone client."""
 
-        # Get Milvus connection information
+class VectorDatabaseQuerier:
+    """
+    Asynchronous client for querying Milvus vector database.
+
+    Handles search operations across sparse (BM25), dense (semantic), or hybrid search strategies.
+    Designed to be used with Django's lifespan manager for app-wide resource management.
+
+    Configuration is read from environment variables:
+        - MILVUS_URL, MILVUS_PORT: Connection details
+        - MILVUS_DATABASE_NAME: Database name
+        - MILVUS_USERNAME, MILVUS_PASSWORD: Authentication credentials
+        - DATABASE_TYPE: "sparse", "dense", or "hybrid"
+        - SPARSE_WEIGHT, DENSE_WEIGHT: Weights for hybrid search combination (0.2/0.8 default)
+    """
+
+    def __init__(self):
+        """
+        Initialize the async database querier.
+
+        Loads configuration but does not establish a connection.
+        Use load_database_and_collections() class method to create an initialized instance.
+
+        Raises:
+            ValueError: If DATABASE_TYPE is not one of: sparse, dense, hybrid
+        """
+        # Load Milvus connection configuration
         self.milvus_url = str(os.getenv("MILVUS_URL", "http://localhost")).strip()
         self.milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
         self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
 
-        # Get the embedding engine
+        # Initialize embedding engine for query embeddings
         self.embedding_engine = Embedding()
 
-        # Get the database type
+        # Validate and load database type (determines search strategy)
         self.database_type = str(os.getenv("DATABASE_TYPE", "hybrid")).strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
             logger.error(f"Invalid database type: {self.database_type}")
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
 
-        # Establish a connection to the Milvus database with the correct DB context
+        # Async client is initialized by load_database_and_collections()
         self.async_client = None
 
     @classmethod
     async def load_database_and_collections(cls):
-        """Async factory to instantiate and initialize the database client and load the collections."""
+        """
+        Async factory method to create and initialize a database querier.
+
+        Creates an instance, verifies the database exists, and loads all collections.
+        This should be called during application startup via lifespan manager.
+
+        Returns:
+            VectorDatabaseQuerier: Initialized and ready-to-query instance.
+
+        Raises:
+            ValueError: If the database doesn't exist.
+        """
         self = cls()
 
-        # Make a dummy client to check if the database exists
+        # Create temporary client to check database existence
         temp_client = AsyncMilvusClient(
             uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
             token=f"{self.milvus_username}:{self.milvus_password}",
         )
-        # List the databases
+        # List available databases
         databases = await temp_client.list_databases()
         logger.info(f"Databases: {databases}")
 
-        # Check if the database exists
+        # Verify target database exists
         if self.milvus_database_name not in databases:
             raise ValueError(f"Database {self.milvus_database_name} does not exist")
         else:
-            # Use the database if it exists and load the collections
+            # Create async client with correct database context
             logger.info(f"Using database {self.milvus_database_name}")
             self.async_client = AsyncMilvusClient(
                 uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
@@ -298,11 +408,10 @@ class VectorDatabaseQuerier:
                 db_name=self.milvus_database_name,
             )
 
-        # Get the collections
+        # Load all collections into memory for faster queries
         collections = await self.async_client.list_collections()
         logger.info(f"Collections: {collections}")
 
-        # Load the collections
         for collection in collections:
             await self.async_client.load_collection(collection_name=collection)
             logger.info(f"Loaded collection: {collection}")
@@ -310,7 +419,15 @@ class VectorDatabaseQuerier:
         return self
     
     async def list_collections_in_database(self):
-        """List the collections in the database."""
+        """
+        List all collections in the database.
+
+        Returns:
+            list: Collection names.
+
+        Raises:
+            Exception: If the query fails.
+        """
         try:
             return await self.async_client.list_collections()
         except Exception as e:
@@ -318,32 +435,48 @@ class VectorDatabaseQuerier:
             raise e
 
     async def search(self, collection_name: str, query: str, limit: int = 10):
+        """
+        Search for verses asynchronously using the configured search strategy.
+
+        For sparse: Uses BM25 keyword matching on text field.
+        For dense: Uses HNSW index for semantic similarity search.
+        For hybrid: Combines both with weighted rank fusion (BM25 and HNSW).
+
+        Parameters:
+            collection_name (str): Name of the Bible version collection to search.
+            query (str): User's search query (text or natural language).
+            limit (int): Maximum number of results to return (default: 10).
+
+        Returns:
+            list: Search results with entity metadata (text, book, chapter, verse, version).
+
+        Raises:
+            Exception: If the search fails.
+        """
+        # Generate query embedding for dense/hybrid search
         if self.database_type == "dense" or self.database_type == "hybrid":
-            # Get query embedding (single vector) asynchronously
+            # Async embedding generation
             query_embedding = (await self.embedding_engine.async_embed([query], prompt_type="query", normalize=False))[0]
         else:
             query_embedding = None
 
-        # Set up the request types for the hybrid search
+        # Build search request list for hybrid search
         request_types = []
 
-        # Set up the sparse search request
+        # Configure sparse (BM25) search if applicable
         if self.database_type == "sparse" or self.database_type == "hybrid":
-            # Set up BM25 search request on sparse field generated by BM25 function
             sparse_search_params = {"metric_type": "BM25", "params": {"drop_ratio_search": 0.2}}
             sparse_request = AnnSearchRequest([query], "sparse_embedding", sparse_search_params, limit=limit)
             request_types.append(sparse_request)
 
-        # Set up the dense search request
+        # Configure dense (HNSW) search if applicable
         if self.database_type == "dense" or self.database_type == "hybrid":
-            # Set up dense vector search request on your dense field
             dense_search_params = {"metric_type": "COSINE", "params": {"ef": 128}}
             dense_request = AnnSearchRequest([query_embedding], "dense_embedding", dense_search_params, limit=limit)
             request_types.append(dense_request)
 
-        # Perform the sparse search
+        # Perform sparse-only search (BM25 keyword matching)
         if self.database_type == "sparse":
-            # BM25 sparse vectors
             sparse_results = await self.async_client.search(
                 collection_name=collection_name,
                 data=[query],
@@ -354,9 +487,8 @@ class VectorDatabaseQuerier:
             )
             return sparse_results[0]
 
-        # Perform the dense search
+        # Perform dense-only search (semantic similarity)
         if self.database_type == "dense":
-            # Dense vectors
             dense_results = await self.async_client.search(
                 collection_name=collection_name,
                 data=[query_embedding],
@@ -367,24 +499,31 @@ class VectorDatabaseQuerier:
             )
             return dense_results[0]
 
-        # Perform the hybrid search
+        # Perform hybrid search (combining sparse and dense with weighted rank fusion)
         if self.database_type == "hybrid":
+            # Load weights for combining sparse and dense results
             sparse_weight = float(str(os.getenv("SPARSE_WEIGHT", 0.2)).strip())
             dense_weight = float(str(os.getenv("DENSE_WEIGHT", 0.8)).strip())
 
-            # Perform hybrid search with reciprocal rank fusion
+            # Hybrid search combines BM25 and semantic similarity via reciprocal rank fusion
             hybrid_results = await self.async_client.hybrid_search(
                 collection_name=collection_name,
                 reqs=request_types,
-                ranker=WeightedRanker(sparse_weight, dense_weight),  # Reciprocal Rank Fusion for combining results
+                ranker=WeightedRanker(sparse_weight, dense_weight),
                 limit=limit,
                 output_fields=["version", "book", "chapter", "verse", "text"]
             )
             return hybrid_results[0]
 
     async def close(self):
+        """
+        Close the async database connection.
+
+        Safely handles both awaitable and non-awaitable close operations.
+        """
         if self.async_client is None:
             return
         close_result = self.async_client.close()
+        # Check if close() returns an awaitable (async operation)
         if inspect.isawaitable(close_result):
             await close_result
