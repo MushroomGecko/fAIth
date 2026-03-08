@@ -464,10 +464,10 @@ class TestCreateCollections(SimpleTestCase):
             with patch("ai.vdb.milvus_db.Embedding") as mock_embedding:
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     with patch("ai.vdb.milvus_db.logger"):
-                        with patch("ai.vdb.milvus_db.VERSION_SELECTION", version_selection):
-                            with patch("ai.vdb.milvus_db.BIBLE_DATA_ROOT", Path("/data")):
-                                with patch("ai.vdb.milvus_db.IN_ORDER_BOOKS", []):
-                                    with patch("ai.vdb.milvus_db.CHAPTER_SELECTION", {}):
+                        with patch("frontend.globals.VERSION_SELECTION", version_selection):
+                            with patch("frontend.globals.BIBLE_DATA_ROOT", Path("/data")):
+                                with patch("frontend.globals.IN_ORDER_BOOKS", []):
+                                    with patch("frontend.globals.CHAPTER_SELECTION", {}):
                                         mock_client = MagicMock()
                                         mock_client.prepare_index_params.return_value = MagicMock()
                                         mock_embedding_instance = MagicMock()
@@ -498,10 +498,10 @@ class TestCreateCollections(SimpleTestCase):
             with patch("ai.vdb.milvus_db.Embedding") as mock_embedding:
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     with patch("ai.vdb.milvus_db.logger"):
-                        with patch("ai.vdb.milvus_db.VERSION_SELECTION", version_selection):
-                            with patch("ai.vdb.milvus_db.BIBLE_DATA_ROOT", Path("/data")):
-                                with patch("ai.vdb.milvus_db.IN_ORDER_BOOKS", []):
-                                    with patch("ai.vdb.milvus_db.CHAPTER_SELECTION", {}):
+                        with patch("frontend.globals.VERSION_SELECTION", version_selection):
+                            with patch("frontend.globals.BIBLE_DATA_ROOT", Path("/data")):
+                                with patch("frontend.globals.IN_ORDER_BOOKS", []):
+                                    with patch("frontend.globals.CHAPTER_SELECTION", {}):
                                         mock_client = MagicMock()
                                         mock_client.prepare_index_params.return_value = MagicMock()
                                         mock_embedding_instance = MagicMock()
@@ -532,7 +532,7 @@ class TestCreateCollections(SimpleTestCase):
             with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     with patch("ai.vdb.milvus_db.logger"):
-                        with patch("ai.vdb.milvus_db.VERSION_SELECTION", version_selection):
+                        with patch("frontend.globals.VERSION_SELECTION", version_selection):
                             mock_client = MagicMock()
                             mock_client_class.return_value = mock_client
 

@@ -2,7 +2,7 @@ import os
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import logging
-
+import json
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,11 @@ class Completions:
             logger.error("LLM model ID is not set")
             raise ValueError("LLM model ID is not set")
         logger.info(f"LLM model ID: {self.model_name}")
+        self.model_arguments = json.loads(str(os.getenv("LLM_MODEL_ARGUMENTS", "{}")).strip())
+        if not self.model_arguments:
+            logger.warning("LLM model arguments are not set")
+            self.model_arguments = {}
+        logger.info(f"LLM model arguments: {self.model_arguments}")
 
         llm_url = str(os.getenv("LLM_URL", "http://localhost")).strip()
         llm_port = str(os.getenv("LLM_PORT", "11436")).strip()
@@ -32,7 +37,11 @@ class Completions:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt.format(query=query)}
         ]
-        response = await self.client.chat.completions.create(model=self.model_name, messages=messages)
+        response = await self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            extra_body=self.model_arguments
+        )
         return response.choices[0].message.content
 
     async def close(self):
