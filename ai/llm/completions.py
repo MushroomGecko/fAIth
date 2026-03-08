@@ -40,7 +40,7 @@ class Completions:
         response = await self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
-            extra_body={"chat_template_kwargs": self.model_arguments}
+            extra_body=self.model_arguments
         )
         return response.choices[0].message.content
 
