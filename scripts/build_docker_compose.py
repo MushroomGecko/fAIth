@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Ensure project root is on sys.path when running this script directly
@@ -9,6 +10,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 load_dotenv()
+
+# ============================================================================
+# Configuration Loading from Environment Variables
+# ============================================================================
 
 # Webapp specific things
 WEBAPP_PORT = int(str(os.getenv("WEBAPP_PORT", 8000)).strip())
@@ -31,6 +36,10 @@ START_PERIOD = "3600s"
 INTERVAL = "30s"
 TIMEOUT = "30s"
 RETRIES = 5
+
+# ============================================================================
+# Compatibility Matrix - Shows valid driver/runner/device combinations
+# ============================================================================
 
 COMPATBILITY_LIST = \
 """
@@ -99,22 +108,58 @@ Drivers:
                     - `intel`
 """.lstrip('\n')
 
+# ============================================================================
+# Docker Compose Template - Main service composition
+# ============================================================================
+
 DOCKER_COMPOSE_TPL = """
 services:
-{postgres_setup}
-
-{etcd_setup}
-
-{seaweedfs_setup}
-
-{milvus_setup}
-
-{embedding_setup}
-
-{llm_setup}
-
-{webapp_setup}
+{services}
 """.lstrip('\n')
+
+# ============================================================================
+# Helper Function - Builds service list with proper spacing
+# ============================================================================
+
+def build_services_section(postgres_setup, etcd_setup, seaweedfs_setup, milvus_setup, embedding_setup, llm_setup, webapp_setup):
+    """
+    Build the services section of docker-compose with proper spacing.
+    
+    Only includes services with content, avoiding blank lines for disabled services.
+    
+    Parameters:
+        postgres_setup, etcd_setup, seaweedfs_setup, milvus_setup: Always included
+        embedding_setup, llm_setup: Included only if non-empty
+        webapp_setup: Always included (final service)
+    
+    Returns:
+        str: Formatted services section
+    """
+    services = []
+    
+    # Always include these services
+    services.append(postgres_setup.lstrip('\n').rstrip('\n'))
+    services.append(etcd_setup.lstrip('\n').rstrip('\n'))
+    services.append(seaweedfs_setup.lstrip('\n').rstrip('\n'))
+    services.append(milvus_setup.lstrip('\n').rstrip('\n'))
+    
+    # Conditionally include embedding service
+    if embedding_setup.strip():
+        services.append(embedding_setup.lstrip('\n').rstrip('\n'))
+    
+    # Conditionally include LLM service
+    if llm_setup.strip():
+        services.append(llm_setup.lstrip('\n').rstrip('\n'))
+    
+    # Always include webapp (final service)
+    services.append(webapp_setup.lstrip('\n').rstrip('\n'))
+    
+    # Join all services with double newline separator (blank line between services)
+    return '\n\n'.join(services)
+
+# ============================================================================
+# GPU Configuration Templates - Driver/device-specific setup
+# ============================================================================
 
 NVIDIA_SETUP = \
 """
@@ -144,6 +189,10 @@ INTEL_SETUP = \
       - /dev/dri
     group_add: [video, render]
 """.lstrip('\n')
+
+# ============================================================================
+# Service Configuration Templates
+# ============================================================================
 
 POSTGRES_SETUP = \
 """
@@ -188,6 +237,7 @@ ETCD_SETUP = \
       retries: {retries}
 """.lstrip('\n')
 
+# SeaweedFS: distributed file storage for Milvus backups
 SEAWEEDFS_SETUP = \
 """
   seaweedfs-master:
@@ -302,6 +352,7 @@ SEAWEEDFS_SETUP = \
         condition: service_healthy
 """.lstrip('\n')
 
+# Milvus: vector database for semantic search
 MILVUS_SETUP = \
 """
   milvus:
@@ -338,6 +389,10 @@ MILVUS_SETUP = \
       embedding:
         condition: service_healthy
 """.lstrip('\n')
+
+# ============================================================================
+# LLM Runner Configuration Templates - Ollama, llama.cpp, vLLM, SGLang
+# ============================================================================
 
 OLLAMA_SETUP = \
 """
@@ -436,8 +491,49 @@ SGLANG_SETUP = \
 {gpu_setup}
 """.lstrip('\n')
 
-WEBAPP_SETUP = \
-"""
+# ============================================================================
+# Webapp Service Configuration - Built conditionally based on enabled services
+# ============================================================================
+
+def build_webapp_setup(embedding_enabled, llm_enabled, webapp_port, uvicorn_workers, start_period, interval, timeout, retries):
+    """
+    Build webapp configuration with conditional service dependencies.
+    
+    If embedding or LLM services are not enabled (ports not set), the webapp
+    will use external services (e.g., OpenAI, OpenRouter) configured via .env.
+    
+    Parameters:
+        embedding_enabled (bool): True if EMBEDDING_PORT is set
+        llm_enabled (bool): True if LLM_PORT is set
+        webapp_port: Port to expose webapp on
+        uvicorn_workers: Number of uvicorn workers
+        start_period, interval, timeout, retries: Healthcheck parameters
+    
+    Returns:
+        str: Formatted webapp Docker Compose service configuration
+    """
+    # Build depends_on section based on enabled services
+    depends_on = """    depends_on:
+      postgres:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy"""
+    
+    if embedding_enabled:
+        depends_on += """
+      embedding:
+        condition: service_healthy"""
+    
+    if llm_enabled:
+        depends_on += """
+      llm:
+        condition: service_healthy"""
+    
+    # Set service URLs based on what's enabled
+    embedding_url = "http://embedding" if embedding_enabled else "${EMBEDDING_URL}"
+    llm_url = "http://llm" if llm_enabled else "${LLM_URL}"
+    
+    webapp_setup = f"""
   webapp:
     build:
       context: .
@@ -450,8 +546,8 @@ WEBAPP_SETUP = \
     environment:
       POSTGRES_HOST: postgres
       MILVUS_URL: http://milvus
-      EMBEDDING_URL: http://embedding
-      LLM_URL: http://llm
+      EMBEDDING_URL: {embedding_url}
+      LLM_URL: {llm_url}
     command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port {webapp_port} --workers {uvicorn_workers}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{webapp_port}/healthcheck/"]
@@ -459,18 +555,15 @@ WEBAPP_SETUP = \
       interval: {interval}
       timeout: {timeout}
       retries: {retries}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      milvus:
-        condition: service_healthy
-      embedding:
-        condition: service_healthy
-      llm:
-        condition: service_healthy
+{depends_on}
     volumes:
       - .:/app
-""".lstrip('\n')
+"""
+    return webapp_setup.lstrip('\n')
+
+# ============================================================================
+# Shell Entrypoint Script - Alternative startup sequence with permissions
+# ============================================================================
 
 SHELL_ENTRYPOINT = \
 """
@@ -500,11 +593,38 @@ log "Starting application server as faith_user"
 exec su faith_user -c "uvicorn fAIth.asgi:application --host 0.0.0.0 --port {webapp_port} --workers {uvicorn_workers}"
 """.lstrip('\n')
 
+# ============================================================================
+# Main Function - Builds runner configuration based on driver/runner/device
+# ============================================================================
+
 def build_docker_compose(llm_port, model_id, embedding, max_context_length, runner, gpu_type, driver, llama_cpp_gpu_layers, llama_cpp_concurrency, vllm_enforce_eager, start_period, interval, timeout, retries):
-    """Build the docker compose file."""
+    """
+    Build the docker compose configuration for LLM or embedding service.
+
+    Selects the appropriate template and GPU setup based on runner and driver choice.
+    Validates compatibility and formats the configuration with provided parameters.
+
+    Parameters:
+        llm_port: Port to expose the service on
+        model_id: HuggingFace model identifier
+        embedding: True for embedding service, False for LLM
+        max_context_length: Maximum context window for the model
+        runner: Model runner type (ollama, llama_cpp, vllm, sglang)
+        gpu_type: GPU type (cpu, nvidia, amd, intel)
+        driver: ML framework driver (cpu, cuda, rocm, vulkan)
+        llama_cpp_gpu_layers: Number of layers to offload to GPU (llama.cpp)
+        llama_cpp_concurrency: Number of concurrent requests (llama.cpp)
+        vllm_enforce_eager: Enforce eager execution mode (vLLM)
+        start_period, interval, timeout, retries: Healthcheck parameters
+
+    Returns:
+        str: Formatted Docker Compose service configuration
+    """
+    # Determine if building embedding or LLM service
     embedding_setup = '"--embedding"' if embedding else ''
     model_type = "embedding" if embedding else "llm"
     
+    # Select template based on runner type
     if runner == "llama_cpp":
         runner_setup = LLAMA_CPP_SETUP
     elif runner == "ollama":
@@ -516,6 +636,7 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
     else:
         raise ValueError(f"Invalid model runner: `{runner}`")
 
+    # Select GPU setup template based on GPU type
     if gpu_type == "nvidia":
         gpu_setup = NVIDIA_SETUP
     elif gpu_type == "amd":
@@ -527,13 +648,19 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
     else:
         raise ValueError(f"Invalid GPU type: `{gpu_type}`")
     
+    # ========================================================================
+    # CPU Driver - Uses software-based inference
+    # ========================================================================
+    
     if driver == "cpu":
+        # Warn if user specified GPU type but selected CPU driver
         if gpu_type != "cpu":
             if embedding:
                 print(f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `EMBEDDING_DRIVER` environment variable.")
             else:
                 print(f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `LLM_DRIVER` environment variable.")
 
+        # Format runner template with CPU-specific configuration
         if runner == "ollama":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup="", ollama_force_cpu="OLLAMA_NUM_GPU=0", ollama_image="ollama/ollama:latest", model_type=model_type, start_period=start_period, interval=interval, timeout=timeout, retries=retries)
         elif runner == "llama_cpp":
@@ -545,10 +672,16 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
     
+    # ========================================================================
+    # CUDA Driver - NVIDIA GPU acceleration
+    # ========================================================================
+    
     elif driver == "cuda":
+        # Validate CUDA only works with NVIDIA GPUs
         if gpu_type != "nvidia":
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
 
+        # Format runner templates with CUDA GPU support
         if runner == "ollama":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup=NVIDIA_SETUP, ollama_force_cpu="", ollama_image="ollama/ollama:latest", model_type=model_type)
         elif runner == "llama_cpp":
@@ -560,10 +693,16 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`")
     
+    # ========================================================================
+    # ROCM Driver - AMD GPU acceleration
+    # ========================================================================
+    
     elif driver == "rocm":
+        # Validate ROCM only works with AMD GPUs
         if gpu_type != "amd":
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
 
+        # Format runner templates with ROCM GPU support
         if runner == "ollama":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, gpu_setup=AMD_SETUP, ollama_force_cpu="", ollama_image="ollama/ollama:rocm", model_type=model_type, start_period=start_period, interval=interval, timeout=timeout, retries=retries)
         elif runner == "llama_cpp":
@@ -575,10 +714,16 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
     
+    # ========================================================================
+    # VULKAN Driver - Cross-platform GPU acceleration
+    # ========================================================================
+    
     elif driver == "vulkan":
+        # Validate VULKAN doesn't support CPU
         if gpu_type == "cpu":
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATBILITY_LIST}")
 
+        # Only llama.cpp supports VULKAN currently
         if runner == "llama_cpp":
             runner_setup = runner_setup.format(llm_port=llm_port, model_id=model_id, max_context_length=max_context_length, gpu_setup=gpu_setup, llama_cpp_gpu_layers=llama_cpp_gpu_layers, llama_cpp_image="ghcr.io/ggml-org/llama.cpp:server-vulkan", hf_token=HF_TOKEN, embedding=embedding_setup, llama_cpp_concurrency=llama_cpp_concurrency, model_type=model_type, start_period=start_period, interval=interval, timeout=timeout, retries=retries)
         else:
@@ -590,9 +735,16 @@ def build_docker_compose(llm_port, model_id, embedding, max_context_length, runn
     print(f"Using `{runner}` with GPU type `{gpu_type}` on driver `{driver}`")
     return runner_setup
 
+# ============================================================================
+# Main Entry Point - Generates docker-compose.yml and entrypoint script
+# ============================================================================
+
 if __name__ == "__main__":
-    # Embedding specific things
-    EMBEDDING_PORT = str(os.getenv("EMBEDDING_PORT", "11435")).strip()
+    # ========================================================================
+    # Load Embedding Service Configuration
+    # ========================================================================
+    
+    EMBEDDING_PORT = str(os.getenv("EMBEDDING_PORT", "")).strip()
     EMBEDDING_MODEL_ID = str(os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")).strip()
     EMBEDDING_MAX_CONTEXT_LENGTH = int(str(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH", 4096)).strip())
     EMBEDDING_MODEL_RUNNER = str(os.getenv("EMBEDDING_MODEL_RUNNER", "llama_cpp")).strip()
@@ -600,44 +752,91 @@ if __name__ == "__main__":
     EMBEDDING_DRIVER = str(os.getenv("EMBEDDING_DRIVER", "cpu")).strip()
     EMBEDDING_VLLM_ENFORCE_EAGER = str(os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")).strip()
     EMBEDDING_LLAMA_CPP_GPU_LAYERS = int(str(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS", 0)).strip())
+    # Special case: -1 means offload all layers (set to 9999 to effectively offload all)
     if EMBEDDING_LLAMA_CPP_GPU_LAYERS == -1:
         EMBEDDING_LLAMA_CPP_GPU_LAYERS = 9999
     EMBEDDING_VLLM_ENFORCE_EAGER = str(os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")).strip()
     EMBEDDING_LLAMA_CPP_CONCURRENCY = int(str(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY", 2)).strip())
 
-    # LLM specific things
-    LLM_PORT = str(os.getenv("LLM_PORT", "11436")).strip()
+    # ========================================================================
+    # Load LLM Service Configuration
+    # ========================================================================
+    
+    LLM_PORT = str(os.getenv("LLM_PORT", "")).strip()
     LLM_MODEL_ID = str(os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")).strip()
     LLM_MAX_CONTEXT_LENGTH = int(str(os.getenv("LLM_MAX_CONTEXT_LENGTH", 4096)).strip())
     LLM_MODEL_RUNNER = str(os.getenv("LLM_MODEL_RUNNER", "llama_cpp")).strip()
     LLM_GPU_TYPE = str(os.getenv("LLM_GPU_TYPE", "cpu")).strip()
     LLM_DRIVER = str(os.getenv("LLM_DRIVER", "cpu")).strip()
     LLM_LLAMA_CPP_GPU_LAYERS = int(str(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS", 0)).strip())
+    # Special case: -1 means offload all layers (set to 9999 to effectively offload all)
     if LLM_LLAMA_CPP_GPU_LAYERS == -1:
         LLM_LLAMA_CPP_GPU_LAYERS = 9999
     LLM_LLAMA_CPP_CONCURRENCY = int(str(os.getenv("LLM_LLAMA_CPP_CONCURRENCY", 2)).strip())
     LLM_VLLM_ENFORCE_EAGER = str(os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")).strip()
 
+    # ========================================================================
+    # Determine Which Services Are Enabled (Based on Port Configuration)
+    # ========================================================================
+    
+    # Services are only included if their ports are explicitly set
+    # If port is empty, user will configure external service (e.g., OpenAI, OpenRouter)
+    embedding_enabled = bool(EMBEDDING_PORT)
+    llm_enabled = bool(LLM_PORT)
+    
+    if not embedding_enabled:
+        print("INFO: EMBEDDING_PORT not set. Webapp will use external embedding service (configure EMBEDDING_URL in .env)")
+    if not llm_enabled:
+        print("INFO: LLM_PORT not set. Webapp will use external LLM service (configure LLM_URL in .env)")
+
+    # ========================================================================
+    # Format Service Configuration Blocks
+    # ========================================================================
+    
     postgres_block = POSTGRES_SETUP.format(postgres_port=POSTGRES_PORT, postgres_user=POSTGRES_USER, postgres_password=POSTGRES_PASSWORD, postgres_database=POSTGRES_DATABASE, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     etcd_block = ETCD_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     seaweedfs_block = SEAWEEDFS_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
-    embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
-    llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
-    webapp_block = WEBAPP_SETUP.format(webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
+    
+    # Build embedding service block only if port is set
+    if embedding_enabled:
+        embedding_block = build_docker_compose(llm_port=EMBEDDING_PORT, model_id=EMBEDDING_MODEL_ID, embedding=True, max_context_length=EMBEDDING_MAX_CONTEXT_LENGTH, runner=EMBEDDING_MODEL_RUNNER, gpu_type=EMBEDDING_GPU_TYPE, driver=EMBEDDING_DRIVER, llama_cpp_gpu_layers=EMBEDDING_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=EMBEDDING_VLLM_ENFORCE_EAGER, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
+    else:
+        embedding_block = ""
+    
+    # Build LLM service block only if port is set
+    if llm_enabled:
+        llm_block = build_docker_compose(llm_port=LLM_PORT, model_id=LLM_MODEL_ID, embedding=False, max_context_length=LLM_MAX_CONTEXT_LENGTH, runner=LLM_MODEL_RUNNER, gpu_type=LLM_GPU_TYPE, driver=LLM_DRIVER, llama_cpp_gpu_layers=LLM_LLAMA_CPP_GPU_LAYERS, llama_cpp_concurrency=LLM_LLAMA_CPP_CONCURRENCY, vllm_enforce_eager=LLM_VLLM_ENFORCE_EAGER, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
+    else:
+        llm_block = ""
+    
+    # Build webapp with conditional dependencies based on enabled services
+    webapp_block = build_webapp_setup(embedding_enabled=embedding_enabled, llm_enabled=llm_enabled, webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
 
-    docker_compose_str = DOCKER_COMPOSE_TPL.format(
-        postgres_setup=postgres_block.lstrip('\n').rstrip('\n'),
-        etcd_setup=etcd_block.lstrip('\n').rstrip('\n'),
-        seaweedfs_setup=seaweedfs_block.lstrip('\n').rstrip('\n'),
-        milvus_setup=milvus_block.lstrip('\n').rstrip('\n'),
-        embedding_setup=embedding_block.lstrip('\n').rstrip('\n'),
-        llm_setup=llm_block.lstrip('\n').rstrip('\n'),
-        webapp_setup=webapp_block.lstrip('\n').rstrip('\n')
+    # ========================================================================
+    # Assemble Final Docker Compose Configuration
+    # ========================================================================
+    
+    # Build services section with proper spacing (no gaps for disabled services)
+    services_section = build_services_section(
+        postgres_setup=postgres_block,
+        etcd_setup=etcd_block,
+        seaweedfs_setup=seaweedfs_block,
+        milvus_setup=milvus_block,
+        embedding_setup=embedding_block,
+        llm_setup=llm_block,
+        webapp_setup=webapp_block
     )
     
+    docker_compose_str = DOCKER_COMPOSE_TPL.format(services=services_section)
+    
+    # Prepare shell entrypoint script with proper formatting
     shell_entrypoint_str = SHELL_ENTRYPOINT.format(webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS).lstrip('\n').rstrip('\n')
 
+    # ========================================================================
+    # Write Generated Files
+    # ========================================================================
+    
     with Path("docker-compose.yml").open("w", encoding="utf-8") as f:
         f.write(docker_compose_str)
 
