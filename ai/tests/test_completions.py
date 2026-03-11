@@ -10,38 +10,75 @@ from ai.llm.completions import Completions
 class TestCompletionsInit(SimpleTestCase):
     """Tests for Completions initialization."""
     
-    def test_completions_init_with_env_variables(self):
-        """Test that Completions initializes with environment variables."""
+    def test_completions_init_with_env_variables_local_mode(self):
+        """Test that Completions initializes correctly in local mode (LLM_PORT set)."""
         with patch.dict(os.environ, {
             "LLM_MODEL_ID": "test-model",
-            "LLM_URL": "http://test-url",
             "LLM_PORT": "11436",
-            "OPENAI_API_KEY": "test-key"
-        }):
+            "LLM_API_KEY": "test-key"
+        }, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
                 completions = Completions()
-                
+
                 assert completions.model_name == "test-model"
-                mock_client.assert_called_once()
+                call_args = mock_client.call_args
+                assert call_args.kwargs['base_url'] == "http://llm:11436/v1"
+                assert call_args.kwargs['api_key'] == "test-key"
+
+    def test_completions_init_with_env_variables_api_mode(self):
+        """Test that Completions initializes correctly in API mode (BASE_LLM_URL set)."""
+        with patch.dict(os.environ, {
+            "LLM_MODEL_ID": "test-model",
+            "BASE_LLM_URL": "https://openrouter.ai/api/v1",
+            "LLM_API_KEY": "sk-or-key"
+        }, clear=True):
+            with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
+                completions = Completions()
+
+                assert completions.model_name == "test-model"
+                call_args = mock_client.call_args
+                assert call_args.kwargs['base_url'] == "https://openrouter.ai/api/v1"
+                assert call_args.kwargs['api_key'] == "sk-or-key"
     
-    def test_completions_init_with_default_model(self):
-        """Test that Completions uses default model when not specified."""
-        with patch.dict(os.environ, {}, clear=True):
+    def test_completions_init_with_default_model_local_mode(self):
+        """Test that Completions uses default model when not specified in local mode."""
+        with patch.dict(os.environ, {"LLM_PORT": "11436"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI'):
                 completions = Completions()
-                
+
                 assert completions.model_name == "unsloth/Qwen3.5-4B-GGUF:Q4_K_M"
-    
-    def test_completions_init_with_default_arguments(self):
-        """Test that Completions uses default arguments."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model"}, clear=True):
+
+    def test_completions_init_with_default_model_api_mode(self):
+        """Test that Completions uses default model when not specified in API mode."""
+        with patch.dict(os.environ, {"BASE_LLM_URL": "https://openrouter.ai/api/v1"}, clear=True):
+            with patch('ai.llm.completions.AsyncOpenAI'):
+                completions = Completions()
+
+                assert completions.model_name == "unsloth/Qwen3.5-4B-GGUF:Q4_K_M"
+
+    def test_completions_init_with_url_local_mode(self):
+        """Test that Completions constructs correct URL in local mode (LLM_PORT set)."""
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
                 Completions()
-                
-                # Verify AsyncOpenAI was called with correct arguments
+
                 call_args = mock_client.call_args
-                assert call_args.kwargs['base_url'] == "http://localhost:11436/v1"
-                assert call_args.kwargs['api_key'] == "sk-noauth"
+                assert call_args.kwargs['base_url'] == "http://llm:11436/v1"
+                assert call_args.kwargs['api_key'] == ""
+
+    def test_completions_init_with_url_api_mode(self):
+        """Test that Completions uses BASE_LLM_URL when LLM_PORT is not set (API mode)."""
+        with patch.dict(os.environ, {
+            "LLM_MODEL_ID": "test-model",
+            "BASE_LLM_URL": "https://openrouter.ai/api/v1",
+            "LLM_API_KEY": "sk-or-key"
+        }, clear=True):
+            with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
+                Completions()
+
+                call_args = mock_client.call_args
+                assert call_args.kwargs['base_url'] == "https://openrouter.ai/api/v1"
+                assert call_args.kwargs['api_key'] == "sk-or-key"
     
     def test_completions_init_without_model_raises_error(self):
         """Test that Completions raises error when model ID is not set."""
@@ -51,14 +88,36 @@ class TestCompletionsInit(SimpleTestCase):
                     Completions()
                 
                 mock_logger.error.assert_called()
-    
-    def test_completions_init_creates_async_client(self):
-        """Test that Completions creates an AsyncOpenAI client."""
-        with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
-            completions = Completions()
-            
-            assert mock_client_class.called
-            assert hasattr(completions, 'client')
+
+    def test_completions_init_without_url_raises_error(self):
+        """Test that Completions raises error when neither LLM_PORT nor BASE_LLM_URL is set."""
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model"}, clear=True):
+            with patch('ai.llm.completions.logger') as mock_logger:
+                with pytest.raises(ValueError, match="Base LLM URL is not set"):
+                    Completions()
+
+                mock_logger.error.assert_called_with("Base LLM URL is not set")
+
+    def test_completions_init_creates_async_client_local_mode(self):
+        """Test that Completions creates an AsyncOpenAI client in local mode."""
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+            with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
+                completions = Completions()
+
+                assert mock_client_class.called
+                assert hasattr(completions, 'client')
+
+    def test_completions_init_creates_async_client_api_mode(self):
+        """Test that Completions creates an AsyncOpenAI client in API mode."""
+        with patch.dict(os.environ, {
+            "LLM_MODEL_ID": "test-model",
+            "BASE_LLM_URL": "https://openrouter.ai/api/v1",
+        }, clear=True):
+            with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
+                completions = Completions()
+
+                assert mock_client_class.called
+                assert hasattr(completions, 'client')
 
 
 @pytest.mark.asyncio
