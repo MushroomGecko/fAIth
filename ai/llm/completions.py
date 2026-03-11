@@ -21,9 +21,9 @@ class Completions:
 
     Configuration from environment variables:
         - LLM_MODEL_ID: Model identifier (default: "unsloth/Qwen3.5-4B-GGUF:Q4_K_M")
-        - LLM_URL, LLM_PORT: Service endpoint (default: http://localhost:11436)
+        - BASE_LLM_URL: Service endpoint (default: http://localhost:11436/v1)
         - LLM_MODEL_ARGUMENTS: JSON string of model-specific parameters (default: {} for compatibility with other models that may not share the same parameters)
-        - OPENAI_API_KEY: Authentication key (default: "sk-noauth")
+        - LLM_API_KEY: Authentication key (default: "")
     """
 
     def __init__(self):
@@ -51,10 +51,20 @@ class Completions:
         logger.info(f"LLM model arguments: {self.model_arguments}")
 
         # Build service endpoint URL and authentication
-        llm_url = str(os.getenv("LLM_URL", "http://localhost")).strip()
-        llm_port = str(os.getenv("LLM_PORT", "11436")).strip()
-        base_url = f"{llm_url}{':' if llm_port else ''}{llm_port}/v1"
-        api_key = str(os.getenv("OPENAI_API_KEY", "sk-noauth")).strip()
+        llm_port = str(os.getenv("LLM_PORT", "")).strip()
+        if llm_port:
+            base_url = f"http://llm:{llm_port}/v1"
+        else:
+            base_url = str(os.getenv("BASE_LLM_URL", "")).strip()
+            if not base_url:
+                logger.error("Base LLM URL is not set")
+                raise ValueError("Base LLM URL is not set")
+        logger.info(f"Base LLM URL: {base_url}")
+        
+        api_key = str(os.getenv("LLM_API_KEY", "")).strip()
+        if not api_key:
+            logger.warning("LLM API key is not set")
+        logger.info(f"LLM API key: {api_key}")
 
         # Initialize async OpenAI-compatible client
         self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)

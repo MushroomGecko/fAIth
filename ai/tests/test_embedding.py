@@ -5,22 +5,30 @@ from ai.vdb.embedding import Embedding
 
 
 def create_mock_getenv(**env_vars):
-    """Create a mock getenv function with predefined environment variables."""
+    """Create a mock getenv function with predefined environment variables.
+
+    Defaults to local mode (EMBEDDING_PORT="11435") unless overridden.
+    Pass EMBEDDING_PORT="" and BASE_EMBEDDING_URL="..." to simulate API mode.
+    """
+    defaults = {
+        "EMBEDDING_PORT": "11435",
+    }
+    merged = {**defaults, **env_vars}
+
     def mock_getenv(key, default=None):
-        return env_vars.get(key, default)
+        return merged.get(key, default)
     return mock_getenv
 
 
 class TestEmbeddingInit(SimpleTestCase):
     """Tests for Embedding initialization."""
 
-    def test_embedding_init_with_env_variables(self):
-        """Test that Embedding initializes with environment variables."""
+    def test_embedding_init_with_env_variables_local_mode(self):
+        """Test that Embedding initializes correctly in local mode with all env vars set."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "custom-model",
-            "EMBEDDING_URL": "http://example.com",
             "EMBEDDING_PORT": "11435",
-            "OPENAI_API_KEY": "sk-test",
+            "EMBEDDING_API_KEY": "sk-test",
             "EMBEDDING_MODEL_QUERY_PROMPT": "Query: {text}",
             "EMBEDDING_MODEL_DOCUMENT_PROMPT": "Document: {text}",
         }
@@ -33,13 +41,30 @@ class TestEmbeddingInit(SimpleTestCase):
                     assert embedding.query_template == "Query: {text}"
                     assert embedding.document_template == "Document: {text}"
 
-    def test_embedding_init_with_default_values(self):
-        """Test that Embedding initializes with default values when env vars not set."""
+    def test_embedding_init_with_env_variables_api_mode(self):
+        """Test that Embedding initializes correctly in API mode with all env vars set."""
+        env_vars = {
+            "EMBEDDING_MODEL_ID": "custom-model",
+            "EMBEDDING_PORT": "",
+            "BASE_EMBEDDING_URL": "https://openrouter.ai/api/v1",
+            "EMBEDDING_API_KEY": "sk-or-key",
+            "EMBEDDING_MODEL_QUERY_PROMPT": "Query: {text}",
+            "EMBEDDING_MODEL_DOCUMENT_PROMPT": "Document: {text}",
+        }
+        with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.embedding.OpenAI"):
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
+                    embedding = Embedding()
+                    assert embedding.model_name == "custom-model"
+                    assert embedding.query_template == "Query: {text}"
+                    assert embedding.document_template == "Document: {text}"
+
+    def test_embedding_init_with_default_values_local_mode(self):
+        """Test that Embedding initializes with default values in local mode."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "Qwen/Qwen3-Embedding-0.6B",
-            "EMBEDDING_URL": "http://localhost",
             "EMBEDDING_PORT": "11435",
-            "OPENAI_API_KEY": "sk-noauth",
             "EMBEDDING_MODEL_QUERY_PROMPT": "",
             "EMBEDDING_MODEL_DOCUMENT_PROMPT": "",
         }
@@ -52,13 +77,30 @@ class TestEmbeddingInit(SimpleTestCase):
                     assert embedding.query_template == ""
                     assert embedding.document_template == ""
 
-    def test_embedding_init_creates_sync_client(self):
-        """Test that Embedding creates a synchronous OpenAI client."""
+    def test_embedding_init_with_default_values_api_mode(self):
+        """Test that Embedding initializes with default values in API mode."""
+        env_vars = {
+            "EMBEDDING_MODEL_ID": "Qwen/Qwen3-Embedding-0.6B",
+            "EMBEDDING_PORT": "",
+            "BASE_EMBEDDING_URL": "https://openrouter.ai/api/v1",
+            "EMBEDDING_MODEL_QUERY_PROMPT": "",
+            "EMBEDDING_MODEL_DOCUMENT_PROMPT": "",
+        }
+        with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.embedding.OpenAI"):
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
+                    embedding = Embedding()
+                    assert embedding.model_name == "Qwen/Qwen3-Embedding-0.6B"
+                    assert embedding.query_template == ""
+                    assert embedding.document_template == ""
+
+    def test_embedding_init_creates_sync_client_local_mode(self):
+        """Test that Embedding creates a synchronous OpenAI client in local mode (EMBEDDING_PORT set)."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "test-model",
-            "EMBEDDING_URL": "http://localhost",
             "EMBEDDING_PORT": "11435",
-            "OPENAI_API_KEY": "sk-test",
+            "EMBEDDING_API_KEY": "sk-test",
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
@@ -66,18 +108,36 @@ class TestEmbeddingInit(SimpleTestCase):
                 with patch("ai.vdb.embedding.AsyncOpenAI"):
                     embedding = Embedding()
                     mock_openai.assert_called_once_with(
-                        base_url="http://localhost:11435/v1",
+                        base_url="http://embedding:11435/v1",
                         api_key="sk-test"
                     )
                     assert embedding.client is not None
 
-    def test_embedding_init_creates_async_client(self):
-        """Test that Embedding creates an asynchronous OpenAI client."""
+    def test_embedding_init_creates_sync_client_api_mode(self):
+        """Test that Embedding creates a synchronous OpenAI client in API mode (BASE_EMBEDDING_URL set)."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "test-model",
-            "EMBEDDING_URL": "http://localhost",
+            "EMBEDDING_PORT": "",
+            "BASE_EMBEDDING_URL": "https://openrouter.ai/api/v1",
+            "EMBEDDING_API_KEY": "sk-or-key",
+        }
+        with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.embedding.OpenAI") as mock_openai:
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
+                    embedding = Embedding()
+                    mock_openai.assert_called_once_with(
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key="sk-or-key"
+                    )
+                    assert embedding.client is not None
+
+    def test_embedding_init_creates_async_client_local_mode(self):
+        """Test that Embedding creates an asynchronous OpenAI client in local mode (EMBEDDING_PORT set)."""
+        env_vars = {
+            "EMBEDDING_MODEL_ID": "test-model",
             "EMBEDDING_PORT": "11435",
-            "OPENAI_API_KEY": "sk-test",
+            "EMBEDDING_API_KEY": "sk-test",
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
@@ -85,8 +145,27 @@ class TestEmbeddingInit(SimpleTestCase):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
                     embedding = Embedding()
                     mock_async_openai.assert_called_once_with(
-                        base_url="http://localhost:11435/v1",
+                        base_url="http://embedding:11435/v1",
                         api_key="sk-test"
+                    )
+                    assert embedding.async_client is not None
+
+    def test_embedding_init_creates_async_client_api_mode(self):
+        """Test that Embedding creates an asynchronous OpenAI client in API mode (BASE_EMBEDDING_URL set)."""
+        env_vars = {
+            "EMBEDDING_MODEL_ID": "test-model",
+            "EMBEDDING_PORT": "",
+            "BASE_EMBEDDING_URL": "https://openrouter.ai/api/v1",
+            "EMBEDDING_API_KEY": "sk-or-key",
+        }
+        with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.embedding.OpenAI"):
+                with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
+                    embedding = Embedding()
+                    mock_async_openai.assert_called_once_with(
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key="sk-or-key"
                     )
                     assert embedding.async_client is not None
 
@@ -94,9 +173,7 @@ class TestEmbeddingInit(SimpleTestCase):
         """Test that Embedding raises error when model ID is not set."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "",
-            "EMBEDDING_URL": "http://localhost",
             "EMBEDDING_PORT": "11435",
-            "OPENAI_API_KEY": "sk-test",
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
@@ -107,6 +184,23 @@ class TestEmbeddingInit(SimpleTestCase):
                             Embedding()
                         mock_logger.error.assert_called_once_with(
                             "Embedding model ID is not set"
+                        )
+
+    def test_embedding_init_without_url_raises_error(self):
+        """Test that Embedding raises error when neither EMBEDDING_PORT nor BASE_EMBEDDING_URL is set."""
+        env_vars = {
+            "EMBEDDING_MODEL_ID": "test-model",
+            "EMBEDDING_PORT": "",
+        }
+        with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.embedding.logger") as mock_logger:
+                with patch("ai.vdb.embedding.OpenAI"):
+                    with patch("ai.vdb.embedding.AsyncOpenAI"):
+                        with pytest.raises(ValueError, match="Base embedding URL is not set"):
+                            Embedding()
+                        mock_logger.error.assert_called_once_with(
+                            "Base embedding URL is not set"
                         )
 
 class TestEmbeddingSize(SimpleTestCase):

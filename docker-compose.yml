@@ -219,7 +219,7 @@ services:
       HF_TOKEN: 
       HF_HOME: /root/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /root/.cache/huggingface
-    command: ["-hf", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M", "-c", "4096", "-ngl", "9999", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "11436", "--cont-batching", "-np", "1", ]
+    command: ["-hf", "unsloth/Qwen3.5-4B-GGUF:Q4_K_M", "-c", "4096", "-ngl", "9999", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "0.0.0.0", "--port", "11436", "--cont-batching", "-np", "1", ]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11436/health"]
       start_period: 3600s
@@ -247,8 +247,8 @@ services:
     environment:
       POSTGRES_HOST: postgres
       MILVUS_URL: http://milvus
-      EMBEDDING_URL: http://embedding
-      LLM_URL: http://llm
+      BASE_EMBEDDING_URL: http://embedding
+      BASE_LLM_URL: http://llm
     command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000 --workers 1"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck/"]
