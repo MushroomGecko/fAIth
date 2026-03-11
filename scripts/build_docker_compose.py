@@ -353,8 +353,37 @@ SEAWEEDFS_SETUP = \
 """.lstrip('\n')
 
 # Milvus: vector database for semantic search
-MILVUS_SETUP = \
-"""
+def build_milvus_setup(milvus_port, embedding_enabled, start_period, interval, timeout, retries):
+    """
+    Build Milvus configuration with optional embedding dependency.
+    
+    Milvus only needs to depend on embedding if it's being used for building
+    initial collections with embeddings during setup.
+    
+    Parameters:
+        milvus_port: Port to expose Milvus on
+        embedding_enabled: True if EMBEDDING_PORT is set
+        start_period, interval, timeout, retries: Healthcheck parameters
+    
+    Returns:
+        str: Formatted Milvus Docker Compose service configuration
+    """
+    # Build depends_on section based on enabled services
+    depends_on = """    depends_on:
+      etcd:
+        condition: service_healthy
+      seaweedfs-s3:
+        condition: service_healthy
+      seaweedfs-init:
+        condition: service_completed_successfully"""
+    
+    # Only depend on embedding if it's enabled (for initial collection building)
+    if embedding_enabled:
+        depends_on += """
+      embedding:
+        condition: service_healthy"""
+    
+    milvus_setup = f"""
   milvus:
     container_name: milvus-faith
     image: milvusdb/milvus:latest
@@ -379,16 +408,9 @@ MILVUS_SETUP = \
       retries: {retries}
     security_opt:
       - seccomp:unconfined
-    depends_on:
-      etcd:
-        condition: service_healthy
-      seaweedfs-s3:
-        condition: service_healthy
-      seaweedfs-init:
-        condition: service_completed_successfully
-      embedding:
-        condition: service_healthy
-""".lstrip('\n')
+{depends_on}
+"""
+    return milvus_setup.lstrip('\n')
 
 # ============================================================================
 # LLM Runner Configuration Templates - Ollama, llama.cpp, vLLM, SGLang
@@ -530,8 +552,8 @@ def build_webapp_setup(embedding_enabled, llm_enabled, webapp_port, uvicorn_work
         condition: service_healthy"""
     
     # Set service URLs based on what's enabled
-    embedding_url = "http://embedding" if embedding_enabled else "${EMBEDDING_URL}"
-    llm_url = "http://llm" if llm_enabled else "${LLM_URL}"
+    embedding_url = "http://embedding" if embedding_enabled else "${BASE_EMBEDDING_URL}"
+    llm_url = "http://llm" if llm_enabled else "${BASE_LLM_URL}"
     
     webapp_setup = f"""
   webapp:
@@ -546,8 +568,8 @@ def build_webapp_setup(embedding_enabled, llm_enabled, webapp_port, uvicorn_work
     environment:
       POSTGRES_HOST: postgres
       MILVUS_URL: http://milvus
-      EMBEDDING_URL: {embedding_url}
-      LLM_URL: {llm_url}
+      BASE_EMBEDDING_URL: {embedding_url}
+      BASE_LLM_URL: {llm_url}
     command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port {webapp_port} --workers {uvicorn_workers}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:{webapp_port}/healthcheck/"]
@@ -785,7 +807,7 @@ if __name__ == "__main__":
     llm_enabled = bool(LLM_PORT)
     
     if not embedding_enabled:
-        print("INFO: EMBEDDING_PORT not set. Webapp will use external embedding service (configure EMBEDDING_URL in .env)")
+        print("INFO: EMBEDDING_PORT not set. Webapp will use external embedding service (configure BASE_EMBEDDING_URL in .env)")
     if not llm_enabled:
         print("INFO: LLM_PORT not set. Webapp will use external LLM service (configure LLM_URL in .env)")
 
@@ -796,7 +818,8 @@ if __name__ == "__main__":
     postgres_block = POSTGRES_SETUP.format(postgres_port=POSTGRES_PORT, postgres_user=POSTGRES_USER, postgres_password=POSTGRES_PASSWORD, postgres_database=POSTGRES_DATABASE, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     etcd_block = ETCD_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     seaweedfs_block = SEAWEEDFS_SETUP.format(start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
-    milvus_block = MILVUS_SETUP.format(milvus_port=MILVUS_PORT, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
+    # Build Milvus block with conditional embedding dependency
+    milvus_block = build_milvus_setup(milvus_port=MILVUS_PORT, embedding_enabled=embedding_enabled, start_period=START_PERIOD, interval=INTERVAL, timeout=TIMEOUT, retries=RETRIES)
     
     # Build embedding service block only if port is set
     if embedding_enabled:
