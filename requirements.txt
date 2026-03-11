@@ -1,12 +1,11 @@
 # Core dependencies for fAIth
 Django==6.0.2
-djangorestframework==3.16.1
+django-ninja==1.5.3
 python-dotenv==1.2.1
 whitenoise==6.11.0
 psycopg[binary]==3.3.2
 
 # ASGI Server Dependencies
-adrf==0.1.12
 django_asgi_lifespan==0.5.1
 uvicorn>=0.38.0
 

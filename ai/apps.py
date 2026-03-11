@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 from django_asgi_lifespan.register import register_lifespan_manager
-from ai.globals import (
+from ai.lifespan_manager import (
     milvus_db_lifespan_manager,
     completions_lifespan_manager,
 )

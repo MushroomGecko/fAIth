@@ -1,13 +1,12 @@
 import logging
 
-from adrf.serializers import Serializer
-from rest_framework import serializers
+from pydantic import BaseModel, field_validator
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
-class GeneralQuestionSerializer(Serializer):
+class GeneralQuestionSerializer(BaseModel):
     """
     Validates and deserializes general question API requests.
 
@@ -17,10 +16,31 @@ class GeneralQuestionSerializer(Serializer):
         collection_name (str): Name of the Milvus collection to search (max 3 chars).
         query (str): User's question or search query (required, non-empty after strip).
     """
-    collection_name = serializers.CharField(max_length=3)
-    query = serializers.CharField()
+    collection_name: str
+    query: str
 
-    def validate_query(self, value: str) -> str:
+    @field_validator("collection_name")
+    @classmethod
+    def validate_collection_name(cls, value: str) -> str:
+        """
+        Validate that the collection_name field is within the maximum length.
+
+        Parameters:
+            value (str): The collection_name string from the request.
+
+        Returns:
+            str: The validated collection_name string.
+
+        Raises:
+            ValueError: If the collection_name exceeds 3 characters.
+        """
+        if len(value) > 3:
+            raise ValueError("collection_name must be max 3 chars")
+        return value
+
+    @field_validator("query")
+    @classmethod
+    def validate_query(cls, value: str) -> str:
         """
         Validate that the query field is not empty after whitespace trimming.
 
@@ -31,10 +51,10 @@ class GeneralQuestionSerializer(Serializer):
             str: Trimmed query string.
 
         Raises:
-            ValidationError: If the query is empty after stripping whitespace.
+            ValueError: If the query is empty after stripping whitespace.
         """
         value = value.strip()
         if not value:
             logger.error("query cannot be empty")
-            raise serializers.ValidationError("query cannot be empty")
+            raise ValueError("query cannot be empty")
         return value

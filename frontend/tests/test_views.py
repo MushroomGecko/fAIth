@@ -5,21 +5,21 @@ from django.test import SimpleTestCase
 from django.http import HttpRequest, HttpResponse
 
 from frontend import views
-from frontend import globals as globals_module
+import fAIth.bible_globals as bible_globals
 
 
 def reset_globals(enabled_versions, default_version, default_book, default_chapter):
     """Reset the globals to their default values."""
 
     # Reset the globals to their default values
-    globals_module.BIBLE_DATA_ROOT = None
-    globals_module.DEFAULT_VERSION = ''
-    globals_module.DEFAULT_BOOK = ''
-    globals_module.DEFAULT_CHAPTER = ''
-    globals_module.VERSION_SELECTION = []
-    globals_module.IN_ORDER_BOOKS = []
-    globals_module.CHAPTER_SELECTION = {}
-    globals_module.ALL_VERSES = {}
+    bible_globals.BIBLE_DATA_ROOT = None
+    bible_globals.DEFAULT_VERSION = ''
+    bible_globals.DEFAULT_BOOK = ''
+    bible_globals.DEFAULT_CHAPTER = ''
+    bible_globals.VERSION_SELECTION = []
+    bible_globals.IN_ORDER_BOOKS = []
+    bible_globals.CHAPTER_SELECTION = {}
+    bible_globals.ALL_VERSES = {}
 
     # Set the environment variables
     os.environ['ENABLED_VERSIONS'] = enabled_versions
@@ -28,14 +28,14 @@ def reset_globals(enabled_versions, default_version, default_book, default_chapt
     os.environ['DEFAULT_CHAPTER'] = default_chapter
     
     # Initialize all globals
-    globals_module.set_bible_data_root()
-    globals_module.set_version_selection()
-    globals_module.set_default_version()
-    globals_module.set_in_order_books()
-    globals_module.set_default_book()
-    globals_module.set_chapter_selection()
-    globals_module.set_default_chapter()
-    globals_module.set_all_verses()
+    bible_globals.set_bible_data_root()
+    bible_globals.set_version_selection()
+    bible_globals.set_default_version()
+    bible_globals.set_in_order_books()
+    bible_globals.set_default_book()
+    bible_globals.set_chapter_selection()
+    bible_globals.set_default_chapter()
+    bible_globals.set_all_verses()
 
 
 class FailingObject:
@@ -61,14 +61,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_render to return a response
             with patch('frontend.views.async_render', new_callable=AsyncMock) as mock_render:
@@ -116,11 +116,11 @@ class TestFullView(SimpleTestCase):
 
                 # Verify all books, chapters, and versions information
                 assert 'in_order' in context
-                assert context['in_order'] == globals_module.IN_ORDER_BOOKS
+                assert context['in_order'] == bible_globals.IN_ORDER_BOOKS
                 assert 'chapter_selection' in context
-                assert context['chapter_selection'] == globals_module.CHAPTER_SELECTION
+                assert context['chapter_selection'] == bible_globals.CHAPTER_SELECTION
                 assert 'version_selection' in context
-                assert context['version_selection'] == globals_module.VERSION_SELECTION
+                assert context['version_selection'] == bible_globals.VERSION_SELECTION
                 
                 # Verify current URL for navigation state
                 assert 'current_url' in context
@@ -139,14 +139,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_render to return a response
             with patch('frontend.views.async_render', new_callable=AsyncMock) as mock_render:
@@ -194,11 +194,11 @@ class TestFullView(SimpleTestCase):
 
                 # Verify all books, chapters, and versions information
                 assert 'in_order' in context
-                assert context['in_order'] == globals_module.IN_ORDER_BOOKS
+                assert context['in_order'] == bible_globals.IN_ORDER_BOOKS
                 assert 'chapter_selection' in context
-                assert context['chapter_selection'] == globals_module.CHAPTER_SELECTION
+                assert context['chapter_selection'] == bible_globals.CHAPTER_SELECTION
                 assert 'version_selection' in context
-                assert context['version_selection'] == globals_module.VERSION_SELECTION
+                assert context['version_selection'] == bible_globals.VERSION_SELECTION
                 
                 # Verify current URL for navigation state
                 assert 'current_url' in context
@@ -217,14 +217,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_render to return a response
             with patch('frontend.views.async_render', new_callable=AsyncMock) as mock_render:
@@ -272,11 +272,11 @@ class TestFullView(SimpleTestCase):
 
                 # Verify all books, chapters, and versions information
                 assert 'in_order' in context
-                assert context['in_order'] == globals_module.IN_ORDER_BOOKS
+                assert context['in_order'] == bible_globals.IN_ORDER_BOOKS
                 assert 'chapter_selection' in context
-                assert context['chapter_selection'] == globals_module.CHAPTER_SELECTION
+                assert context['chapter_selection'] == bible_globals.CHAPTER_SELECTION
                 assert 'version_selection' in context
-                assert context['version_selection'] == globals_module.VERSION_SELECTION
+                assert context['version_selection'] == bible_globals.VERSION_SELECTION
                 
                 # Verify current URL for navigation state
                 assert 'current_url' in context
@@ -297,14 +297,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_redirect to return a response
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -331,16 +331,16 @@ class TestFullView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
                 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is valid for that book
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
                 
                 # Verify the version is in VERSION_SELECTION
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_full_view_invalid_chapter(self):
@@ -356,14 +356,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_redirect to return a response
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -390,16 +390,16 @@ class TestFullView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
                 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is valid for that book
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == 1
                 
                 # Verify the version is in VERSION_SELECTION
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_full_view_chapter_is_string(self):
@@ -415,14 +415,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_redirect to return a response
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -449,16 +449,16 @@ class TestFullView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
                 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is valid for that book
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == 1
                 
                 # Verify the version is in VERSION_SELECTION
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_full_view_invalid_version(self):
@@ -474,14 +474,14 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
-                          ALL_VERSES=globals_module.ALL_VERSES):
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+                          ALL_VERSES=bible_globals.ALL_VERSES):
             
             # Mock async_redirect to return a response
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -508,16 +508,16 @@ class TestFullView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
                 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is valid for that book
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == request_chapter
                 
                 # Verify the version is in VERSION_SELECTION
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_full_view_general_error(self):
@@ -533,13 +533,13 @@ class TestFullView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          BIBLE_DATA_ROOT=globals_module.BIBLE_DATA_ROOT,
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          VERSION_SELECTION=globals_module.VERSION_SELECTION,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION,
+                          BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
                           ALL_VERSES=FailingObject()):
             
             # Mock async_redirect to verify it's called
@@ -567,16 +567,16 @@ class TestFullView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
                 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is valid for that book
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
                 
                 # Verify the version is in VERSION_SELECTION
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
 class TestBookChapterView(SimpleTestCase):
     """Tests for book_chapter_view function."""
@@ -594,11 +594,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -625,16 +625,16 @@ class TestBookChapterView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is valid for that book
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == request_chapter
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_book_chapter_view_success_revelation_22(self):
@@ -648,11 +648,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -679,16 +679,16 @@ class TestBookChapterView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is valid for that book
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == request_chapter
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
     
     @pytest.mark.asyncio
     async def test_book_chapter_view_success_2_timothy_2(self):
@@ -702,11 +702,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -733,16 +733,16 @@ class TestBookChapterView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
 
                 # Verify the redirect goes to a valid book that exists in IN_ORDER_BOOKS
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is valid for that book
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == request_chapter
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_book_chapter_view_invalid_book(self):
@@ -757,11 +757,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -788,16 +788,16 @@ class TestBookChapterView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
     
     @pytest.mark.asyncio
     async def test_book_chapter_view_invalid_chapter(self):
@@ -812,11 +812,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -843,16 +843,16 @@ class TestBookChapterView(SimpleTestCase):
                 book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert book in globals_module.IN_ORDER_BOOKS    
+                assert book in bible_globals.IN_ORDER_BOOKS    
                 assert book == request_book
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert default_chapter == 1
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_book_chapter_view_chapter_is_string(self):
@@ -867,11 +867,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS,
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -898,16 +898,16 @@ class TestBookChapterView(SimpleTestCase):
                 book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert book in globals_module.IN_ORDER_BOOKS    
+                assert book in bible_globals.IN_ORDER_BOOKS    
                 assert book == request_book
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert default_chapter == 1
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_book_chapter_view_general_error(self):
@@ -922,11 +922,11 @@ class TestBookChapterView(SimpleTestCase):
         
         # Patch the globals in views module with IN_ORDER_BOOKS that will cause an error
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
                           IN_ORDER_BOOKS=FailingObject(),
-                          CHAPTER_SELECTION=globals_module.CHAPTER_SELECTION):
+                          CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -952,16 +952,16 @@ class TestBookChapterView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
                 assert default_chapter == 1
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
 
 class TestBookView(SimpleTestCase):
@@ -979,10 +979,10 @@ class TestBookView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -1009,16 +1009,16 @@ class TestBookView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the specified book
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is the specified chapter
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == 1
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
     
     @pytest.mark.asyncio
     async def test_book_view_success_revelation(self):
@@ -1031,10 +1031,10 @@ class TestBookView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -1061,16 +1061,16 @@ class TestBookView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the specified book
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is the specified chapter
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == 1
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_book_view_success_2_timothy(self):
@@ -1083,10 +1083,10 @@ class TestBookView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -1113,16 +1113,16 @@ class TestBookView(SimpleTestCase):
                 book, chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the specified book
-                assert book in globals_module.IN_ORDER_BOOKS
+                assert book in bible_globals.IN_ORDER_BOOKS
                 assert book == request_book
                 
                 # Verify the chapter is the specified chapter
-                assert chapter in range(1, globals_module.CHAPTER_SELECTION[book] + 1)
+                assert chapter in range(1, bible_globals.CHAPTER_SELECTION[book] + 1)
                 assert chapter == 1
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     # Error tests
     @pytest.mark.asyncio
@@ -1137,10 +1137,10 @@ class TestBookView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
-                          IN_ORDER_BOOKS=globals_module.IN_ORDER_BOOKS):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+                          IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -1167,16 +1167,16 @@ class TestBookView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     @pytest.mark.asyncio
     async def test_book_view_general_error(self):
@@ -1190,9 +1190,9 @@ class TestBookView(SimpleTestCase):
         
         # Patch the globals in views module with IN_ORDER_BOOKS that will cause an error
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
                           IN_ORDER_BOOKS=FailingObject()):
             
             # Mock async_redirect to verify it's called
@@ -1220,16 +1220,16 @@ class TestBookView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
 class TestDefaultView(SimpleTestCase):
     """Tests for default_view function."""
@@ -1244,9 +1244,9 @@ class TestDefaultView(SimpleTestCase):
         
         # Patch the globals in views module to match what we set up
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER):
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER):
             
             # Mock async_redirect to verify it's called
             with patch('frontend.views.async_redirect', new_callable=AsyncMock) as mock_redirect:
@@ -1273,16 +1273,16 @@ class TestDefaultView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION
 
     # Error tests
     @pytest.mark.asyncio
@@ -1294,9 +1294,9 @@ class TestDefaultView(SimpleTestCase):
         
         # Patch the globals in views module with VERSION_SELECTION that will cause an error
         with patch.multiple('frontend.views',
-                          DEFAULT_VERSION=globals_module.DEFAULT_VERSION,
-                          DEFAULT_BOOK=globals_module.DEFAULT_BOOK,
-                          DEFAULT_CHAPTER=globals_module.DEFAULT_CHAPTER,
+                          DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+                          DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+                          DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
                           VERSION_SELECTION=FailingObject()):
             
             # Mock async_redirect to verify it's called
@@ -1324,13 +1324,13 @@ class TestDefaultView(SimpleTestCase):
                 default_book, default_chapter, default_version = redirect_args
 
                 # Verify the redirect goes to the default book
-                assert default_book in globals_module.IN_ORDER_BOOKS
-                assert default_book == globals_module.DEFAULT_BOOK
+                assert default_book in bible_globals.IN_ORDER_BOOKS
+                assert default_book == bible_globals.DEFAULT_BOOK
                 
                 # Verify the chapter is the default chapter
-                assert default_chapter in range(1, globals_module.CHAPTER_SELECTION[default_book] + 1)
-                assert default_chapter == globals_module.DEFAULT_CHAPTER
+                assert default_chapter in range(1, bible_globals.CHAPTER_SELECTION[default_book] + 1)
+                assert default_chapter == bible_globals.DEFAULT_CHAPTER
 
                 # Verify the version is the default version
-                assert default_version in globals_module.VERSION_SELECTION
-                assert default_version == globals_module.DEFAULT_VERSION
+                assert default_version in bible_globals.VERSION_SELECTION
+                assert default_version == bible_globals.DEFAULT_VERSION

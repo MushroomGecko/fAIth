@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from django.test import SimpleTestCase
-from ai.globals import milvus_db_lifespan_manager, completions_lifespan_manager
+from ai.lifespan_manager import milvus_db_lifespan_manager, completions_lifespan_manager
 
 
 class TestMilvusDbLifespanManager(SimpleTestCase):
@@ -10,8 +10,8 @@ class TestMilvusDbLifespanManager(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_milvus_db_lifespan_manager_initialization_and_close(self):
         """Test that milvus_db_lifespan_manager properly initializes and closes the database."""
-        with patch("ai.globals.VectorDatabaseQuerier") as mock_querier_class:
-            with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_querier_class:
+            with patch("ai.lifespan_manager.logger"):
                 mock_milvus_db = AsyncMock()
                 mock_querier_class.load_database_and_collections = AsyncMock(return_value=mock_milvus_db)
 
@@ -24,8 +24,8 @@ class TestMilvusDbLifespanManager(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_milvus_db_lifespan_manager_handles_close_error(self):
         """Test that milvus_db_lifespan_manager handles errors during close gracefully."""
-        with patch("ai.globals.VectorDatabaseQuerier") as mock_querier_class:
-            with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_querier_class:
+            with patch("ai.lifespan_manager.logger"):
                 mock_milvus_db = AsyncMock()
                 mock_milvus_db.close.side_effect = Exception("Close failed")
                 mock_querier_class.load_database_and_collections = AsyncMock(return_value=mock_milvus_db)
@@ -39,8 +39,8 @@ class TestMilvusDbLifespanManager(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_milvus_db_lifespan_manager_closes_on_exception(self):
         """Test that milvus_db_lifespan_manager closes database even when exception occurs during yield."""
-        with patch("ai.globals.VectorDatabaseQuerier") as mock_querier_class:
-            with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_querier_class:
+            with patch("ai.lifespan_manager.logger"):
                 mock_milvus_db = AsyncMock()
                 mock_querier_class.load_database_and_collections = AsyncMock(return_value=mock_milvus_db)
 
@@ -59,8 +59,8 @@ class TestCompletionsLifespanManager(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_completions_lifespan_manager_initialization_and_close(self):
         """Test that completions_lifespan_manager properly initializes and closes the object."""
-        with patch("ai.globals.Completions") as mock_completions_class:
-            with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class:
+            with patch("ai.lifespan_manager.logger"):
                 mock_completions_obj = MagicMock()
                 mock_completions_obj.close = AsyncMock()
                 mock_completions_class.return_value = mock_completions_obj
@@ -74,8 +74,8 @@ class TestCompletionsLifespanManager(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_completions_lifespan_manager_handles_close_error(self):
         """Test that completions_lifespan_manager handles errors during close gracefully."""
-        with patch("ai.globals.Completions") as mock_completions_class:
-            with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class:
+            with patch("ai.lifespan_manager.logger"):
                 mock_completions_obj = MagicMock()
                 mock_completions_obj.close = AsyncMock(side_effect=Exception("Close failed"))
                 mock_completions_class.return_value = mock_completions_obj
@@ -89,8 +89,8 @@ class TestCompletionsLifespanManager(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_completions_lifespan_manager_closes_on_exception(self):
         """Test that completions_lifespan_manager closes object even when exception occurs during yield."""
-        with patch("ai.globals.Completions") as mock_completions_class:
-            with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class:
+            with patch("ai.lifespan_manager.logger"):
                 mock_completions_obj = MagicMock()
                 mock_completions_obj.close = AsyncMock()
                 mock_completions_class.return_value = mock_completions_obj
@@ -110,9 +110,9 @@ class TestLifespanManagerIntegration(SimpleTestCase):
     @pytest.mark.asyncio
     async def test_both_managers_initialize_and_close(self):
         """Test that both managers can be used together and properly close."""
-        with patch("ai.globals.VectorDatabaseQuerier") as mock_querier_class:
-            with patch("ai.globals.Completions") as mock_completions_class:
-                with patch("ai.globals.logger"):
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_querier_class:
+            with patch("ai.lifespan_manager.Completions") as mock_completions_class:
+                with patch("ai.lifespan_manager.logger"):
                     mock_milvus_db = AsyncMock()
                     mock_completions_obj = MagicMock()
                     mock_completions_obj.close = AsyncMock()

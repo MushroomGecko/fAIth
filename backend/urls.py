@@ -4,4 +4,3 @@ from .views import router
 urlpatterns = [
     path('', include(router.urls)),
 ]
-
