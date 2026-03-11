@@ -5,7 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
-from ninja import Router
+from ninja import Router, Form
 
 from ai.serializers import GeneralQuestionSerializer
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
@@ -21,8 +21,8 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 router = Router()
 
 
-@router.post("/general_question", tags=[APITags.AI])
-async def general_question(request, payload: GeneralQuestionSerializer):
+@router.post("/general_question", tags=[APITags.AI], url_name="general_question")
+async def general_question(request, payload: GeneralQuestionSerializer = Form(...)):
     """
     API endpoint for answering general questions using RAG (Retrieval-Augmented Generation).
 

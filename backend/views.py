@@ -20,7 +20,7 @@ def check_db():
         cursor.execute("SELECT 1")
 
 
-@router.get("/healthcheck", tags=[APITags.HEALTH])
+@router.get("/healthcheck", tags=[APITags.HEALTH], url_name="healthcheck")
 async def healthcheck(request):
     """
     API endpoint for health checks and system status.

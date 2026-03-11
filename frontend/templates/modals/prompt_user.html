@@ -6,7 +6,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="promptUserForm" hx-post="{% url 'general_question' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="multipart/form-data">
+                <form id="promptUserForm" hx-post="{% url 'api:general_question' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
                     {% csrf_token %}
                     <input type="hidden" name="collection_name" value="{{ version }}">
                     <div class="mb-3">

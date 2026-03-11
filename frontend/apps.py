@@ -14,7 +14,7 @@ class FrontendConfig(AppConfig):
         if 'pytest' in sys.modules or any('pytest' in arg for arg in sys.argv):
             logger.info("Running under pytest, skipping frontend globals initialization.")
         else:
-            from frontend import globals as globals_module
+            import fAIth.bible_globals as globals_module
             globals_module.set_bible_data_root()
             globals_module.set_version_selection()
             globals_module.set_default_version()
