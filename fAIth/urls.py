@@ -8,8 +8,8 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 from django.contrib import admin
 from django.urls import path, include
 from ninja import NinjaAPI
-from backend.views import router as backend_router
-from ai.views import router as ai_router
+from backend.urls import router as backend_router
+from ai.urls import router as ai_router
 
 # Create NinjaAPI instance with custom namespace for simpler reverse() calls
 api = NinjaAPI(urls_namespace="api")

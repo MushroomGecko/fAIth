@@ -4,7 +4,7 @@ import asyncio
 from django.test import SimpleTestCase, RequestFactory
 from rest_framework import status
 
-from backend.views import healthcheck
+from backend.views.healthcheck import healthcheck
 
 
 class TestHealthcheckView(SimpleTestCase):
@@ -22,7 +22,7 @@ class TestHealthcheckView(SimpleTestCase):
         """Test that healthcheck responds to GET requests."""
         request = self.factory.get('/healthcheck/')
         
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_cursor = MagicMock()
             mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
             mock_connection.cursor.return_value.__exit__.return_value = None
@@ -38,7 +38,7 @@ class TestHealthcheckView(SimpleTestCase):
         """Test that healthcheck returns 200 OK when database is connected."""
         request = self.factory.get('/healthcheck/')
         
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_cursor = MagicMock()
             mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
             mock_connection.cursor.return_value.__exit__.return_value = None
@@ -53,7 +53,7 @@ class TestHealthcheckView(SimpleTestCase):
         """Test that healthcheck executes the database query correctly."""
         request = self.factory.get('/healthcheck/')
         
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_cursor = MagicMock()
             mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
             mock_connection.cursor.return_value.__exit__.return_value = None
@@ -70,7 +70,7 @@ class TestHealthcheckView(SimpleTestCase):
         request = self.factory.get('/healthcheck/')
         
         error_message = "connection refused"
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_connection.cursor.side_effect = Exception(error_message)
             
             response = self._call_healthcheck(request)
@@ -86,7 +86,7 @@ class TestHealthcheckView(SimpleTestCase):
         request = self.factory.get('/healthcheck/')
         
         error_message = "database connection timeout"
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_connection.cursor.return_value.__enter__.side_effect = TimeoutError(error_message)
             
             response = self._call_healthcheck(request)
@@ -101,7 +101,7 @@ class TestHealthcheckView(SimpleTestCase):
         """Test that healthcheck returns proper JSON response."""
         request = self.factory.get('/healthcheck/')
         
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_cursor = MagicMock()
             mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
             mock_connection.cursor.return_value.__exit__.return_value = None
@@ -118,7 +118,7 @@ class TestHealthcheckView(SimpleTestCase):
         request = self.factory.get('/healthcheck/')
         
         error_message = "permission denied"
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_connection.cursor.side_effect = PermissionError(error_message)
             
             response = self._call_healthcheck(request)
@@ -134,7 +134,7 @@ class TestHealthcheckView(SimpleTestCase):
         request = self.factory.get('/healthcheck/')
         
         error_message = "Unexpected error occurred"
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_connection.cursor.side_effect = Exception(error_message)
             
             response = self._call_healthcheck(request)
@@ -148,7 +148,7 @@ class TestHealthcheckView(SimpleTestCase):
         """Test that healthcheck properly uses cursor context manager."""
         request = self.factory.get('/healthcheck/')
         
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_cursor = MagicMock()
             mock_context_manager = MagicMock()
             mock_context_manager.__enter__ = MagicMock(return_value=mock_cursor)
@@ -168,7 +168,7 @@ class TestHealthcheckView(SimpleTestCase):
         request = self.factory.get('/healthcheck/')
         
         error_message = "Unexpected error occurred"
-        with patch('backend.views.connection') as mock_connection, patch('backend.views.logger') as mock_logger:
+        with patch('backend.views.healthcheck.connection') as mock_connection, patch('backend.views.healthcheck.logger') as mock_logger:
             mock_connection.cursor.side_effect = Exception(error_message)
             
             self._call_healthcheck(request)
@@ -180,7 +180,7 @@ class TestHealthcheckView(SimpleTestCase):
     
     def test_healthcheck_multiple_sequential_requests(self):
         """Test that multiple healthcheck requests work correctly."""
-        with patch('backend.views.connection') as mock_connection:
+        with patch('backend.views.healthcheck.connection') as mock_connection:
             mock_cursor = MagicMock()
             mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
             mock_connection.cursor.return_value.__exit__.return_value = None
