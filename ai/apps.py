@@ -1,10 +1,12 @@
+import logging
+
 from django.apps import AppConfig
 from django_asgi_lifespan.register import register_lifespan_manager
-from ai.globals import (
-    milvus_db_lifespan_manager,
+
+from ai.lifespan_manager import (
     completions_lifespan_manager,
+    milvus_db_lifespan_manager,
 )
-import logging
 
 logger = logging.getLogger(__name__)
 

@@ -10,11 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import logging
-from dotenv import load_dotenv
-import os
 import json
+import logging
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(name)s: %(message)s')
@@ -48,8 +49,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
-    'adrf',
     "ai",
     "backend",
     "frontend",
@@ -149,3 +148,9 @@ STORAGES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+NINJA_DOCS_CONF = {
+    "title": "fAIth API",
+    "version": "1.0.0",
+    "ui": "swagger"
+}

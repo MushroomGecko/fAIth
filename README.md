@@ -46,8 +46,7 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 - Berean Standard Bible (BSB) - https://berean.bible/
 ### Python Libraries
 - Django - https://github.com/django/django
-- Django Rest Framework (DRF) - https://github.com/encode/django-rest-framework
-- Async Django Rest Framework (aDRF) - https://github.com/em1208/adrf
+- Django Ninja (REST Framework) - https://github.com/vitalik/django-ninja
 - Django ASGI Handler with Lifespan protocol support - https://github.com/illagrenan/django-asgi-lifespan
 - OpenAI API Library (Python) - https://github.com/openai/openai-python
 - Uvicorn (ASGI Runner) - https://github.com/Kludex/uvicorn

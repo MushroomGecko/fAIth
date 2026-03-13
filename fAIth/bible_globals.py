@@ -39,14 +39,14 @@ def set_bible_data_root():
     Set the root directory for Bible data files.
 
     This is the first function that must be called during initialization.
-    It sets BIBLE_DATA_ROOT to {Django BASE_DIR}/frontend/bible_data.
+    It sets BIBLE_DATA_ROOT to {Django BASE_DIR}/fAIth/bible_data.
 
     Raises:
         ValueError: If the directory cannot be set.
     """
     global BIBLE_DATA_ROOT
     try:
-        BIBLE_DATA_ROOT = settings.BASE_DIR.joinpath('frontend', 'bible_data')
+        BIBLE_DATA_ROOT = settings.BASE_DIR.joinpath('fAIth', 'bible_data')
     except Exception as e:
         logger.error(f"Error: {e}. 'BIBLE_DATA_ROOT' cannot be set.")
         raise ValueError(f"Error: {e}. 'BIBLE_DATA_ROOT' cannot be set.")

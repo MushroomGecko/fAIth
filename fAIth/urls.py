@@ -3,25 +3,25 @@ URL configuration for fAIth project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
 from django.contrib import admin
-from django.urls import path, include
-from backend.views import HealthcheckView
+from django.urls import include, path
+from ninja import NinjaAPI
+
+from ai.api import ai_api
+from backend.api import backend_api, healcheck_api
+
+# Create NinjaAPI instance with custom namespace for simpler reverse() calls
+api = NinjaAPI(urls_namespace="api")
+
+# Register aggregated app routers with the API
+api.add_router("", healcheck_api)
+api.add_router("", backend_api)
+api.add_router("v1/", ai_api)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('healthcheck/', HealthcheckView.as_view(), name='healthcheck'),
-    path('v1/', include('ai.urls')),
     path('', include('frontend.urls')),
+    path('', api.urls),
 ]

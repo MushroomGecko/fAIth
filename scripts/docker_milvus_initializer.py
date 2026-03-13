@@ -24,7 +24,7 @@ except Exception as e:
     logger.warning(f"Warning: Django setup failed: {e}")
 
 # Get the version selection
-from frontend.globals import VERSION_SELECTION
+from fAIth.bible_globals import VERSION_SELECTION
 # Import the Milvus database class
 from ai.vdb.milvus_db import VectorDatabaseBuilder
 

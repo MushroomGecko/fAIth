@@ -1,7 +1,16 @@
 import asyncio
 import logging
 
-from frontend.globals import BIBLE_DATA_ROOT, DEFAULT_VERSION, DEFAULT_BOOK, DEFAULT_CHAPTER, IN_ORDER_BOOKS, CHAPTER_SELECTION, VERSION_SELECTION, ALL_VERSES
+from fAIth.bible_globals import (
+    ALL_VERSES,
+    BIBLE_DATA_ROOT,
+    CHAPTER_SELECTION,
+    DEFAULT_BOOK,
+    DEFAULT_CHAPTER,
+    DEFAULT_VERSION,
+    IN_ORDER_BOOKS,
+    VERSION_SELECTION,
+)
 from frontend.utils import async_redirect, async_render
 
 # Set up logging
