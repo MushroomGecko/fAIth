@@ -6,7 +6,6 @@ from pathlib import Path
 
 from django.test import SimpleTestCase
 from django.http import HttpRequest
-from rest_framework import status
 
 from ai.views.general_question import general_question
 
@@ -63,7 +62,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             response = self._call_general_question(request, payload)
 
             # Verify successful response
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == 200
             assert "text/html" in response["content-type"]
             assert b"Response" in response.content
 
@@ -151,7 +150,7 @@ class TestGeneralQuestionView(SimpleTestCase):
 
             response = self._call_general_question(request, payload)
 
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == 200
             # Verify stringify was called even with empty results
             mock_stringify.assert_called_once()
 

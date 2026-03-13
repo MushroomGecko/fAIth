@@ -2,7 +2,6 @@ from unittest.mock import patch, MagicMock
 import json
 import asyncio
 from django.test import SimpleTestCase, RequestFactory
-from rest_framework import status
 
 from backend.views.healthcheck import healthcheck
 
@@ -32,7 +31,7 @@ class TestHealthcheckView(SimpleTestCase):
             # Verify request method is GET
             assert request.method == 'GET'
             # Verify response was generated successfully
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == 200
 
     def test_healthcheck_success_database_connected(self):
         """Test that healthcheck returns 200 OK when database is connected."""
@@ -46,7 +45,7 @@ class TestHealthcheckView(SimpleTestCase):
             response = self._call_healthcheck(request)
             
             # Verify successful response
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == 200
             assert json.loads(response.content)['status'] == 'OK'
     
     def test_healthcheck_database_query_executed(self):
@@ -76,7 +75,7 @@ class TestHealthcheckView(SimpleTestCase):
             response = self._call_healthcheck(request)
             
             # Verify error response
-            assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+            assert response.status_code == 503
             data = json.loads(response.content)
             assert data['status'] == 'error'
             assert error_message in data['message']
@@ -92,7 +91,7 @@ class TestHealthcheckView(SimpleTestCase):
             response = self._call_healthcheck(request)
             
             # Verify error response
-            assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+            assert response.status_code == 503
             data = json.loads(response.content)
             assert data['status'] == 'error'
             assert error_message in data['message']
@@ -124,7 +123,7 @@ class TestHealthcheckView(SimpleTestCase):
             response = self._call_healthcheck(request)
             
             # Verify error response includes message
-            assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+            assert response.status_code == 503
             data = json.loads(response.content)
             assert 'message' in data
             assert error_message in data['message']
@@ -140,7 +139,7 @@ class TestHealthcheckView(SimpleTestCase):
             response = self._call_healthcheck(request)
             
             # Verify error response
-            assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+            assert response.status_code == 503
             data = json.loads(response.content)
             assert data['status'] == 'error'
     
@@ -193,8 +192,8 @@ class TestHealthcheckView(SimpleTestCase):
             response2 = self._call_healthcheck(request2)
             
             # Verify both requests succeeded
-            assert response1.status_code == status.HTTP_200_OK
-            assert response2.status_code == status.HTTP_200_OK
+            assert response1.status_code == 200
+            assert response2.status_code == 200
             
             # Verify database was queried twice
             assert mock_cursor.execute.call_count == 2
