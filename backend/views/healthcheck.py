@@ -1,14 +1,18 @@
-import logging
 import json
+import logging
 
+from asgiref.sync import sync_to_async
 from django.db import connection
 from django.http import HttpResponse
-from asgiref.sync import sync_to_async
+from ninja import Router
 
-from backend.api import healcheck_api
+from fAIth.api_tags import APITags
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
+# Create router for healthcheck API
+router = Router()
 
 @sync_to_async
 def check_db():
@@ -16,8 +20,7 @@ def check_db():
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1")
 
-
-@healcheck_api.get("/healthcheck", url_name="healthcheck")
+@router.get("/healthcheck", tags=[APITags.HEALTH], url_name="healthcheck")
 async def healthcheck(request):
     """
     API endpoint for health checks and system status.

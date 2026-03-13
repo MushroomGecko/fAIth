@@ -10,11 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import logging
-from dotenv import load_dotenv
-import os
 import json
+import logging
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(name)s: %(message)s')

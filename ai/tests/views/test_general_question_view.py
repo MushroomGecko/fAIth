@@ -4,9 +4,8 @@ import asyncio
 from unittest.mock import patch, AsyncMock, MagicMock
 from pathlib import Path
 
-import pytest
 from django.test import SimpleTestCase
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from rest_framework import status
 
 from ai.views.general_question import general_question
@@ -109,7 +108,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "Rendered template"
 
-            response = self._call_general_question(request, payload)
+            _ = self._call_general_question(request, payload)
 
             # Verify LLM completions was called with proper prompts
             request.state["completions_obj"].completions.assert_called_once()
@@ -187,7 +186,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
-            response = self._call_general_question(request, payload)
+            _ = self._call_general_question(request, payload)
 
             # Verify both system and user prompts were loaded
             assert mock_read_file.call_count == 2
@@ -227,7 +226,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html><body>Response</body></html>"
 
-            response = self._call_general_question(request, payload)
+            _ = self._call_general_question(request, payload)
 
             # Verify template rendering
             mock_render.assert_called_once()
@@ -303,7 +302,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
-            response = self._call_general_question(request, payload)
+            _ = self._call_general_question(request, payload)
 
             # Verify MILVUS_SEARCH_LIMIT was used in search
             request.state["milvus_db"].search.assert_called_once()
@@ -340,7 +339,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
-            response = self._call_general_question(request, payload)
+            _ = self._call_general_question(request, payload)
 
             # Verify correct fields were extracted and used
             assert request.state["milvus_db"].search.call_args[1]["query"] == "Who is Jesus Christ?"
