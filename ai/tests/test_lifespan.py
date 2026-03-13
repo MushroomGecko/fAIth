@@ -75,6 +75,20 @@ class TestMilvusDbLifespanManager:
             mock_logger.error.assert_called()
             assert "Error closing Async Milvus database" in mock_logger.error.call_args[0][0]
 
+    @pytest.mark.asyncio
+    async def test_milvus_db_lifespan_closes_on_exception(self):
+        """Lifespan manager should close database even when exception occurs during yield."""
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class:
+            mock_vdb_instance = AsyncMock()
+            mock_vdb_class.load_database_and_collections = AsyncMock(return_value=mock_vdb_instance)
+
+            try:
+                async with milvus_db_lifespan_manager():
+                    raise ValueError("Test error during yield")
+            except ValueError:
+                pass
+
+            mock_vdb_instance.close.assert_called_once()
 
 class TestCompletionsLifespanManager:
     """Test suite for the LLM Completions lifespan manager."""
@@ -143,3 +157,40 @@ class TestCompletionsLifespanManager:
 
             mock_logger.error.assert_called()
             assert "Error closing Completions object" in mock_logger.error.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_completions_lifespan_closes_on_exception(self):
+        """Lifespan manager should close completions even when exception occurs during yield."""
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class:
+            mock_completions_instance = AsyncMock()
+            mock_completions_class.return_value = mock_completions_instance
+
+            try:
+                async with completions_lifespan_manager():
+                    raise RuntimeError("Test error during yield")
+            except RuntimeError:
+                pass
+
+            mock_completions_instance.close.assert_called_once()
+
+
+class TestLifespanManagerIntegration:
+    """Integration tests for both lifespan managers working together."""
+
+    @pytest.mark.asyncio
+    async def test_both_managers_initialize_and_close(self):
+        """Test that both managers can be used together and properly close."""
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, \
+             patch("ai.lifespan_manager.Completions") as mock_completions_class:
+            mock_vdb_instance = AsyncMock()
+            mock_completions_instance = AsyncMock()
+            mock_vdb_class.load_database_and_collections = AsyncMock(return_value=mock_vdb_instance)
+            mock_completions_class.return_value = mock_completions_instance
+
+            async with milvus_db_lifespan_manager() as db_state:
+                async with completions_lifespan_manager() as comp_state:
+                    assert "milvus_db" in db_state
+                    assert "completions_obj" in comp_state
+
+            mock_vdb_instance.close.assert_called_once()
+            mock_completions_instance.close.assert_called_once()
