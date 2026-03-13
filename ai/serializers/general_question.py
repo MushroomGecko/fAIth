@@ -6,7 +6,7 @@ from pydantic import BaseModel, field_validator
 logger = logging.getLogger(__name__)
 
 
-class GeneralQuestionSerializer(BaseModel):
+class GeneralQuestionInputSerializer(BaseModel):
     """
     Validates and deserializes general question API requests.
 
@@ -58,3 +58,14 @@ class GeneralQuestionSerializer(BaseModel):
             logger.error("query cannot be empty")
             raise ValueError("query cannot be empty")
         return value
+
+class GeneralQuestionOutputSerializer(BaseModel):
+    """
+    Validates and serializes general question API responses.
+
+    Ensures required fields are present and properly formatted before processing.
+
+    Fields:
+        response_content (str): The response content from the LLM.
+    """
+    response_content: str

@@ -147,3 +147,9 @@ STORAGES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+NINJA_DOCS_CONF = {
+    "title": "fAIth API",
+    "version": "1.0.0",
+    "ui": "swagger"
+}

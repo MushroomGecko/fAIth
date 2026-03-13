@@ -5,12 +5,11 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
-from ninja import Router, Form
+from ninja import Form
 
-from ai.serializers import GeneralQuestionSerializer
+from ai.serializers.general_question import GeneralQuestionInputSerializer, GeneralQuestionOutputSerializer
 from ai.utils import async_read_file, stringify_vdb_results, clean_llm_output
-from fAIth.api_tags import APITags
-
+from ai.api import ai_api
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -18,11 +17,9 @@ logger = logging.getLogger(__name__)
 MILVUS_SEARCH_LIMIT = int(str(os.getenv("MILVUS_SEARCH_LIMIT", 10)).strip())
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
-router = Router()
 
-
-@router.post("/general_question", tags=[APITags.AI], url_name="general_question")
-async def general_question(request, payload: GeneralQuestionSerializer = Form(...)):
+@ai_api.post("/general_question", url_name="general_question")
+async def general_question(request, payload: GeneralQuestionInputSerializer = Form(...)):
     """
     API endpoint for answering general questions using RAG (Retrieval-Augmented Generation).
 
@@ -89,7 +86,10 @@ async def general_question(request, payload: GeneralQuestionSerializer = Form(..
         "response_content": mark_safe(cleaned_result),
     }
     rendered_template = render_to_string(template_name, context)
-
+    
+    # Simply validate the output
+    _ = GeneralQuestionOutputSerializer(response_content=rendered_template)
+    
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

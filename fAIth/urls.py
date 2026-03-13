@@ -8,15 +8,16 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 from django.contrib import admin
 from django.urls import path, include
 from ninja import NinjaAPI
-from backend.urls import router as backend_router
-from ai.urls import router as ai_router
+from backend.api import healcheck_api, backend_api
+from ai.api import ai_api
 
 # Create NinjaAPI instance with custom namespace for simpler reverse() calls
 api = NinjaAPI(urls_namespace="api")
 
 # Register routers with the API
-api.add_router("", backend_router)
-api.add_router("v1/", ai_router)
+api.add_router("", healcheck_api)
+api.add_router("", backend_api)
+api.add_router("v1/", ai_api)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
