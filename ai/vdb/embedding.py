@@ -2,14 +2,11 @@ import logging
 import os
 
 import numpy as np
-from dotenv import load_dotenv
 from openai import OpenAI, AsyncOpenAI
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
 
 
 class Embedding:
@@ -24,7 +21,7 @@ class Embedding:
 
     Configuration from environment variables:
         - EMBEDDING_MODEL_ID: Model identifier (default: "Qwen/Qwen3-Embedding-0.6B")
-        - BASE_EMBEDDING_URL: Service endpoint (default: http://localhost:11435/v1)
+        - BASE_EMBEDDING_URL: Service endpoint (default: http://embedding:11435/v1)
         - EMBEDDING_API_KEY: Authentication key
         - EMBEDDING_MODEL_QUERY_PROMPT: Template for query embeddings (optional)
         - EMBEDDING_MODEL_DOCUMENT_PROMPT: Template for document embeddings (optional)
@@ -47,15 +44,11 @@ class Embedding:
             raise ValueError("Embedding model ID is not set")
         logger.info(f"Embedding model ID: {self.model_name}")
 
-        # Build service endpoint URL
-        embedding_port = str(os.getenv("EMBEDDING_PORT", "")).strip()
-        if embedding_port:
-            base_url = f"http://embedding:{embedding_port}/v1"
-        else:
-            base_url = str(os.getenv("BASE_EMBEDDING_URL", "")).strip()
-            if not base_url:
-                logger.error("Base embedding URL is not set")
-                raise ValueError("Base embedding URL is not set")
+        # Use pre-computed embedding URL from docker-compose or environment
+        base_url = str(os.getenv("BASE_EMBEDDING_URL", "")).strip()
+        if not base_url:
+            logger.error("Base embedding URL is not set")
+            raise ValueError("Base embedding URL is not set")
         logger.info(f"Base embedding URL: {base_url}")
 
         api_key = str(os.getenv("EMBEDDING_API_KEY", "")).strip()

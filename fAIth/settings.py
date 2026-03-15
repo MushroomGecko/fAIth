@@ -15,7 +15,6 @@ import logging
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(name)s: %(message)s')
@@ -23,9 +22,6 @@ logger = logging.getLogger(__name__)
 
 # Build paths inside the project like this: BASE_DIR.joinpath('subdir').
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Load environment variables
-load_dotenv()
 
 
 # Quick-start development settings - unsuitable for production
@@ -96,7 +92,7 @@ DATABASES = {
         'NAME': str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip(),
         'USER': str(os.getenv("POSTGRES_USER", "faith_user")).strip(),
         'PASSWORD': str(os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")).strip(),
-        'HOST': str(os.getenv("POSTGRES_HOST", "localhost")).strip(),
+        'HOST': str(os.getenv("POSTGRES_HOST", "postgres")).strip(),
         'PORT': str(os.getenv("POSTGRES_PORT", "5432")).strip()
     }
 }

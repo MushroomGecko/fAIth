@@ -3,7 +3,6 @@ import json
 import logging
 import os
 
-from dotenv import load_dotenv
 from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
 
 from ai.vdb.embedding import Embedding
@@ -11,9 +10,6 @@ import fAIth.bible_globals as bible_globals
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
-# Load environment variables
-load_dotenv()
 
 
 class VectorDatabaseBuilder:
@@ -41,8 +37,13 @@ class VectorDatabaseBuilder:
             ValueError: If DATABASE_TYPE is not one of: sparse, dense, hybrid
         """
         # Load Milvus connection configuration
-        self.milvus_url = str(os.getenv("MILVUS_URL", "http://localhost")).strip()
-        self.milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
+        # Use pre-computed Milvus URL from docker-compose or environment
+        milvus_url = str(os.getenv("MILVUS_URL", "")).strip()
+        if not milvus_url:
+            logger.error("Milvus URL is not set")
+            raise ValueError("Milvus URL is not set")
+        
+        self.milvus_url = milvus_url
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
         self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
@@ -57,7 +58,7 @@ class VectorDatabaseBuilder:
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
         
         # Establish synchronous connection to Milvus
-        self.client = MilvusClient(uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}", token=f"{self.milvus_username}:{self.milvus_password}")
+        self.client = MilvusClient(uri=self.milvus_url, token=f"{self.milvus_username}:{self.milvus_password}")
 
     def load_database(self):
         """
@@ -353,8 +354,13 @@ class VectorDatabaseQuerier:
             ValueError: If DATABASE_TYPE is not one of: sparse, dense, hybrid
         """
         # Load Milvus connection configuration
-        self.milvus_url = str(os.getenv("MILVUS_URL", "http://localhost")).strip()
-        self.milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
+        # Use pre-computed Milvus URL from docker-compose or environment
+        milvus_url = str(os.getenv("MILVUS_URL", "")).strip()
+        if not milvus_url:
+            logger.error("Milvus URL is not set")
+            raise ValueError("Milvus URL is not set")
+        
+        self.milvus_url = milvus_url
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
         self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
