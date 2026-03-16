@@ -10,6 +10,7 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "faith_user", "-d", "faith_db"]
+      start_period: 3600s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -30,6 +31,7 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
     healthcheck:
       test: ["CMD", "etcdctl", "endpoint", "health"]
+      start_period: 3600s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -42,6 +44,7 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/seaweedfs/master:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://seaweedfs-master:9333/cluster/status"]
+      start_period: 3600s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -54,6 +57,7 @@ services:
     command: 'volume -ip=seaweedfs-volume -master="seaweedfs-master:9333" -ip.bind=0.0.0.0 -port=8080 -metricsPort=9325 -dir=/data'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://seaweedfs-volume:8080/status"]
+      start_period: 3600s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -67,6 +71,7 @@ services:
     command: 'filer -ip=seaweedfs-filer -master="seaweedfs-master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://seaweedfs-filer:8888/"]
+      start_period: 3600s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -87,6 +92,7 @@ services:
     command: 's3 -filer="seaweedfs-filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
     healthcheck:
       test: ["CMD", "curl", "http://seaweedfs-s3:8333/"]
+      start_period: 3600s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -230,7 +236,8 @@ services:
       POSTGRES_USER: faith_user
       POSTGRES_PASSWORD: postgres-secure-password
       POSTGRES_DATABASE: faith_db
-      MILVUS_URL: http://milvus:19530
+      MILVUS_HOST: milvus
+      MILVUS_PORT: 19530
       BASE_EMBEDDING_URL: http://embedding:11435/v1
       BASE_LLM_URL: http://llm:11436/v1
     command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000 --workers 1"
@@ -243,12 +250,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    
       milvus:
         condition: service_healthy
       embedding:
         condition: service_healthy
       llm:
         condition: service_healthy
+
     volumes:
       - .:/app

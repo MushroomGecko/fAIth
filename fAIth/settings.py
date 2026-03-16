@@ -89,11 +89,11 @@ ASGI_APPLICATION = "fAIth.asgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip(),
+        'HOST': str(os.getenv("POSTGRES_HOST", "postgres")).strip(),
+        'PORT': str(os.getenv("POSTGRES_PORT", "5432")).strip(),
         'USER': str(os.getenv("POSTGRES_USER", "faith_user")).strip(),
         'PASSWORD': str(os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")).strip(),
-        'HOST': str(os.getenv("POSTGRES_HOST", "postgres")).strip(),
-        'PORT': str(os.getenv("POSTGRES_PORT", "5432")).strip()
+        'NAME': str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip()
     }
 }
 

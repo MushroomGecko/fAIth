@@ -38,12 +38,15 @@ class VectorDatabaseBuilder:
         """
         # Load Milvus connection configuration
         # Use pre-computed Milvus URL from docker-compose or environment
-        milvus_url = str(os.getenv("MILVUS_URL", "")).strip()
-        if not milvus_url:
-            logger.error("Milvus URL is not set")
-            raise ValueError("Milvus URL is not set")
-        
-        self.milvus_url = milvus_url
+        milvus_host = str(os.getenv("MILVUS_HOST", "")).strip()
+        milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
+
+        # Validate Milvus host and port
+        if not milvus_host or not milvus_port:
+            logger.error("Milvus host or port is not set")
+            raise ValueError("Milvus host or port is not set")
+
+        self.milvus_url = f"{milvus_host}:{milvus_port}"
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
         self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
