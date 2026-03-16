@@ -20,7 +20,7 @@ class VectorDatabaseBuilder:
     It supports three embedding strategies: sparse (BM25), dense (HNSW), or hybrid (both).
 
     Configuration is read from environment variables:
-        - MILVUS_URL, MILVUS_PORT: Connection details
+        - MILVUS_HOST, MILVUS_PORT: Connection details
         - MILVUS_DATABASE_NAME: Database name
         - MILVUS_USERNAME, MILVUS_PASSWORD: Authentication credentials
         - DATABASE_TYPE: "sparse", "dense", or "hybrid"
@@ -38,28 +38,34 @@ class VectorDatabaseBuilder:
         """
         # Load Milvus connection configuration
         # Use pre-computed Milvus URL from docker-compose or environment
-        milvus_host = str(os.getenv("MILVUS_HOST", "")).strip()
-        milvus_port = str(os.getenv("MILVUS_PORT", "19530")).strip()
+        milvus_host = str(os.getenv("MILVUS_HOST") or "http://milvus").strip()
+        milvus_port = str(os.getenv("MILVUS_PORT") or "19530").strip()
 
         # Validate Milvus host and port
         if not milvus_host or not milvus_port:
             logger.error("Milvus host or port is not set")
             raise ValueError("Milvus host or port is not set")
 
+        # If Milvus host is not a valid URL, add http:// prefix to make it a valid URL
+        if not milvus_host.startswith(("http://", "https://")):
+            milvus_host = f"http://{milvus_host}"
+
         self.milvus_url = f"{milvus_host}:{milvus_port}"
-        self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
-        self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
-        self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
+        self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME") or "fAIth").strip()
+        self.milvus_username = str(os.getenv("MILVUS_USERNAME") or "root").strip()
+        self.milvus_password = os.getenv("MILVUS_PASSWORD")
+        if not self.milvus_password:
+            raise ValueError("MILVUS_PASSWORD environment variable is not set")
 
         # Initialize embedding engine for generating vector embeddings
         self.embedding_engine = Embedding()
         
         # Validate and load database type (determines schema and indexing strategy)
-        self.database_type = str(os.getenv("DATABASE_TYPE", "hybrid")).strip().lower()
+        self.database_type = str(os.getenv("DATABASE_TYPE") or "hybrid").strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
             logger.error(f"Invalid database type: {self.database_type}")
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
-        
+
         # Establish synchronous connection to Milvus
         self.client = MilvusClient(uri=self.milvus_url, token=f"{self.milvus_username}:{self.milvus_password}")
 
@@ -136,7 +142,7 @@ class VectorDatabaseBuilder:
         except Exception as e:
             logger.warning(f"Error dropping collection or collection does not exist: {e}")
 
-    def create_collections(self, collection_names: list[str] = []):
+    def create_collections(self, collection_names: list[str] | None = None):
         """
         Create collections with appropriate schema and build indices for all Bible verses.
 
@@ -339,7 +345,7 @@ class VectorDatabaseQuerier:
     Designed to be used with Django's lifespan manager for app-wide resource management.
 
     Configuration is read from environment variables:
-        - MILVUS_URL, MILVUS_PORT: Connection details
+        - MILVUS_HOST, MILVUS_PORT: Connection details
         - MILVUS_DATABASE_NAME: Database name
         - MILVUS_USERNAME, MILVUS_PASSWORD: Authentication credentials
         - DATABASE_TYPE: "sparse", "dense", or "hybrid"
@@ -357,22 +363,26 @@ class VectorDatabaseQuerier:
             ValueError: If DATABASE_TYPE is not one of: sparse, dense, hybrid
         """
         # Load Milvus connection configuration
-        # Use pre-computed Milvus URL from docker-compose or environment
-        milvus_url = str(os.getenv("MILVUS_URL", "")).strip()
-        if not milvus_url:
-            logger.error("Milvus URL is not set")
-            raise ValueError("Milvus URL is not set")
-        
-        self.milvus_url = milvus_url
-        self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME", "faith_db")).strip()
-        self.milvus_username = str(os.getenv("MILVUS_USERNAME", "admin")).strip()
-        self.milvus_password = str(os.getenv("MILVUS_PASSWORD", "admin")).strip()
+        milvus_host = str(os.getenv("MILVUS_HOST") or "http://milvus").strip()
+        milvus_port = str(os.getenv("MILVUS_PORT") or "19530").strip()
+
+        if not milvus_host.startswith(("http://", "https://")):
+            milvus_host = f"http://{milvus_host}"
+
+        self.milvus_url = f"{milvus_host}:{milvus_port}"
+        self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME") or "fAIth").strip()
+        self.milvus_username = str(os.getenv("MILVUS_USERNAME") or "root").strip()
+        self.milvus_password = os.getenv("MILVUS_PASSWORD")
+        if not self.milvus_password:
+            raise ValueError("MILVUS_PASSWORD environment variable is not set")
+        self.sparse_weight = float(str(os.getenv("SPARSE_WEIGHT") or 0.2).strip())
+        self.dense_weight = float(str(os.getenv("DENSE_WEIGHT") or 0.8).strip())
 
         # Initialize embedding engine for query embeddings
         self.embedding_engine = Embedding()
 
         # Validate and load database type (determines search strategy)
-        self.database_type = str(os.getenv("DATABASE_TYPE", "hybrid")).strip().lower()
+        self.database_type = str(os.getenv("DATABASE_TYPE") or "hybrid").strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
             logger.error(f"Invalid database type: {self.database_type}")
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
@@ -398,7 +408,7 @@ class VectorDatabaseQuerier:
 
         # Create temporary client to check database existence
         temp_client = AsyncMilvusClient(
-            uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
+            uri=self.milvus_url,
             token=f"{self.milvus_username}:{self.milvus_password}",
         )
         # List available databases
@@ -412,7 +422,7 @@ class VectorDatabaseQuerier:
             # Create async client with correct database context
             logger.info(f"Using database {self.milvus_database_name}")
             self.async_client = AsyncMilvusClient(
-                uri=f"{self.milvus_url}{':' if self.milvus_port else ''}{self.milvus_port}",
+                uri=self.milvus_url,
                 token=f"{self.milvus_username}:{self.milvus_password}",
                 db_name=self.milvus_database_name,
             )
@@ -510,15 +520,11 @@ class VectorDatabaseQuerier:
 
         # Perform hybrid search (combining sparse and dense with weighted rank fusion)
         if self.database_type == "hybrid":
-            # Load weights for combining sparse and dense results
-            sparse_weight = float(str(os.getenv("SPARSE_WEIGHT", 0.2)).strip())
-            dense_weight = float(str(os.getenv("DENSE_WEIGHT", 0.8)).strip())
-
             # Hybrid search combines BM25 and semantic similarity via reciprocal rank fusion
             hybrid_results = await self.async_client.hybrid_search(
                 collection_name=collection_name,
                 reqs=request_types,
-                ranker=WeightedRanker(sparse_weight, dense_weight),
+                ranker=WeightedRanker(self.sparse_weight, self.dense_weight),
                 limit=limit,
                 output_fields=["version", "book", "chapter", "verse", "text"]
             )

@@ -276,7 +276,7 @@ SEAWEEDFS_SETUP = """
       AWS_SECRET_ACCESS_KEY: minioadmin
     command: 's3 -filer="seaweedfs-filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
     healthcheck:
-      test: ["CMD", "curl", "http://seaweedfs-s3:8333/"]
+      test: ["CMD", "curl", "-f", "http://seaweedfs-s3:8333/"]
       start_period: {start_period}
       interval: {interval}
       timeout: {timeout}
@@ -479,23 +479,13 @@ SGLANG_SETUP = """
 
 def build_webapp_setup(
     postgres_enabled,
-    postgres_host,
-    postgres_port,
-    postgres_user,
-    postgres_password,
-    postgres_database,
     milvus_enabled,
-    milvus_host,
-    milvus_port,
     embedding_enabled,
     embedding_url,
     llm_enabled,
     llm_url,
     webapp_port,
     uvicorn_workers,
-    django_debug,
-    django_secret_key,
-    django_allowed_hosts,
     start_period,
     interval,
     timeout,
@@ -504,26 +494,21 @@ def build_webapp_setup(
     """
     Build webapp configuration with conditional service dependencies.
 
-    If embedding or LLM services are not enabled (ports not set), the webapp
-    will use external services (e.g., OpenAI, OpenRouter) configured via .env.
+    Secrets and app config (Django settings, Postgres/Milvus credentials and
+    endpoints) are intentionally omitted here — they are injected at runtime via
+    env_file: .env, with the app code defaulting to container names when empty.
+    Only embedding and LLM URLs are set explicitly because they are constructed
+    values not directly available in .env (they combine container name + port).
 
     Parameters:
         postgres_enabled (bool): True if using local PostgreSQL service
-        postgres_host: Postgres host
-        postgres_port: Postgres port
-        postgres_user: Postgres user
-        postgres_password: Postgres password
-        postgres_database: Postgres database
         milvus_enabled (bool): True if using local Milvus service
-        milvus_host: Milvus host
-        milvus_port: Milvus port
         embedding_enabled (bool): True if using local embedding service
+        embedding_url: Embedding service URL (constructed from container name + port)
         llm_enabled (bool): True if using local LLM service
+        llm_url: LLM service URL (constructed from container name + port)
         webapp_port: Port to expose webapp on
         uvicorn_workers: Number of uvicorn workers
-        django_debug: Django debug mode
-        django_secret_key: Django secret key
-        django_allowed_hosts: Django allowed hosts
         start_period: Healthcheck start period
         interval: Healthcheck interval
         timeout: Healthcheck timeout
@@ -568,16 +553,6 @@ def build_webapp_setup(
     env_file:
       - .env
     environment:
-      DJANGO_DEBUG: {django_debug}
-      DJANGO_SECRET_KEY: '{django_secret_key}'
-      DJANGO_ALLOWED_HOSTS: '{django_allowed_hosts}'
-      POSTGRES_HOST: {postgres_host}
-      POSTGRES_PORT: {postgres_port}
-      POSTGRES_USER: {postgres_user}
-      POSTGRES_PASSWORD: {postgres_password}
-      POSTGRES_DATABASE: {postgres_database}
-      MILVUS_HOST: {milvus_host}
-      MILVUS_PORT: {milvus_port}
       BASE_EMBEDDING_URL: {embedding_url}
       BASE_LLM_URL: {llm_url}
     command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000 --workers {uvicorn_workers}"
@@ -601,7 +576,7 @@ def build_webapp_setup(
 SHELL_ENTRYPOINT = """
 #!/bin/sh
 
-set -euo
+set -euo pipefail
 
 log() {{
     printf '[ENTRYPOINT] %s\n' "$1"
@@ -982,85 +957,72 @@ if __name__ == "__main__":
     # ========================================================================
 
     # Webapp configuration
-    WEBAPP_PORT = int(str(os.getenv("WEBAPP_PORT", 8000)).strip())
-    UVICORN_WORKERS = int(str(os.getenv("UVICORN_WORKERS", 1)).strip())
+    WEBAPP_PORT = int(str(os.getenv("WEBAPP_PORT") or 8000).strip())
+    UVICORN_WORKERS = int(str(os.getenv("UVICORN_WORKERS") or 1).strip())
 
     # Postgres configuration
-    POSTGRES_HOST = str(os.getenv("POSTGRES_HOST", "")).strip()
-    POSTGRES_PORT = str(os.getenv("POSTGRES_PORT", "5432")).strip()
-    POSTGRES_USER = str(os.getenv("POSTGRES_USER", "faith_user")).strip()
-    POSTGRES_PASSWORD = str(
-        os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")
-    ).strip()
-    POSTGRES_DATABASE = str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip()
+    POSTGRES_HOST = str(os.getenv("POSTGRES_HOST") or "").strip()
+    POSTGRES_PORT = str(os.getenv("POSTGRES_PORT") or "5432").strip()
+    POSTGRES_USER = str(os.getenv("POSTGRES_USER") or "faith_user").strip()
+    POSTGRES_PASSWORD = str(os.getenv("POSTGRES_PASSWORD") or "").strip()
+    POSTGRES_DATABASE = str(os.getenv("POSTGRES_DATABASE") or "faith_db").strip()
 
     # Milvus configuration
-    MILVUS_HOST = str(os.getenv("MILVUS_HOST", "")).strip()
-    MILVUS_PORT = str(os.getenv("MILVUS_PORT", "19530")).strip()
+    MILVUS_HOST = str(os.getenv("MILVUS_HOST") or "").strip()
+    MILVUS_PORT = str(os.getenv("MILVUS_PORT") or "19530").strip()
 
     # Embedding configuration
-    EMBEDDING_PORT = str(os.getenv("EMBEDDING_PORT", "")).strip()
-    BASE_EMBEDDING_URL = str(os.getenv("BASE_EMBEDDING_URL", "")).strip()
+    EMBEDDING_PORT = str(os.getenv("EMBEDDING_PORT") or "").strip()
+    BASE_EMBEDDING_URL = str(os.getenv("BASE_EMBEDDING_URL") or "").strip()
     EMBEDDING_MODEL_ID = str(
-        os.getenv("EMBEDDING_MODEL_ID", "Qwen/Qwen3-Embedding-0.6B")
+        os.getenv("EMBEDDING_MODEL_ID") or "Qwen/Qwen3-Embedding-0.6B"
     ).strip()
     EMBEDDING_MAX_CONTEXT_LENGTH = int(
-        str(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH", 4096)).strip()
+        str(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH") or 4096).strip()
     )
     EMBEDDING_MODEL_RUNNER = str(
-        os.getenv("EMBEDDING_MODEL_RUNNER", "llama_cpp")
+        os.getenv("EMBEDDING_MODEL_RUNNER") or "llama_cpp"
     ).strip()
-    EMBEDDING_GPU_TYPE = str(os.getenv("EMBEDDING_GPU_TYPE", "cpu")).strip()
-    EMBEDDING_DRIVER = str(os.getenv("EMBEDDING_DRIVER", "cpu")).strip()
+    EMBEDDING_GPU_TYPE = str(os.getenv("EMBEDDING_GPU_TYPE") or "cpu").strip()
+    EMBEDDING_DRIVER = str(os.getenv("EMBEDDING_DRIVER") or "cpu").strip()
     EMBEDDING_VLLM_ENFORCE_EAGER = str(
-        os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER", "False")
+        os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER") or "False"
     ).strip()
     EMBEDDING_LLAMA_CPP_GPU_LAYERS = int(
-        str(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS", 0)).strip()
+        str(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS") or 0).strip()
     )
     # Special case: -1 means offload all layers (set to 9999 to effectively offload all)
     if EMBEDDING_LLAMA_CPP_GPU_LAYERS == -1:
         EMBEDDING_LLAMA_CPP_GPU_LAYERS = 9999
     EMBEDDING_LLAMA_CPP_CONCURRENCY = int(
-        str(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY", 2)).strip()
+        str(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY") or 2).strip()
     )
 
     # LLM configuration
-    LLM_PORT = str(os.getenv("LLM_PORT", "")).strip()
-    BASE_LLM_URL = str(os.getenv("BASE_LLM_URL", "")).strip()
+    LLM_PORT = str(os.getenv("LLM_PORT") or "").strip()
+    BASE_LLM_URL = str(os.getenv("BASE_LLM_URL") or "").strip()
     LLM_MODEL_ID = str(
-        os.getenv("LLM_MODEL_ID", "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M")
+        os.getenv("LLM_MODEL_ID") or "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M"
     ).strip()
-    LLM_MAX_CONTEXT_LENGTH = int(str(os.getenv("LLM_MAX_CONTEXT_LENGTH", 4096)).strip())
-    LLM_MODEL_RUNNER = str(os.getenv("LLM_MODEL_RUNNER", "llama_cpp")).strip()
-    LLM_GPU_TYPE = str(os.getenv("LLM_GPU_TYPE", "cpu")).strip()
-    LLM_DRIVER = str(os.getenv("LLM_DRIVER", "cpu")).strip()
+    LLM_MAX_CONTEXT_LENGTH = int(
+        str(os.getenv("LLM_MAX_CONTEXT_LENGTH") or 4096).strip()
+    )
+    LLM_MODEL_RUNNER = str(os.getenv("LLM_MODEL_RUNNER") or "llama_cpp").strip()
+    LLM_GPU_TYPE = str(os.getenv("LLM_GPU_TYPE") or "cpu").strip()
+    LLM_DRIVER = str(os.getenv("LLM_DRIVER") or "cpu").strip()
     LLM_LLAMA_CPP_GPU_LAYERS = int(
-        str(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS", 0)).strip()
+        str(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS") or 0).strip()
     )
     # Special case: -1 means offload all layers (set to 9999 to effectively offload all)
     if LLM_LLAMA_CPP_GPU_LAYERS == -1:
         LLM_LLAMA_CPP_GPU_LAYERS = 9999
     LLM_LLAMA_CPP_CONCURRENCY = int(
-        str(os.getenv("LLM_LLAMA_CPP_CONCURRENCY", 2)).strip()
+        str(os.getenv("LLM_LLAMA_CPP_CONCURRENCY") or 2).strip()
     )
-    LLM_VLLM_ENFORCE_EAGER = str(os.getenv("LLM_VLLM_ENFORCE_EAGER", "False")).strip()
-
-    # Django configuration
-    DJANGO_DEBUG = str(os.getenv("DJANGO_DEBUG", "False")).strip()
-    DJANGO_SECRET_KEY = str(
-        os.getenv(
-            "DJANGO_SECRET_KEY",
-            "django-insecure-d)+b7f#u@$@q)(ft*qcz1!%^uvy(_ext-^t4d6i$3l$)21__s(",
-        )
-    ).strip()
-    DJANGO_ALLOWED_HOSTS = str(
-        os.getenv("DJANGO_ALLOWED_HOSTS", '["127.0.0.1", "localhost"]')
-    ).strip()
-    print(f"DJANGO_ALLOWED_HOSTS: {DJANGO_ALLOWED_HOSTS}")
+    LLM_VLLM_ENFORCE_EAGER = str(os.getenv("LLM_VLLM_ENFORCE_EAGER") or "False").strip()
 
     # HuggingFace configuration
-    HF_TOKEN = str(os.getenv("HF_TOKEN", "")).strip()
+    HF_TOKEN = str(os.getenv("HF_TOKEN") or "").strip()
 
     # Healthcheck configuration
     START_PERIOD = "3600s"
@@ -1079,28 +1041,12 @@ if __name__ == "__main__":
     local_embedding_enabled = not bool(BASE_EMBEDDING_URL.strip())
     local_llm_enabled = not bool(BASE_LLM_URL.strip())
 
-    # Build Postgres host and port
-    if local_postgres_enabled:
-        print("INFO: POSTGRES_HOST not set. Webapp will use local PostgreSQL service.")
-    postgres_host = "postgres" if local_postgres_enabled else POSTGRES_HOST
-    postgres_port = "5432" if local_postgres_enabled else POSTGRES_PORT
-
-    # If Postgres host is a valid URL, remove the protocol prefix
-    if postgres_host.startswith(("http://", "https://")):
-        postgres_host = postgres_host.replace("http://", "").replace("https://", "")
-
-    # Build Milvus host and port
-    if local_milvus_enabled:
-        print("INFO: MILVUS_HOST not set. Webapp will use local Milvus service.")
-    milvus_host = "milvus" if local_milvus_enabled else MILVUS_HOST
-    milvus_port = "19530" if local_milvus_enabled else MILVUS_PORT
-
-    # If Milvus host is not a valid URL, add http:// prefix
-    if not milvus_host.startswith(("http://", "https://")):
-        milvus_host = f"http://{milvus_host}"
-
     # Build embedding URL
     if local_embedding_enabled:
+        if not EMBEDDING_PORT:
+            raise ValueError(
+                "EMBEDDING_PORT must be set when BASE_EMBEDDING_URL is empty (local embedding service)"
+            )
         print(
             "INFO: BASE_EMBEDDING_URL not set. Webapp will use local embedding service."
         )
@@ -1112,6 +1058,10 @@ if __name__ == "__main__":
 
     # Build LLM URL
     if local_llm_enabled:
+        if not LLM_PORT:
+            raise ValueError(
+                "LLM_PORT must be set when BASE_LLM_URL is empty (local LLM service)"
+            )
         print("INFO: BASE_LLM_URL not set. Webapp will use local LLM service.")
     llm_url = f"http://llm:{LLM_PORT}/v1" if local_llm_enabled else BASE_LLM_URL
 
@@ -1205,23 +1155,13 @@ if __name__ == "__main__":
     # Build webapp with conditional dependencies based on enabled services
     webapp_block = build_webapp_setup(
         postgres_enabled=local_postgres_enabled,
-        postgres_host=postgres_host,
-        postgres_port=postgres_port,
-        postgres_user=POSTGRES_USER,
-        postgres_password=POSTGRES_PASSWORD,
-        postgres_database=POSTGRES_DATABASE,
         milvus_enabled=local_milvus_enabled,
-        milvus_host=milvus_host,
-        milvus_port=milvus_port,
         embedding_enabled=local_embedding_enabled,
         embedding_url=embedding_url,
         llm_enabled=local_llm_enabled,
         llm_url=llm_url,
         webapp_port=WEBAPP_PORT,
         uvicorn_workers=UVICORN_WORKERS,
-        django_debug=DJANGO_DEBUG,
-        django_secret_key=DJANGO_SECRET_KEY,
-        django_allowed_hosts=DJANGO_ALLOWED_HOSTS,
         start_period=START_PERIOD,
         interval=INTERVAL,
         timeout=TIMEOUT,

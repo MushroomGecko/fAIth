@@ -4,7 +4,7 @@ services:
     image: postgres:latest
     environment:
       POSTGRES_USER: faith_user
-      POSTGRES_PASSWORD: postgres-secure-password
+      POSTGRES_PASSWORD: CHANGE_ME_use_a_strong_password
       POSTGRES_DB: faith_db
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/postgres:/var/lib/postgresql
@@ -91,7 +91,7 @@ services:
       AWS_SECRET_ACCESS_KEY: minioadmin
     command: 's3 -filer="seaweedfs-filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
     healthcheck:
-      test: ["CMD", "curl", "http://seaweedfs-s3:8333/"]
+      test: ["CMD", "curl", "-f", "http://seaweedfs-s3:8333/"]
       start_period: 3600s
       interval: 30s
       timeout: 30s
@@ -170,7 +170,7 @@ services:
 
   embedding:
     container_name: llama-cpp-embedding-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -184,18 +184,10 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: cdi
-              device_ids:
-                - nvidia.com/gpu=all
-              capabilities: [gpu]
 
   llm:
     container_name: llama-cpp-llm-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -209,14 +201,6 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: cdi
-              device_ids:
-                - nvidia.com/gpu=all
-              capabilities: [gpu]
 
   webapp:
     build:
@@ -228,16 +212,6 @@ services:
     env_file:
       - .env
     environment:
-      DJANGO_DEBUG: False
-      DJANGO_SECRET_KEY: 'django-insecure-d)+b7f#u@$@q)(ft*qcz1!%^uvy(_ext-^t4d6i$3l$)21__s('
-      DJANGO_ALLOWED_HOSTS: '["127.0.0.1", "localhost"]'
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: faith_user
-      POSTGRES_PASSWORD: postgres-secure-password
-      POSTGRES_DATABASE: faith_db
-      MILVUS_HOST: milvus
-      MILVUS_PORT: 19530
       BASE_EMBEDDING_URL: http://embedding:11435/v1
       BASE_LLM_URL: http://llm:11436/v1
     command: sh -c "python scripts/docker_milvus_initializer.py && python manage.py migrate && python manage.py collectstatic --noinput --clear && uvicorn fAIth.asgi:application --host 0.0.0.0 --port 8000 --workers 1"

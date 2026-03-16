@@ -28,12 +28,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = str(os.getenv("DJANGO_SECRET_KEY", "django-insecure-d)+b7f#u@$@q)(ft*qcz1!%^uvy(_ext-^t4d6i$3l$)21__s(")).strip()
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("DJANGO_SECRET_KEY environment variable is not set")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", False)
+DEBUG = str(os.getenv("DJANGO_DEBUG") or "").strip().lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS", "[\"127.0.0.1\", \"localhost\"]")).strip())
+ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1", "localhost"]').strip())
 
 
 # Application definition
@@ -86,14 +88,27 @@ ASGI_APPLICATION = "fAIth.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+postgres_host = str(os.getenv("POSTGRES_HOST") or "postgres").strip()
+postgres_port = str(os.getenv("POSTGRES_PORT") or "5432").strip()
+postgres_user = str(os.getenv("POSTGRES_USER") or "faith_user").strip()
+postgres_password = os.getenv("POSTGRES_PASSWORD")
+postgres_database = str(os.getenv("POSTGRES_DATABASE") or "faith_db").strip()
+
+if not postgres_password:
+    raise ValueError("POSTGRES_PASSWORD environment variable is not set")
+
+# If Postgres host is a valid URL, remove the protocol prefix to make it a valid Django database host URI
+if postgres_host.startswith(("http://", "https://")):
+    postgres_host = postgres_host.replace("http://", "").replace("https://", "")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'HOST': str(os.getenv("POSTGRES_HOST", "postgres")).strip(),
-        'PORT': str(os.getenv("POSTGRES_PORT", "5432")).strip(),
-        'USER': str(os.getenv("POSTGRES_USER", "faith_user")).strip(),
-        'PASSWORD': str(os.getenv("POSTGRES_PASSWORD", "postgres-secure-password")).strip(),
-        'NAME': str(os.getenv("POSTGRES_DATABASE", "faith_db")).strip()
+        'HOST': postgres_host,
+        'PORT': postgres_port,
+        'USER': postgres_user,
+        'PASSWORD': postgres_password,
+        'NAME': postgres_database
     }
 }
 

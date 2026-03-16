@@ -34,30 +34,28 @@ class Completions:
             ValueError: If LLM_MODEL_ID is not set.
         """
         # Load and validate LLM model configuration
-        self.model_name = str(os.getenv("LLM_MODEL_ID", "unsloth/Qwen3.5-4B-GGUF:Q4_K_M")).strip()
+        self.model_name = str(os.getenv("LLM_MODEL_ID") or "unsloth/Qwen3.5-4B-GGUF:Q4_K_M").strip()
         if not self.model_name:
             logger.error("LLM model ID is not set")
             raise ValueError("LLM model ID is not set")
         logger.info(f"LLM model ID: {self.model_name}")
 
         # Load optional model-specific parameters (e.g., temperature, top_p, enable_thinking, etc.)
-        self.model_arguments = json.loads(str(os.getenv("LLM_MODEL_ARGUMENTS", "{}")).strip())
+        self.model_arguments = json.loads(str(os.getenv("LLM_MODEL_ARGUMENTS") or "{}").strip())
         if not self.model_arguments:
             logger.warning("LLM model arguments are not set")
-            self.model_arguments = {}
         logger.info(f"LLM model arguments: {self.model_arguments}")
 
         # Use pre-computed LLM URL from docker-compose or environment
-        base_url = str(os.getenv("BASE_LLM_URL", "")).strip()
+        base_url = str(os.getenv("BASE_LLM_URL") or "").strip()
         if not base_url:
             logger.error("Base LLM URL is not set")
             raise ValueError("Base LLM URL is not set")
         logger.info(f"Base LLM URL: {base_url}")
-        
-        api_key = str(os.getenv("LLM_API_KEY", "")).strip()
+
+        api_key = str(os.getenv("LLM_API_KEY") or "").strip()
         if not api_key:
             logger.warning("LLM API key is not set")
-        logger.info(f"LLM API key: {api_key}")
 
         # Initialize async OpenAI-compatible client
         self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)
