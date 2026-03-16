@@ -70,7 +70,7 @@ services:
     image: chrislusf/seaweedfs:4.03
     command: 'filer -ip=seaweedfs-filer -master="seaweedfs-master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://seaweedfs-filer:8888/"]
+      test: ["CMD", "curl", "-f", "http://seaweedfs-filer:8888/healthz"]
       start_period: 3600s
       interval: 30s
       timeout: 30s
@@ -91,7 +91,7 @@ services:
       AWS_SECRET_ACCESS_KEY: minioadmin
     command: 's3 -filer="seaweedfs-filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://seaweedfs-s3:8333/"]
+      test: ["CMD", "curl", "-f", "http://seaweedfs-s3:8333/healthz"]
       start_period: 3600s
       interval: 30s
       timeout: 30s
@@ -170,7 +170,7 @@ services:
 
   embedding:
     container_name: llama-cpp-embedding-faith
-    image: ghcr.io/ggml-org/llama.cpp:server
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -184,10 +184,18 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
+              capabilities: [gpu]
 
   llm:
     container_name: llama-cpp-llm-faith
-    image: ghcr.io/ggml-org/llama.cpp:server
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -201,6 +209,14 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
+              capabilities: [gpu]
 
   webapp:
     build:

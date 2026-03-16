@@ -255,7 +255,7 @@ SEAWEEDFS_SETUP = """
     image: chrislusf/seaweedfs:4.03
     command: 'filer -ip=seaweedfs-filer -master="seaweedfs-master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://seaweedfs-filer:8888/"]
+      test: ["CMD", "curl", "-f", "http://seaweedfs-filer:8888/healthz"]
       start_period: {start_period}
       interval: {interval}
       timeout: {timeout}
@@ -276,7 +276,7 @@ SEAWEEDFS_SETUP = """
       AWS_SECRET_ACCESS_KEY: minioadmin
     command: 's3 -filer="seaweedfs-filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://seaweedfs-s3:8333/"]
+      test: ["CMD", "curl", "-f", "http://seaweedfs-s3:8333/healthz"]
       start_period: {start_period}
       interval: {interval}
       timeout: {timeout}
