@@ -464,7 +464,7 @@ SGLANG_SETUP = """
     command: ["python", "-m", "sglang.launch_server", "--model-path", "{model_id}", "--max-total-tokens", "{max_context_length}", "--disable-cuda-graph", "--host", "0.0.0.0", "--port", "{model_port}"]
     ipc: host
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:{model_port}/health"]
+      test: ["CMD", "curl", "-f", "http://{model_type}:{model_port}/health"]
       start_period: {start_period}
       interval: {interval}
       timeout: {timeout}
