@@ -22,7 +22,7 @@ body:
         - label: GPU/CUDA/Hardware configuration
         - label: Network/connectivity
         - label: API authentication (API keys, credentials)
-        - label: Other
+        - label: Other (Describe in 'What's Happening?')
 
   - type: textarea
     id: what_happened
@@ -71,15 +71,15 @@ body:
     id: docker_version
     attributes:
       label: Docker version
-      description: "The version of Docker you are using."
-      placeholder: "Run: `docker --version` and paste the output here"
+      description: "Provide the version of Docker you are using. Run: `docker --version` and paste the output below."
+      placeholder: "Paste your Docker version here"
 
   - type: textarea
     id: docker_compose_version
     attributes:
       label: Docker Compose version
-      description: "The version of Docker Compose you are using."
-      placeholder: "Run: `docker compose version` and paste the output here"
+      description: "Provide the version of Docker Compose you are using. Run: `docker compose version` and paste the output below."
+      placeholder: "Paste your Docker Compose version here"
 
   - type: textarea
     id: available_memory
@@ -116,8 +116,8 @@ body:
     id: python_version
     attributes:
       label: Python version
-      description: "The version of Python you are using."
-      placeholder: "Run: `python --version` and paste the output here"
+      description: "Provide the version of Python you are using. Run: `python --version` and paste the output below."
+      placeholder: "Paste your Python version here"
 
   - type: checkboxes
     id: model_setup
@@ -135,15 +135,15 @@ body:
       label: ".env configuration (if using LOCAL models)"
       description: |
         If using LOCAL models, provide the relevant configuration:
-        - EMBEDDING_MODEL_ID: [default: Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0]
-        - LLM_MODEL_ID: [default: unsloth/Qwen3.5-4B-GGUF:Q4_K_M]
-        - EMBEDDING_MODEL_RUNNER: [vllm, llama_cpp, ollama, or sglang]
-        - LLM_MODEL_RUNNER: [vllm, llama_cpp, ollama, or sglang]
-        - EMBEDDING_GPU_TYPE: [nvidia, amd, intel, or cpu]
-        - LLM_GPU_TYPE: [nvidia, amd, intel, or cpu]
-        - EMBEDDING_DRIVER: [cuda, rocm, vulkan, or cpu] (Intel uses vulkan)
-        - LLM_DRIVER: [cuda, rocm, vulkan, or cpu] (Intel uses vulkan)
-      placeholder: "Paste relevant LOCAL model configuration here"
+        - EMBEDDING_MODEL_ID: [default: `Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0`]
+        - LLM_MODEL_ID: [default: `unsloth/Qwen3.5-4B-GGUF:Q4_K_M`]
+        - EMBEDDING_MODEL_RUNNER: [`vllm`, `llama_cpp`, `ollama`, or `sglang`]
+        - LLM_MODEL_RUNNER: [`vllm`, `llama_cpp`, `ollama`, or `sglang`]
+        - EMBEDDING_GPU_TYPE: [`nvidia`, `amd`, `intel`, or `cpu`]
+        - LLM_GPU_TYPE: [`nvidia`, `amd`, `intel`, or `cpu`]
+        - EMBEDDING_DRIVER: [`cuda`, `rocm`, `vulkan`, or `cpu`]
+        - LLM_DRIVER: [`cuda`, `rocm`, `vulkan`, or `cpu`]
+      placeholder: "Paste your LOCAL model configuration here"
 
   - type: textarea
     id: third_party_config
@@ -156,7 +156,7 @@ body:
         - Which provider(s)? [e.g., OpenAI, Anthropic, HuggingFace, Azure, other: ___]
 
         **NOTE: Do NOT share your API keys or credentials in this issue. Keep all sensitive information private.**
-      placeholder: "Paste relevant THIRD-PARTY provider configuration here"
+      placeholder: "Paste your THIRD-PARTY provider configuration here"
 
   - type: checkboxes
     id: troubleshooting
@@ -171,7 +171,7 @@ body:
         - label: "Verified `.env` file is copied from `.env_template`"
         - label: "Checked system resource limits (RAM, VRAM)"
         - label: "Reviewed README.md setup instructions"
-        - label: "Other: [describe]"
+        - label: "Other: [describe in 'Additional Context']"
 
   - type: textarea
     id: additional_context

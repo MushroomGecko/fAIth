@@ -48,7 +48,7 @@ body:
         - label: iOS
         - label: Android
         - label: Ubuntu/Linux
-        - label: Other
+        - label: Other (Describe in 'Additional Context')
 
   - type: checkboxes
     id: browser
@@ -59,13 +59,14 @@ body:
         - label: Chrome
         - label: Firefox
         - label: Safari
-        - label: Other
+        - label: Other (Describe in 'Browser Version')
 
   - type: textarea
     id: browser_version
     attributes:
       label: Browser Version
-      placeholder: "Provide the version of the browser you are using if applicable"
+      description: "Provide the version of the browser you are using if applicable. Run the following command in your browser search bar to get the version: `edge://settings/help` for Edge, `chrome://settings/help` for Chrome, `about:support` for Firefox, etc."
+      placeholder: "Paste your browser version here"
 
   - type: textarea
     id: error_messages
@@ -77,8 +78,7 @@ body:
         - **An error message** - copy and paste it exactly as you see it
         - **Console errors** (for web app users) - check your browser's developer tools (F12) for red errors
         
-        
-        Just paste or drag them above. Images help us a lot!
+        Just paste or drag them below. Images help us a lot!
       placeholder: "Paste or drag screenshots and error messages here"
 
   - type: textarea
