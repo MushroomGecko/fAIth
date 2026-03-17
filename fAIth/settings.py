@@ -94,8 +94,8 @@ postgres_user = str(os.getenv("POSTGRES_USER") or "faith_user").strip()
 postgres_password = os.getenv("POSTGRES_PASSWORD")
 postgres_database = str(os.getenv("POSTGRES_DATABASE") or "faith_db").strip()
 
-if not postgres_password:
-    raise ValueError("POSTGRES_PASSWORD environment variable is not set")
+if not postgres_password or postgres_password == "CHANGE_ME_use_a_strong_password":
+    raise ValueError("POSTGRES_PASSWORD environment variable is not set or was set to the default value")
 
 # If Postgres host is a valid URL, remove the protocol prefix to make it a valid Django database host URI
 if postgres_host.startswith(("http://", "https://")):

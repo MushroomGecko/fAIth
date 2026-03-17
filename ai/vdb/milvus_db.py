@@ -54,8 +54,8 @@ class VectorDatabaseBuilder:
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME") or "fAIth").strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME") or "root").strip()
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
-        if not self.milvus_password:
-            raise ValueError("MILVUS_PASSWORD environment variable is not set")
+        if not self.milvus_password or self.milvus_password == "CHANGE_ME_use_a_strong_password":
+            raise ValueError("MILVUS_PASSWORD environment variable is not set or was set to the default value")
 
         # Initialize embedding engine for generating vector embeddings
         self.embedding_engine = Embedding()
@@ -373,8 +373,8 @@ class VectorDatabaseQuerier:
         self.milvus_database_name = str(os.getenv("MILVUS_DATABASE_NAME") or "fAIth").strip()
         self.milvus_username = str(os.getenv("MILVUS_USERNAME") or "root").strip()
         self.milvus_password = os.getenv("MILVUS_PASSWORD")
-        if not self.milvus_password:
-            raise ValueError("MILVUS_PASSWORD environment variable is not set")
+        if not self.milvus_password or self.milvus_password == "CHANGE_ME_use_a_strong_password":
+            raise ValueError("MILVUS_PASSWORD environment variable is not set or was set to the default value")
         self.sparse_weight = float(str(os.getenv("SPARSE_WEIGHT") or 0.2).strip())
         self.dense_weight = float(str(os.getenv("DENSE_WEIGHT") or 0.8).strip())
 
