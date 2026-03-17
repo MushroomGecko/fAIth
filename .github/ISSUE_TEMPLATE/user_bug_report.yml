@@ -1,0 +1,93 @@
+name: User Bug Report
+description: Create a bug report to help us improve
+title: "[BUG] Brief description of the issue"
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for helping us improve fAIth! Please fill out the form below to help us understand and fix the issue."
+
+  - type: textarea
+    id: what_went_wrong
+    attributes:
+      label: What went wrong?
+      description: Describe the bug in simple terms. What did you expect to happen, and what happened instead?
+      placeholder: "Example: When I try to log in, I get an error message."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: How can we reproduce this?
+      description: Help us recreate the problem by listing the exact steps. Be as specific as possible. The more details, the better. You can never give too many details!
+      placeholder: |
+        1. Open the login page
+        2. Enter my username and password
+        3. Click the Login button
+        4. I get an error message saying that the page was not found instead of logging in
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: What should have happened?
+      description: Describe what you expected to see or happen.
+      placeholder: "Example: I expected to be logged in and see my dashboard."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: operating_system
+    attributes:
+      label: Operating System
+      options:
+        - label: Windows 11
+        - label: macOS
+        - label: iOS
+        - label: Android
+        - label: Ubuntu/Linux
+        - label: Other (Describe in 'Additional Context')
+
+  - type: checkboxes
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - label: Edge
+        - label: Chrome
+        - label: Firefox
+        - label: Safari
+        - label: Other (Describe in 'Browser Version')
+
+  - type: textarea
+    id: browser_version
+    attributes:
+      label: Browser Version
+      description: "Provide the version of the browser you are using if applicable. Run the following command in your browser search bar to get the version: `edge://settings/help` for Edge, `chrome://settings/help` for Chrome, `about:support` for Firefox, etc."
+      placeholder: "Paste your browser version here"
+
+  - type: textarea
+    id: error_messages
+    attributes:
+      label: Screenshots or error messages
+      description: |
+        If you have:
+        - **A screenshot** showing the problem - please add it!
+        - **An error message** - copy and paste it exactly as you see it
+        - **Console errors** (for web app users) - check your browser's developer tools (F12) for red errors
+        
+        Just paste or drag them below. Images help us a lot!
+      placeholder: "Paste or drag screenshots and error messages here"
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Anything else?
+      description: Add any other details that might be helpful
+      placeholder: |
+        - When did this start happening?
+        - Does it happen every time or just sometimes?
+        - Have you tried restarting or refreshing?
+        - Is anyone else experiencing this?
