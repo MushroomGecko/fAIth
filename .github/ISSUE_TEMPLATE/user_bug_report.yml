@@ -77,6 +77,7 @@ body:
         - **An error message** - copy and paste it exactly as you see it
         - **Console errors** (for web app users) - check your browser's developer tools (F12) for red errors
         
+        
         Just paste or drag them below. Images help us a lot!
       placeholder: "Paste or drag screenshots and error messages here"
 
