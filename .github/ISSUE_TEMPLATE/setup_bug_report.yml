@@ -39,8 +39,8 @@ body:
       label: Steps to reproduce
       description: What did you do when the problem occurred? Be specific about your setup.
       placeholder: |
-        1. Ran 'python ./scripts/build_docker_compose.py' with default settings
-        2. Executed 'docker compose up -d'
+        1. Ran `python ./scripts/build_docker_compose.py` with default settings
+        2. Executed `docker compose up -d`
         3. Waited 2 minutes, then checked logs
         4. Milvus container exited with status 1
     validations:
@@ -51,8 +51,8 @@ body:
     attributes:
       label: Error messages and logs
       description: |
-        Please provide the exact error messages. For Docker issues, run: 'docker compose logs -f [service-name]'.
-        For Python/application errors, run: 'docker compose logs -f webapp'.
+        Please provide the exact error messages. For Docker issues, run: `docker compose logs -f [service-name]`.
+        For Python/application errors, run: `docker compose logs -f webapp`.
         
         
         Copy the complete error message and the last 20-30 lines of logs.
@@ -64,51 +64,60 @@ body:
     id: os_info
     attributes:
       label: Operating System
-      description: "e.g., Ubuntu 24.04, Fedora 42, Windows 11 WSL2"
-      placeholder: "[e.g., Ubuntu 24.04, Fedora 42, Windows 11 WSL2]"
+      description: "Provide the operating system you are using. If using Linux, please provide the distribution, version, and kernel version."
+      placeholder: "Windows 11 24H2 WSL2, macOS 14.2, Ubuntu 24.04, Fedora 42, Linux Mint 22, Arch Linux 6.1.10-arch1-1, etc."
 
   - type: textarea
     id: docker_version
     attributes:
       label: Docker version
-      description: "Run: 'docker --version'"
-      placeholder: "[run: 'docker --version']"
+      description: "The version of Docker you are using."
+      placeholder: "Run: `docker --version` and paste the output here"
 
   - type: textarea
     id: docker_compose_version
     attributes:
       label: Docker Compose version
-      description: "Run: 'docker compose version'"
-      placeholder: "[run: 'docker compose version']"
+      description: "The version of Docker Compose you are using."
+      placeholder: "Run: `docker compose version` and paste the output here"
 
   - type: textarea
-    id: available_ram
+    id: available_memory
     attributes:
-      label: Available RAM
-      placeholder: "[e.g., 16GB, 8GB]"
-
-  - type: textarea
-    id: available_vram
-    attributes:
-      label: Available VRAM
-      placeholder: "[e.g., NVIDIA RTX 4080 with 12GB, CPU-only]"
+      label: Available memory
+      description: Provide both system RAM and GPU VRAM if applicable
+      placeholder: |
+        System RAM: 16GB
+        GPU VRAM: 12GB (RTX 4080)
+        
+        Or if CPU-only:
+        System RAM: 8GB
 
   - type: checkboxes
     id: gpu_support
     attributes:
-      label: GPU Support
+      label: GPU Architecture
       options:
         - label: NVIDIA (with CUDA)
+        - label: NVIDIA (with Vulkan)
         - label: AMD (with ROCm)
-        - label: Intel (with Vulcan)
+        - label: AMD (with Vulkan)
+        - label: Intel (with Vulkan)
         - label: CPU-only
+
+  - type: textarea
+    id: gpu_model
+    attributes:
+      label: GPU model (if applicable)
+      description: The specific GPU model helps us understand driver compatibility and capabilities
+      placeholder: "Example: RTX 4080, RTX 3060, AMD Radeon RX 7900 XT, Intel Arc B580, Intel Arc A770, N/A (CPU-only)"
 
   - type: textarea
     id: python_version
     attributes:
       label: Python version
-      description: "Run: 'python --version'"
-      placeholder: "[run: 'python --version']"
+      description: "The version of Python you are using."
+      placeholder: "Run: `python --version` and paste the output here"
 
   - type: checkboxes
     id: model_setup
@@ -126,15 +135,15 @@ body:
       label: ".env configuration (if using LOCAL models)"
       description: |
         If using LOCAL models, provide the relevant configuration:
-        - 'EMBEDDING_MODEL_ID': [default: 'Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0']
-        - 'LLM_MODEL_ID': [default: 'unsloth/Qwen3.5-4B-GGUF:Q4_K_M']
-        - 'EMBEDDING_MODEL_RUNNER': ['vllm', 'llama_cpp', 'ollama', or 'sglang']
-        - 'LLM_MODEL_RUNNER': ['vllm', 'llama_cpp', 'ollama', or 'sglang']
-        - 'EMBEDDING_GPU_TYPE': ['nvidia', 'amd', 'intel', or 'cpu']
-        - 'LLM_GPU_TYPE': ['nvidia', 'amd', 'intel', or 'cpu']
-        - 'EMBEDDING_DRIVER': ['cuda', 'rocm', 'vulkan', or 'cpu'] (Intel uses 'vulkan')
-        - 'LLM_DRIVER': ['cuda', 'rocm', 'vulkan', or 'cpu'] (Intel uses 'vulkan')
-      placeholder: "[Paste relevant LOCAL model configuration here]"
+        - EMBEDDING_MODEL_ID: [default: Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0]
+        - LLM_MODEL_ID: [default: unsloth/Qwen3.5-4B-GGUF:Q4_K_M]
+        - EMBEDDING_MODEL_RUNNER: [vllm, llama_cpp, ollama, or sglang]
+        - LLM_MODEL_RUNNER: [vllm, llama_cpp, ollama, or sglang]
+        - EMBEDDING_GPU_TYPE: [nvidia, amd, intel, or cpu]
+        - LLM_GPU_TYPE: [nvidia, amd, intel, or cpu]
+        - EMBEDDING_DRIVER: [cuda, rocm, vulkan, or cpu] (Intel uses vulkan)
+        - LLM_DRIVER: [cuda, rocm, vulkan, or cpu] (Intel uses vulkan)
+      placeholder: "Paste relevant LOCAL model configuration here"
 
   - type: textarea
     id: third_party_config
@@ -142,14 +151,12 @@ body:
       label: "Third-party provider configuration (if using THIRD-PARTY providers)"
       description: |
         If using THIRD-PARTY providers, provide:
-        - 'BASE_EMBEDDING_URL': [e.g., 'https://openrouter.ai/api/v1']
-        - 'BASE_LLM_URL': [e.g., 'https://openrouter.ai/api/v1']
+        - BASE_EMBEDDING_URL: [e.g., https://openrouter.ai/api/v1]
+        - BASE_LLM_URL: [e.g., https://openrouter.ai/api/v1]
         - Which provider(s)? [e.g., OpenAI, Anthropic, HuggingFace, Azure, other: ___]
-        - Are API keys configured? [ ] Yes [ ] No [ ] Not sure
-        
-        
+
         **NOTE: Do NOT share your API keys or credentials in this issue. Keep all sensitive information private.**
-      placeholder: "[Paste relevant THIRD-PARTY provider configuration here]"
+      placeholder: "Paste relevant THIRD-PARTY provider configuration here"
 
   - type: checkboxes
     id: troubleshooting
@@ -157,11 +164,11 @@ body:
       label: What you've already tried
       description: Have you attempted any troubleshooting? (Check all that apply)
       options:
-        - label: "Restarted Docker daemon: 'sudo systemctl restart docker'"
-        - label: "Cleaned up Docker: 'docker compose down && docker system prune'"
-        - label: "Removed old volumes (helps with SeaweedFS errors): 'docker compose down -v && sudo rm -rf ./volumes'"
-        - label: "Checked available disk space: 'df -h'"
-        - label: "Verified '.env' file is copied from '.env_template'"
+        - label: "Restarted Docker daemon: `sudo systemctl restart docker`"
+        - label: "Cleaned up Docker: `docker compose down && docker system prune`"
+        - label: "Removed old volumes (helps with SeaweedFS errors): `docker compose down -v && sudo rm -rf ./volumes`"
+        - label: "Checked available disk space: `df -h`"
+        - label: "Verified `.env` file is copied from `.env_template`"
         - label: "Checked system resource limits (RAM, VRAM)"
         - label: "Reviewed README.md setup instructions"
         - label: "Other: [describe]"
