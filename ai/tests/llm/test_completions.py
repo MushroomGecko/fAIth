@@ -14,7 +14,7 @@ class TestCompletionsInit(SimpleTestCase):
         """Test that Completions initializes correctly in local mode (LLM_PORT set)."""
         with patch.dict(os.environ, {
             "LLM_MODEL_ID": "test-model",
-            "LLM_PORT": "11436",
+            "BASE_LLM_URL": "http://llm:11436/v1",
             "LLM_API_KEY": "test-key"
         }, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
@@ -42,7 +42,7 @@ class TestCompletionsInit(SimpleTestCase):
     
     def test_completions_init_with_default_model_local_mode(self):
         """Test that Completions uses default model when not specified in local mode."""
-        with patch.dict(os.environ, {"LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI'):
                 completions = Completions()
 
@@ -58,7 +58,7 @@ class TestCompletionsInit(SimpleTestCase):
 
     def test_completions_init_with_url_local_mode(self):
         """Test that Completions constructs correct URL in local mode (LLM_PORT set)."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client:
                 Completions()
 
@@ -100,7 +100,7 @@ class TestCompletionsInit(SimpleTestCase):
 
     def test_completions_init_creates_async_client_local_mode(self):
         """Test that Completions creates an AsyncOpenAI client in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 completions = Completions()
 
@@ -126,7 +126,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_success_local_mode(self):
         """Test that completions method successfully generates a response in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -172,7 +172,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_message_formatting_local_mode(self):
         """Test that completions correctly formats messages in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -234,7 +234,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_uses_correct_model_local_mode(self):
         """Test that completions uses the correct model in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -286,7 +286,7 @@ class TestCompletionsMethod(SimpleTestCase):
         """Test that completions handles blank extra_body (empty dict) correctly in local mode."""
         with patch.dict(os.environ, {
             "LLM_MODEL_ID": "test-model",
-            "LLM_PORT": "11436",
+            "BASE_LLM_URL": "http://llm:11436/v1",
             "LLM_MODEL_ARGUMENTS": "{}"
         }, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
@@ -346,7 +346,7 @@ class TestCompletionsMethod(SimpleTestCase):
         model_args = {"chat_template_kwargs": {"temperature": 0.7, "max_tokens": 512}}
         with patch.dict(os.environ, {
             "LLM_MODEL_ID": "test-model",
-            "LLM_PORT": "11436",
+            "BASE_LLM_URL": "http://llm:11436/v1",
             "LLM_MODEL_ARGUMENTS": json.dumps(model_args)
         }, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
@@ -409,7 +409,7 @@ class TestCompletionsClose(SimpleTestCase):
 
     async def test_close_success_local_mode(self):
         """Test that close successfully closes the client in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.close = AsyncMock()
@@ -439,7 +439,7 @@ class TestCompletionsClose(SimpleTestCase):
 
     async def test_close_handles_error_local_mode(self):
         """Test that close handles errors gracefully in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.close = AsyncMock(side_effect=Exception("Close failed"))
@@ -473,7 +473,7 @@ class TestCompletionsClose(SimpleTestCase):
 
     async def test_close_logging_local_mode(self):
         """Test that close logs when closing in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.close = AsyncMock()
@@ -512,7 +512,7 @@ class TestCompletionsIntegration(SimpleTestCase):
 
     async def test_completions_lifecycle_local_mode(self):
         """Test the full lifecycle of Completions object in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -572,7 +572,7 @@ class TestCompletionsIntegration(SimpleTestCase):
 
     async def test_multiple_completions_calls_local_mode(self):
         """Test multiple consecutive completions calls in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "LLM_PORT": "11436"}, clear=True):
+        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
             with patch('ai.llm.completions.AsyncOpenAI') as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client

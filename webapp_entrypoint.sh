@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -euo
+set -euo pipefail
 
 log() {
     printf '[ENTRYPOINT] %s

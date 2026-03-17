@@ -18,7 +18,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
     def test_init_with_default_values(self):
         """Test VectorDatabaseBuilder initialization with default environment variables."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -31,8 +31,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
             with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient"):
                     builder = VectorDatabaseBuilder()
-                    assert builder.milvus_url == "http://localhost"
-                    assert builder.milvus_port == "19530"
+                    assert builder.milvus_url == "http://milvus:19530"
                     assert builder.milvus_database_name == "faith_db"
                     assert builder.milvus_username == "admin"
                     assert builder.milvus_password == "admin"
@@ -41,7 +40,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
     def test_database_type_sparse(self):
         """Test initialization with sparse database type."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -59,7 +58,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
     def test_database_type_dense(self):
         """Test initialization with dense database type."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -77,7 +76,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
     def test_init_with_custom_values(self):
         """Test VectorDatabaseBuilder initialization with custom environment variables."""
         env_vars = {
-            "MILVUS_URL": "http://milvus.example.com",
+            "MILVUS_HOST": "http://milvus.example.com",
             "MILVUS_PORT": "19531",
             "MILVUS_DATABASE_NAME": "custom_db",
             "MILVUS_USERNAME": "user",
@@ -90,15 +89,14 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
             with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient"):
                     builder = VectorDatabaseBuilder()
-                    assert builder.milvus_url == "http://milvus.example.com"
-                    assert builder.milvus_port == "19531"
+                    assert builder.milvus_url == "http://milvus.example.com:19531"
                     assert builder.milvus_database_name == "custom_db"
                     assert builder.database_type == "dense"
 
     def test_init_invalid_database_type(self):
         """Test that invalid database type raises ValueError."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -117,7 +115,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
     def test_init_creates_milvus_client(self):
         """Test that MilvusClient is created with correct parameters."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -131,14 +129,14 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     VectorDatabaseBuilder()
                     mock_client_class.assert_called_once_with(
-                        uri="http://localhost:19530",
+                        uri="http://milvus:19530",
                         token="admin:admin"
                     )
 
     def test_init_creates_embedding_engine(self):
         """Test that Embedding engine is created during initialization."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -154,13 +152,31 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
                     mock_embedding_class.assert_called_once()
                     assert builder.embedding_engine is not None
 
+    def test_init_invalid_password(self):
+        """Test that invalid password raises ValueError."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "admin",
+            "MILVUS_PASSWORD": "CHANGE_ME_use_a_strong_password",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
+                    with pytest.raises(ValueError, match="MILVUS_PASSWORD environment variable is not set or was set to the default value"):
+                        VectorDatabaseBuilder()
+
 class TestLoadDatabase(SimpleTestCase):
     """Tests for load_database method."""
 
     def test_load_database_success(self):
         """Test successful database loading."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -183,7 +199,7 @@ class TestLoadDatabase(SimpleTestCase):
     def test_load_database_error(self):
         """Test error handling during database loading."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -210,7 +226,7 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
     def test_load_existing_database(self):
         """Test loading an existing database."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -237,7 +253,7 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
     def test_create_new_database(self):
         """Test creating a new database when no databases exist at all."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -265,7 +281,7 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
     def test_create_new_database_with_existing_databases(self):
         """Test creating a new database when it does not exist in existing databases."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -293,7 +309,7 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
     def test_create_database_error(self):
         """Test error handling during database creation."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -322,7 +338,7 @@ class TestListCollectionsInDatabase(SimpleTestCase):
     def test_list_collections_success(self):
         """Test successfully listing collections."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -348,7 +364,7 @@ class TestListCollectionsInDatabase(SimpleTestCase):
     def test_list_collections_error(self):
         """Test error handling when listing collections fails."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -376,7 +392,7 @@ class TestDropCollection(SimpleTestCase):
     def test_drop_collection_success(self):
         """Test successfully dropping a collection."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -418,7 +434,7 @@ class TestDropCollection(SimpleTestCase):
     def test_drop_collection_warning(self):
         """Test that warning is logged when dropping non-existent collection."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -450,7 +466,7 @@ class TestCreateCollections(SimpleTestCase):
     def test_create_all_collections_default(self):
         """Test creating all collections when no specific names are provided."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -484,7 +500,7 @@ class TestCreateCollections(SimpleTestCase):
     def test_create_specific_collection_valid(self):
         """Test creating specific collections with valid names."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -518,7 +534,7 @@ class TestCreateCollections(SimpleTestCase):
     def test_create_collection_invalid_name(self):
         """Test error when creating collection with invalid name."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -547,7 +563,7 @@ class TestClose(SimpleTestCase):
     def test_close_success(self):
         """Test successfully closing the database connection."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -570,7 +586,7 @@ class TestClose(SimpleTestCase):
     def test_close_error(self):
         """Test error handling during database closing."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -598,7 +614,7 @@ class TestVectorDatabaseQuerierInit(SimpleTestCase):
     def test_querier_init_with_default_values(self):
         """Test VectorDatabaseQuerier initialization with default values."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -610,8 +626,7 @@ class TestVectorDatabaseQuerierInit(SimpleTestCase):
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
             with patch("ai.vdb.milvus_db.Embedding"):
                 querier = VectorDatabaseQuerier()
-                assert querier.milvus_url == "http://localhost"
-                assert querier.milvus_port == "19530"
+                assert querier.milvus_url == "http://milvus:19530"
                 assert querier.milvus_database_name == "faith_db"
                 assert querier.database_type == "hybrid"
                 assert querier.async_client is None
@@ -619,7 +634,7 @@ class TestVectorDatabaseQuerierInit(SimpleTestCase):
     def test_querier_invalid_database_type(self):
         """Test that invalid database type raises ValueError in querier."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -642,7 +657,7 @@ class TestVectorDatabaseQuerierLoadDatabaseAndCollections(SimpleTestCase):
     async def test_load_database_and_collections_success(self):
         """Test successfully loading database and collections."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -673,7 +688,7 @@ class TestVectorDatabaseQuerierLoadDatabaseAndCollections(SimpleTestCase):
     async def test_load_database_not_found(self):
         """Test error when database doesn't exist."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "nonexistent_db",
             "MILVUS_USERNAME": "admin",
@@ -702,7 +717,7 @@ class TestVectorDatabaseQuerierLoadDatabaseAndCollections(SimpleTestCase):
     async def test_load_database_not_found_in_existing_databases(self):
         """Test error when database doesn't exist."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "nonexistent_db",
             "MILVUS_USERNAME": "admin",
@@ -735,7 +750,7 @@ class TestVectorDatabaseQuerierListCollections(SimpleTestCase):
     async def test_list_collections_success(self):
         """Test successfully listing collections asynchronously."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -762,7 +777,7 @@ class TestVectorDatabaseQuerierListCollections(SimpleTestCase):
     async def test_list_collections_error(self):
         """Test error handling when listing collections fails."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -791,7 +806,7 @@ class TestVectorDatabaseQuerierSearch(SimpleTestCase):
     async def test_search_hybrid_mode(self):
         """Test search in hybrid mode."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -823,7 +838,7 @@ class TestVectorDatabaseQuerierSearch(SimpleTestCase):
     async def test_search_dense_mode(self):
         """Test search in dense mode."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -853,7 +868,7 @@ class TestVectorDatabaseQuerierSearch(SimpleTestCase):
     async def test_search_sparse_mode(self):
         """Test search in sparse mode."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -886,7 +901,7 @@ class TestVectorDatabaseQuerierClose(SimpleTestCase):
     async def test_close_with_active_client(self):
         """Test closing when async client is active."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",
@@ -911,7 +926,7 @@ class TestVectorDatabaseQuerierClose(SimpleTestCase):
     async def test_close_with_no_client(self):
         """Test closing when no async client exists."""
         env_vars = {
-            "MILVUS_URL": "http://localhost",
+            "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
             "MILVUS_USERNAME": "admin",

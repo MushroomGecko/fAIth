@@ -11,7 +11,7 @@ def create_mock_getenv(**env_vars):
     Pass EMBEDDING_PORT="" and BASE_EMBEDDING_URL="..." to simulate API mode.
     """
     defaults = {
-        "EMBEDDING_PORT": "11435",
+        "BASE_EMBEDDING_URL": "http://embedding:11435/v1",
     }
     merged = {**defaults, **env_vars}
 
@@ -169,28 +169,23 @@ class TestEmbeddingInit(SimpleTestCase):
                     )
                     assert embedding.async_client is not None
 
-    def test_embedding_init_without_model_raises_error(self):
-        """Test that Embedding raises error when model ID is not set."""
+    def test_embedding_init_empty_model_falls_back_to_default(self):
+        """Test that empty EMBEDDING_MODEL_ID falls back to the Qwen default model."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "",
-            "EMBEDDING_PORT": "11435",
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
-            with patch("ai.vdb.embedding.logger") as mock_logger:
-                with patch("ai.vdb.embedding.OpenAI"):
-                    with patch("ai.vdb.embedding.AsyncOpenAI"):
-                        with pytest.raises(ValueError, match="Embedding model ID is not set"):
-                            Embedding()
-                        mock_logger.error.assert_called_once_with(
-                            "Embedding model ID is not set"
-                        )
+            with patch("ai.vdb.embedding.OpenAI"):
+                with patch("ai.vdb.embedding.AsyncOpenAI"):
+                    embedding = Embedding()
+                    assert embedding.model_name == "Qwen/Qwen3-Embedding-0.6B"
 
     def test_embedding_init_without_url_raises_error(self):
-        """Test that Embedding raises error when neither EMBEDDING_PORT nor BASE_EMBEDDING_URL is set."""
+        """Test that Embedding raises error when BASE_EMBEDDING_URL is not set."""
         env_vars = {
             "EMBEDDING_MODEL_ID": "test-model",
-            "EMBEDDING_PORT": "",
+            "BASE_EMBEDDING_URL": "",
         }
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
