@@ -1,0 +1,65 @@
+name: Feature Request
+description: Suggest an idea to make fAIth better
+title: "[FEAT] Brief description of your idea"
+labels: [feature]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for suggesting a feature! We'd love to hear how we can make fAIth better for you. Please fill out the form below."
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Tell us about the situation where you wish fAIth had a certain feature. What makes it difficult or frustrating right now?
+      placeholder: "Example: When I'm reading a Bible passage and take notes, I can't organize them by topic. I end up with scattered notes that are hard to find later."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to see?
+      description: Describe the feature you'd like to see added to fAIth. Be as specific as you can!
+      placeholder: "Example: I'd like to be able to create custom note categories or tags (like 'Theology', 'Personal Application', 'Questions') and organize my notes by these tags."
+    validations:
+      required: true
+
+  - type: textarea
+    id: why_important
+    attributes:
+      label: Why is this important to you?
+      description: Help us understand how this feature would improve your Bible study experience.
+      placeholder: "Example: It would help me study thematically instead of just by chapter order, and I could easily find related insights across different passages."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other ideas you considered
+      description: Did you think of other ways to solve this problem? What are they?
+      placeholder: "Example: I thought about a search feature, but a tagging system would be better because I could group related ideas together even if they use different words."
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or examples
+      description: |
+        Do you have any:
+        - **Sketches or mockups** of what you imagine? - Please add them!
+        - **Examples from other apps** that do something similar? - Screenshots or descriptions help!
+        - **Use cases or scenarios** where this would be useful? - Describe them!
+        
+        Just paste or drag them below. Visual examples are super helpful!
+      placeholder: "Paste or drag screenshots and mockups here"
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Anything else?
+      description: Any other context that would help us understand your feature request
+      placeholder: |
+        - How often would you use this feature?
+        - Are there other apps that have similar features?
+        - Would this help other users too, or is it just for you?

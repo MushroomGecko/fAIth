@@ -1,0 +1,183 @@
+name: Application Host Bug Report
+description: Report issues with setting up, deploying, or running fAIth (Docker, Milvus, Postgres, LLMs, etc.)
+title: "[SETUP] Brief description of the issue"
+labels: [setup]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for reporting a setup/deployment issue! This helps us improve the installation experience. Please provide as much detail as possible."
+
+  - type: checkboxes
+    id: component
+    attributes:
+      label: What component is failing?
+      description: Which part of the fAIth setup is having issues?
+      options:
+        - label: Docker / Docker Compose setup
+        - label: Postgres database
+        - label: Milvus vector database (or etcd/SeaweedFS)
+        - label: Embedding service (local or third-party)
+        - label: LLM service (local or third-party)
+        - label: Django/Uvicorn application startup
+        - label: GPU/CUDA/Hardware configuration
+        - label: Network/connectivity
+        - label: API authentication (API keys, credentials)
+        - label: Other
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What's happening?
+      description: Describe the error or unexpected behavior you're encountering.
+      placeholder: "Example: Docker Compose fails to start the Milvus container with an error about port 19530 being in use."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you do when the problem occurred? Be specific about your setup.
+      placeholder: |
+        1. Ran `python ./scripts/build_docker_compose.py` with default settings
+        2. Executed `docker compose up -d`
+        3. Waited 2 minutes, then checked logs
+        4. Milvus container exited with status 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_logs
+    attributes:
+      label: Error messages and logs
+      description: |
+        Please provide the exact error messages. For Docker issues, run:
+        ```bash
+        docker compose logs -f [service-name]
+        ```
+        
+        Or for Python/application errors:
+        ```bash
+        docker compose logs -f webapp
+        ```
+        
+        Copy the **complete error message** and the last 20-30 lines of logs.
+      placeholder: "Paste your error messages and logs here"
+    validations:
+      required: true
+
+  - type: textarea
+    id: os_info
+    attributes:
+      label: Operating System
+      description: "e.g., Ubuntu 24.04, Fedora 42, Windows 11 WSL2"
+      placeholder: "[e.g., Ubuntu 24.04, Fedora 42, Windows 11 WSL2]"
+
+  - type: textarea
+    id: docker_version
+    attributes:
+      label: Docker version
+      description: "Run: `docker --version`"
+      placeholder: "[run: `docker --version`]"
+
+  - type: textarea
+    id: docker_compose_version
+    attributes:
+      label: Docker Compose version
+      description: "Run: `docker compose version`"
+      placeholder: "[run: `docker compose version`]"
+
+  - type: textarea
+    id: available_ram
+    attributes:
+      label: Available RAM
+      placeholder: "[e.g., 16GB, 8GB]"
+
+  - type: textarea
+    id: available_vram
+    attributes:
+      label: Available VRAM
+      placeholder: "[e.g., NVIDIA RTX 4080 with 12GB, CPU-only]"
+
+  - type: checkboxes
+    id: gpu_support
+    attributes:
+      label: GPU Support
+      options:
+        - label: NVIDIA (with CUDA)
+        - label: AMD (with ROCm)
+        - label: Intel (with Vulcan)
+        - label: CPU-only
+
+  - type: textarea
+    id: python_version
+    attributes:
+      label: Python version
+      description: "Run: `python --version`"
+      placeholder: "[run: `python --version`]"
+
+  - type: checkboxes
+    id: model_setup
+    attributes:
+      label: Model/Service Setup
+      options:
+        - label: Local models (running in Docker)
+        - label: Third-party providers (OpenAI, Anthropic, HuggingFace, etc.)
+    validations:
+      required: true
+
+  - type: textarea
+    id: local_models_config
+    attributes:
+      label: ".env configuration (if using LOCAL models)"
+      description: |
+        If using LOCAL models, provide the relevant configuration:
+        - `EMBEDDING_MODEL_ID`: [default: `Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0`]
+        - `LLM_MODEL_ID`: [default: `unsloth/Qwen3.5-4B-GGUF:Q4_K_M`]
+        - `EMBEDDING_MODEL_RUNNER`: [`vllm`, `llama_cpp`, `ollama`, or `sglang`]
+        - `LLM_MODEL_RUNNER`: [`vllm`, `llama_cpp`, `ollama`, or `sglang`]
+        - `EMBEDDING_GPU_TYPE`: [`nvidia`, `amd`, `intel`, or `cpu`]
+        - `LLM_GPU_TYPE`: [`nvidia`, `amd`, `intel`, or `cpu`]
+        - `EMBEDDING_DRIVER`: [`cuda`, `rocm`, `vulkan`, or `cpu`] (Intel uses `vulkan`)
+        - `LLM_DRIVER`: [`cuda`, `rocm`, `vulkan`, or `cpu`] (Intel uses `vulkan`)
+      placeholder: "[Paste relevant LOCAL model configuration here]"
+
+  - type: textarea
+    id: third_party_config
+    attributes:
+      label: "Third-party provider configuration (if using THIRD-PARTY providers)"
+      description: |
+        If using THIRD-PARTY providers, provide:
+        - `BASE_EMBEDDING_URL`: [e.g., `https://openrouter.ai/api/v1`]
+        - `BASE_LLM_URL`: [e.g., `https://openrouter.ai/api/v1`]
+        - Which provider(s)? [e.g., OpenAI, Anthropic, HuggingFace, Azure, other: ___]
+        - Are API keys configured? [ ] Yes [ ] No [ ] Not sure
+        
+        **NOTE: Do NOT share your API keys or credentials in this issue. Keep all sensitive information private.**
+      placeholder: "[Paste relevant THIRD-PARTY provider configuration here]"
+
+  - type: checkboxes
+    id: troubleshooting
+    attributes:
+      label: What you've already tried
+      description: Have you attempted any troubleshooting? (Check all that apply)
+      options:
+        - label: "Restarted Docker daemon: `sudo systemctl restart docker`"
+        - label: "Cleaned up Docker: `docker compose down && docker system prune`"
+        - label: "Removed old volumes (helps with SeaweedFS errors): `docker compose down -v && sudo rm -rf ./volumes`"
+        - label: "Checked available disk space: `df -h`"
+        - label: "Verified `.env` file is copied from `.env_template`"
+        - label: "Checked system resource limits (RAM, VRAM)"
+        - label: "Reviewed README.md setup instructions"
+        - label: "Other: [describe]"
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Any other information that might help us debug
+      placeholder: |
+        - Did this work before, or is this a fresh setup?
+        - Are you using custom/non-default models?
+        - Is this a multi-machine setup (e.g., different hosts for app vs. database)?
+        - Any network or firewall restrictions?
