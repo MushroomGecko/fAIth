@@ -325,7 +325,11 @@ SEAWEEDFS_SETUP = """
 
 # Milvus: vector database for semantic search
 def build_milvus_setup(
-    local_embedding_enabled, start_period, interval, timeout, retries
+    local_embedding_enabled,
+    start_period,
+    interval,
+    timeout,
+    retries,
 ):
     """
     Build Milvus configuration with optional embedding dependency.
@@ -681,13 +685,9 @@ def build_docker_compose(
         # Warn if user specified GPU type but selected CPU driver
         if gpu_type != "cpu":
             if embedding:
-                print(
-                    f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `EMBEDDING_DRIVER` environment variable."
-                )
+                print(f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `EMBEDDING_DRIVER` environment variable.")
             else:
-                print(
-                    f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `LLM_DRIVER` environment variable."
-                )
+                print(f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `LLM_DRIVER` environment variable.")
 
         # Format runner template with CPU-specific configuration
         if runner == "ollama":
@@ -750,9 +750,7 @@ def build_docker_compose(
                 retries=retries,
             )
         else:
-            raise ValueError(
-                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-            )
+            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
     # ========================================================================
     # CUDA Driver - NVIDIA GPU acceleration
@@ -761,9 +759,7 @@ def build_docker_compose(
     elif driver == "cuda":
         # Validate CUDA only works with NVIDIA GPUs
         if gpu_type != "nvidia":
-            raise ValueError(
-                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-            )
+            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
         # Format runner templates with CUDA GPU support
         if runner == "ollama":
@@ -835,9 +831,7 @@ def build_docker_compose(
     elif driver == "rocm":
         # Validate ROCM only works with AMD GPUs
         if gpu_type != "amd":
-            raise ValueError(
-                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-            )
+            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
         # Format runner templates with ROCM GPU support
         if runner == "ollama":
@@ -900,9 +894,7 @@ def build_docker_compose(
                 retries=retries,
             )
         else:
-            raise ValueError(
-                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-            )
+            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
     # ========================================================================
     # VULKAN Driver - Cross-platform GPU acceleration
@@ -911,9 +903,7 @@ def build_docker_compose(
     elif driver == "vulkan":
         # Validate VULKAN doesn't support CPU
         if gpu_type == "cpu":
-            raise ValueError(
-                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-            )
+            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
         # Only llama.cpp supports VULKAN currently
         if runner == "llama_cpp":
@@ -934,14 +924,10 @@ def build_docker_compose(
                 retries=retries,
             )
         else:
-            raise ValueError(
-                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-            )
+            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
     else:
-        raise ValueError(
-            f"Invalid driver: `{driver}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
-        )
+        raise ValueError(f"Invalid driver: `{driver}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
     print(f"Using `{runner}` with GPU type `{gpu_type}` on driver `{driver}`")
     return runner_setup
@@ -974,51 +960,31 @@ if __name__ == "__main__":
     # Embedding configuration
     EMBEDDING_PORT = str(os.getenv("EMBEDDING_PORT") or "").strip()
     BASE_EMBEDDING_URL = str(os.getenv("BASE_EMBEDDING_URL") or "").strip()
-    EMBEDDING_MODEL_ID = str(
-        os.getenv("EMBEDDING_MODEL_ID") or "Qwen/Qwen3-Embedding-0.6B"
-    ).strip()
-    EMBEDDING_MAX_CONTEXT_LENGTH = int(
-        str(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH") or 4096).strip()
-    )
-    EMBEDDING_MODEL_RUNNER = str(
-        os.getenv("EMBEDDING_MODEL_RUNNER") or "llama_cpp"
-    ).strip()
+    EMBEDDING_MODEL_ID = str(os.getenv("EMBEDDING_MODEL_ID") or "Qwen/Qwen3-Embedding-0.6B").strip()
+    EMBEDDING_MAX_CONTEXT_LENGTH = int(str(os.getenv("EMBEDDING_MAX_CONTEXT_LENGTH") or 4096).strip())
+    EMBEDDING_MODEL_RUNNER = str(os.getenv("EMBEDDING_MODEL_RUNNER") or "llama_cpp").strip()
     EMBEDDING_GPU_TYPE = str(os.getenv("EMBEDDING_GPU_TYPE") or "cpu").strip()
     EMBEDDING_DRIVER = str(os.getenv("EMBEDDING_DRIVER") or "cpu").strip()
-    EMBEDDING_VLLM_ENFORCE_EAGER = str(
-        os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER") or "False"
-    ).strip()
-    EMBEDDING_LLAMA_CPP_GPU_LAYERS = int(
-        str(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS") or 0).strip()
-    )
+    EMBEDDING_VLLM_ENFORCE_EAGER = str(os.getenv("EMBEDDING_VLLM_ENFORCE_EAGER") or "False").strip()
+    EMBEDDING_LLAMA_CPP_GPU_LAYERS = int(str(os.getenv("EMBEDDING_LLAMA_CPP_GPU_LAYERS") or 0).strip())
     # Special case: -1 means offload all layers (set to 9999 to effectively offload all)
     if EMBEDDING_LLAMA_CPP_GPU_LAYERS == -1:
         EMBEDDING_LLAMA_CPP_GPU_LAYERS = 9999
-    EMBEDDING_LLAMA_CPP_CONCURRENCY = int(
-        str(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY") or 2).strip()
-    )
+    EMBEDDING_LLAMA_CPP_CONCURRENCY = int(str(os.getenv("EMBEDDING_LLAMA_CPP_CONCURRENCY") or 2).strip())
 
     # LLM configuration
     LLM_PORT = str(os.getenv("LLM_PORT") or "").strip()
     BASE_LLM_URL = str(os.getenv("BASE_LLM_URL") or "").strip()
-    LLM_MODEL_ID = str(
-        os.getenv("LLM_MODEL_ID") or "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M"
-    ).strip()
-    LLM_MAX_CONTEXT_LENGTH = int(
-        str(os.getenv("LLM_MAX_CONTEXT_LENGTH") or 4096).strip()
-    )
+    LLM_MODEL_ID = str(os.getenv("LLM_MODEL_ID") or "unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M").strip()
+    LLM_MAX_CONTEXT_LENGTH = int(str(os.getenv("LLM_MAX_CONTEXT_LENGTH") or 4096).strip())
     LLM_MODEL_RUNNER = str(os.getenv("LLM_MODEL_RUNNER") or "llama_cpp").strip()
     LLM_GPU_TYPE = str(os.getenv("LLM_GPU_TYPE") or "cpu").strip()
     LLM_DRIVER = str(os.getenv("LLM_DRIVER") or "cpu").strip()
-    LLM_LLAMA_CPP_GPU_LAYERS = int(
-        str(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS") or 0).strip()
-    )
+    LLM_LLAMA_CPP_GPU_LAYERS = int(str(os.getenv("LLM_LLAMA_CPP_GPU_LAYERS") or 0).strip())
     # Special case: -1 means offload all layers (set to 9999 to effectively offload all)
     if LLM_LLAMA_CPP_GPU_LAYERS == -1:
         LLM_LLAMA_CPP_GPU_LAYERS = 9999
-    LLM_LLAMA_CPP_CONCURRENCY = int(
-        str(os.getenv("LLM_LLAMA_CPP_CONCURRENCY") or 2).strip()
-    )
+    LLM_LLAMA_CPP_CONCURRENCY = int(str(os.getenv("LLM_LLAMA_CPP_CONCURRENCY") or 2).strip())
     LLM_VLLM_ENFORCE_EAGER = str(os.getenv("LLM_VLLM_ENFORCE_EAGER") or "False").strip()
 
     # HuggingFace configuration
@@ -1044,24 +1010,14 @@ if __name__ == "__main__":
     # Build embedding URL
     if local_embedding_enabled:
         if not EMBEDDING_PORT:
-            raise ValueError(
-                "EMBEDDING_PORT must be set when BASE_EMBEDDING_URL is empty (local embedding service)"
-            )
-        print(
-            "INFO: BASE_EMBEDDING_URL not set. Webapp will use local embedding service."
-        )
-    embedding_url = (
-        f"http://embedding:{EMBEDDING_PORT}/v1"
-        if local_embedding_enabled
-        else BASE_EMBEDDING_URL
-    )
+            raise ValueError("EMBEDDING_PORT must be set when BASE_EMBEDDING_URL is empty (local embedding service)")
+        print("INFO: BASE_EMBEDDING_URL not set. Webapp will use local embedding service.")
+    embedding_url = f"http://embedding:{EMBEDDING_PORT}/v1" if local_embedding_enabled else BASE_EMBEDDING_URL
 
     # Build LLM URL
     if local_llm_enabled:
         if not LLM_PORT:
-            raise ValueError(
-                "LLM_PORT must be set when BASE_LLM_URL is empty (local LLM service)"
-            )
+            raise ValueError("LLM_PORT must be set when BASE_LLM_URL is empty (local LLM service)")
         print("INFO: BASE_LLM_URL not set. Webapp will use local LLM service.")
     llm_url = f"http://llm:{LLM_PORT}/v1" if local_llm_enabled else BASE_LLM_URL
 
@@ -1188,7 +1144,8 @@ if __name__ == "__main__":
     # Prepare shell entrypoint script with proper formatting
     shell_entrypoint_str = (
         SHELL_ENTRYPOINT.format(
-            webapp_port=WEBAPP_PORT, uvicorn_workers=UVICORN_WORKERS
+            webapp_port=WEBAPP_PORT,
+            uvicorn_workers=UVICORN_WORKERS,
         )
         .lstrip("\n")
         .rstrip("\n")

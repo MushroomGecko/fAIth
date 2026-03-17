@@ -1,0 +1,17 @@
+[tool.black]
+line-length = 9999
+target-version = ["py312"]
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.venv
+  | _build
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 9999
