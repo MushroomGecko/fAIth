@@ -29,13 +29,24 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 3. Activate the venv with `.venv/bin/activate`
 4. Install required packages with `pip install -r requirements.txt`
 5. Copy `.env_template` to `.env`
-6. Edit `.env` to fit your environment
+6. Change `DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, and `MILVUS_PASSWORD` in the new `.env` file to use more secure secrets. You can generate secure values with:
+   - `DJANGO_SECRET_KEY`: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
+   - `POSTGRES_PASSWORD` and `MILVUS_PASSWORD`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+7. If you wish to host fAIth on your local network, add your local IP to the `DJANGO_ALLOWED_HOSTS` list
+8. Configure the remaining `.env` settings to fit your environment:
+   - **AI Models**: Set `EMBEDDING_MODEL_ID` and `LLM_MODEL_ID` based on your available memory
+   - **Model Serving** - Choose one approach:
+     - **Local Models**: Set `EMBEDDING_MODEL_RUNNER` and `LLM_MODEL_RUNNER` (vllm, llama_cpp, ollama, or sglang), configure `EMBEDDING_GPU_TYPE` and `LLM_GPU_TYPE` (cpu, nvidia, amd, intel).
+        - **Advanced**: If using llama_cpp, you can adjust `EMBEDDING_LLAMA_CPP_GPU_LAYERS` and `LLM_LLAMA_CPP_GPU_LAYERS` for more fine-grained tuning of where the model lives (-1 for all GPU layers, 0 for CPU-only)
+     - **Third-Party Providers**: Set `BASE_EMBEDDING_URL` and `BASE_LLM_URL` instead, then add API keys `EMBEDDING_API_KEY`, `LLM_API_KEY`, and `HF_TOKEN` as needed
+   - **Webapp Settings**: `WEBAPP_PORT` and `UVICORN_WORKERS`
+   - **Bible Configuration**: `ENABLED_VERSIONS`, `DEFAULT_VERSION`, `DEFAULT_BOOK`, and `DEFAULT_CHAPTER`
 
-**NOTE: Before running fAIth, if you plan to use the default options provided in the `.env` file, please ensure you have at least 6GB of available VRAM or shared system memory to provide ample room for the AI models used. If you do not have at least 6GB of memory, please edit the `.env` file to use models that support your memory size.**
+**NOTE: Before running fAIth, if you plan to use the default options provided in the `.env` file, please ensure you have at least 6GB of available VRAM or shared system memory to provide ample room for the AI models used. If you do not have at least 6GB of memory, please edit the `.env` file to use models that support your memory size or opt for third-party providers instead.**
 
-7. Run the Docker YML generator with `python ./scripts/build_docker_compose.py`
-8. Start fAIth by running `docker compose up -d`. You may want to use this time to grab a coffee and/or read your Bible. This step may take a while. This step involves downloading all of the required Docker containers, downloading the AI models, and loading the vector database. After these steps complete, fAIth should automatically run via uvicorn.
-9. Visit `http://localhost:8000` to access fAIth
+9. Run the Docker Compose generator with `python ./scripts/build_docker_compose.py`
+10. Start fAIth by running `docker compose up -d`. You may want to use this time to grab a coffee and/or read your Bible. This step may take a while. This step involves downloading all of the required Docker containers, downloading the AI models, and loading the vector database. After these steps complete, fAIth should automatically run via uvicorn.
+11. Visit `http://localhost:8000` to access fAIth
 
 ## Credits
 ### Applications
