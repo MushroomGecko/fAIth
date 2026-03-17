@@ -1,7 +1,7 @@
 name: Application Host Bug Report
 description: Report issues with setting up, deploying, or running fAIth (Docker, Milvus, Postgres, LLMs, etc.)
 title: "[SETUP] Brief description of the issue"
-labels: [setup]
+labels: [bug]
 body:
   - type: markdown
     attributes:
