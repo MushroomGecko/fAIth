@@ -171,7 +171,7 @@ body:
         - label: "Verified `.env` file is copied from `.env_template`"
         - label: "Checked system resource limits (RAM, VRAM)"
         - label: "Reviewed README.md setup instructions"
-        - label: "Other: [describe in 'Additional Context']"
+        - label: "Other: (describe in 'Additional Context')"
 
   - type: textarea
     id: additional_context
