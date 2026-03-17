@@ -11,10 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 load_dotenv()
 
-# ============================================================================
-# Compatibility Matrix - Shows valid driver/runner/device combinations
-# ============================================================================
-
+# Compatibility list - Valid driver/runner/device combinations
 COMPATIBILITY_LIST = """
 Drivers:
     - `cpu`
@@ -81,18 +78,11 @@ Drivers:
                     - `intel`
 """.lstrip("\n")
 
-# ============================================================================
-# Docker Compose Template - Main service composition
-# ============================================================================
-
+# Docker compose template - Main service composition
 DOCKER_COMPOSE_TPL = """
 services:
 {services}
 """.lstrip("\n")
-
-# ============================================================================
-# Helper Function - Builds service list with proper spacing
-# ============================================================================
 
 
 def build_services_section(
@@ -144,10 +134,7 @@ def build_services_section(
     return "\n\n".join(services)
 
 
-# ============================================================================
-# GPU Configuration Templates - Driver/device-specific setup
-# ============================================================================
-
+# NVIDIA GPU setup
 NVIDIA_SETUP = """
     deploy:
       resources:
@@ -159,6 +146,7 @@ NVIDIA_SETUP = """
               capabilities: [gpu]
 """.lstrip("\n")
 
+# AMD GPU setup
 AMD_SETUP = """
     devices:
       - /dev/kfd
@@ -168,16 +156,14 @@ AMD_SETUP = """
       - seccomp=unconfined
 """.lstrip("\n")
 
+# Intel GPU setup
 INTEL_SETUP = """
     devices:
       - /dev/dri
     group_add: [video, render]
 """.lstrip("\n")
 
-# ============================================================================
-# Service Configuration Templates
-# ============================================================================
-
+# Postgres service configuration
 POSTGRES_SETUP = """
   postgres:
     container_name: postgres-faith
@@ -196,6 +182,7 @@ POSTGRES_SETUP = """
       retries: {retries}
 """.lstrip("\n")
 
+# Etcd service configuration
 ETCD_SETUP = """
   etcd:
     container_name: etcd-faith
@@ -219,7 +206,7 @@ ETCD_SETUP = """
       retries: {retries}
 """.lstrip("\n")
 
-# SeaweedFS: distributed file storage for Milvus backups
+# SeaweedFS service configuration - distributed file storage for Milvus backups
 SEAWEEDFS_SETUP = """
   seaweedfs-master:
     container_name: seaweedfs-master-faith
@@ -323,7 +310,6 @@ SEAWEEDFS_SETUP = """
 """.lstrip("\n")
 
 
-# Milvus: vector database for semantic search
 def build_milvus_setup(
     local_embedding_enabled,
     start_period,
@@ -387,10 +373,7 @@ def build_milvus_setup(
     return milvus_setup.lstrip("\n")
 
 
-# ============================================================================
-# LLM Runner Configuration Templates - Ollama, llama.cpp, vLLM, SGLang
-# ============================================================================
-
+# Ollama service configuration
 OLLAMA_SETUP = """
   {model_type}:
     container_name: ollama-{model_type}-faith
@@ -432,6 +415,7 @@ LLAMA_CPP_SETUP = """
 {gpu_setup}
 """.lstrip("\n")
 
+# vLLM service configuration
 VLLM_SETUP = """
   {model_type}:
     container_name: vllm-{model_type}-faith
@@ -453,6 +437,7 @@ VLLM_SETUP = """
 {gpu_setup}
 """.lstrip("\n")
 
+# SGLang service configuration
 SGLANG_SETUP = """
   {model_type}:
     container_name: sglang-{model_type}-faith
@@ -475,10 +460,6 @@ SGLANG_SETUP = """
       retries: {retries}
 {gpu_setup}
 """.lstrip("\n")
-
-# ============================================================================
-# Webapp Service Configuration - Built conditionally based on enabled services
-# ============================================================================
 
 
 def build_webapp_setup(
@@ -573,10 +554,7 @@ def build_webapp_setup(
     return webapp_setup.lstrip("\n")
 
 
-# ============================================================================
-# Shell Entrypoint Script - Alternative startup sequence with permissions
-# ============================================================================
-
+# Shell entrypoint script - Alternative startup sequence with permissions
 SHELL_ENTRYPOINT = """
 #!/bin/sh
 
@@ -603,10 +581,6 @@ fi
 log "Starting application server as faith_user"
 exec su faith_user -c "uvicorn fAIth.asgi:application --host 0.0.0.0 --port {webapp_port} --workers {uvicorn_workers}"
 """.lstrip("\n")
-
-# ============================================================================
-# Main Function - Builds runner configuration based on driver/runner/device
-# ============================================================================
 
 
 def build_docker_compose(
@@ -677,10 +651,7 @@ def build_docker_compose(
     else:
         raise ValueError(f"Invalid GPU type: `{gpu_type}`")
 
-    # ========================================================================
-    # CPU Driver - Uses software-based inference
-    # ========================================================================
-
+    # CPU driver - Uses software-based inference
     if driver == "cpu":
         # Warn if user specified GPU type but selected CPU driver
         if gpu_type != "cpu":
@@ -752,10 +723,7 @@ def build_docker_compose(
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
-    # ========================================================================
-    # CUDA Driver - NVIDIA GPU acceleration
-    # ========================================================================
-
+    # CUDA driver - NVIDIA GPU acceleration
     elif driver == "cuda":
         # Validate CUDA only works with NVIDIA GPUs
         if gpu_type != "nvidia":
@@ -824,10 +792,7 @@ def build_docker_compose(
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`")
 
-    # ========================================================================
-    # ROCM Driver - AMD GPU acceleration
-    # ========================================================================
-
+    # ROCM driver - AMD GPU acceleration
     elif driver == "rocm":
         # Validate ROCM only works with AMD GPUs
         if gpu_type != "amd":
@@ -896,10 +861,7 @@ def build_docker_compose(
         else:
             raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
 
-    # ========================================================================
-    # VULKAN Driver - Cross-platform GPU acceleration
-    # ========================================================================
-
+    # VULKAN driver - Cross-platform GPU acceleration
     elif driver == "vulkan":
         # Validate VULKAN doesn't support CPU
         if gpu_type == "cpu":
@@ -933,14 +895,10 @@ def build_docker_compose(
     return runner_setup
 
 
-# ============================================================================
-# Main Entry Point - Generates docker-compose.yml and entrypoint script
-# ============================================================================
-
 if __name__ == "__main__":
-    # ========================================================================
-    # Load All Configuration from Environment Variables
-    # ========================================================================
+    """
+    Load all configuration from environment variables and generate docker-compose.yml and entrypoint script.
+    """
 
     # Webapp configuration
     WEBAPP_PORT = int(str(os.getenv("WEBAPP_PORT") or 8000).strip())
@@ -996,10 +954,7 @@ if __name__ == "__main__":
     TIMEOUT = "30s"
     RETRIES = 5
 
-    # ========================================================================
-    # Determine Which Services Are Enabled (Based on Port Configuration)
-    # ========================================================================
-
+    # Determine which services are enabled (based on port configuration)
     # Services are only included if their ports are explicitly set
     # If port is empty, user will configure external service (e.g., OpenAI, OpenRouter)
     local_postgres_enabled = not bool(POSTGRES_HOST.strip())
@@ -1021,10 +976,7 @@ if __name__ == "__main__":
         print("INFO: BASE_LLM_URL not set. Webapp will use local LLM service.")
     llm_url = f"http://llm:{LLM_PORT}/v1" if local_llm_enabled else BASE_LLM_URL
 
-    # ========================================================================
-    # Format Service Configuration Blocks
-    # ========================================================================
-
+    # Format service configuration blocks
     if local_postgres_enabled:
         postgres_block = POSTGRES_SETUP.format(
             postgres_user=POSTGRES_USER,
@@ -1124,10 +1076,7 @@ if __name__ == "__main__":
         retries=RETRIES,
     )
 
-    # ========================================================================
     # Assemble Final Docker Compose Configuration
-    # ========================================================================
-
     # Build services section with proper spacing (no gaps for disabled services)
     services_section = build_services_section(
         postgres_setup=postgres_block,
@@ -1151,10 +1100,7 @@ if __name__ == "__main__":
         .rstrip("\n")
     )
 
-    # ========================================================================
-    # Write Generated Files
-    # ========================================================================
-
+    # Write generated files
     with Path("docker-compose.yml").open("w", encoding="utf-8") as f:
         f.write(docker_compose_str)
 
