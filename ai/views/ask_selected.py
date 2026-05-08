@@ -65,8 +65,10 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
 
     # Search vector database for relevant context
     vector_database = request.state["milvus_db"]
-    query_results = await vector_database.search(collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT)
-    selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=MILVUS_SEARCH_LIMIT)
+    # Split in half since we are using two queries
+    half_limit = MILVUS_SEARCH_LIMIT // 2
+    query_results = await vector_database.search(collection_name=collection_name, query=query, limit=half_limit)
+    selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=half_limit)
     stringified_query_results = await stringify_vdb_results(query_results)
     stringified_selected_text_results = await stringify_vdb_results(selected_text_results)
     logger.info(f"Query results:\n{stringified_query_results}")
