@@ -357,6 +357,7 @@ def build_milvus_setup(
       MINIO_USE_SSL: "false"
       MINIO_BUCKET_NAME: milvus-bucket
       MINIO_ROOT_PATH: milvus/data
+      MILVUS_COMMON_SECURITY_AUTHORIZATIONENABLED: "true"
     volumes:
       - ${{DOCKER_VOLUME_DIRECTORY:-.}}/volumes/milvus:/var/lib/milvus
     command: ["milvus", "run", "standalone"]

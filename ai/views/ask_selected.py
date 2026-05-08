@@ -7,16 +7,15 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from ninja import Form, Router
 
-from ai.serializers.general_question import GeneralQuestionInputSerializer
+from ai.serializers.ask_selected import AskSelectedInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-
 from ai.utils import async_read_file, clean_llm_output, stringify_vdb_results
 from fAIth.api_tags import APITags
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Create router for general question API
+# Create router for ask selected API
 router = Router()
 
 # Configuration constants
@@ -24,10 +23,10 @@ MILVUS_SEARCH_LIMIT = int(str(os.getenv("MILVUS_SEARCH_LIMIT", 10)).strip())
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
-@router.post("/general_question", tags=[APITags.AI], url_name="general_question")
-async def general_question(request, payload: GeneralQuestionInputSerializer = Form(...)):
+@router.post("/ask_selected", tags=[APITags.AI], url_name="ask_selected")
+async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...)):
     """
-    API endpoint for answering general questions using RAG (Retrieval-Augmented Generation).
+    API endpoint for answering questions about selected text using RAG (Retrieval-Augmented Generation).
 
     Combines vector database search with LLM completions to provide context-aware answers.
     The workflow: validate input -> search vector DB -> load prompts -> call LLM -> render HTML response.
@@ -35,7 +34,7 @@ async def general_question(request, payload: GeneralQuestionInputSerializer = Fo
     Process a user question and return an LLM-generated response with context.
 
     Workflow:
-        1. Validate request payload (query and collection_name)
+        1. Validate request payload (selected_text, query and collection_name)
         2. Search vector database for relevant context
         3. Load and format system and user prompts
         4. Call LLM with prompts to generate response
@@ -47,30 +46,38 @@ async def general_question(request, payload: GeneralQuestionInputSerializer = Fo
             - state["milvus_db"]: Pre-initialized vector database connection
             - state["completions_obj"]: Pre-initialized LLM completions object
         payload: Validated request payload containing:
-            - query (str): User's question
             - collection_name (str): Milvus vector collection to search
+            - selected_text (str): The selected text from the user.
+            - query (str): User's question about the selected text
 
     Returns:
         HttpResponse: Rendered HTML template containing the LLM response.
             - 200 OK: HTML template with response_content
             - 400 Bad Request: Validation errors or missing required fields
     """
-    file_directory = "general_question"
+    file_directory = "ask_selected"
     
     # Extract validated data from payload
-    query = payload.query
     collection_name = payload.collection_name
+    selected_text = payload.selected_text
+    query = payload.query
+    
 
     # Search vector database for relevant context
     vector_database = request.state["milvus_db"]
-    vector_results = await vector_database.search(collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT)
-    stringified_vector_results = await stringify_vdb_results(vector_results)
-    logger.info(f"Vector results:\n{stringified_vector_results}")
+    query_results = await vector_database.search(collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT)
+    selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=MILVUS_SEARCH_LIMIT)
+    stringified_query_results = await stringify_vdb_results(query_results)
+    stringified_selected_text_results = await stringify_vdb_results(selected_text_results)
+    logger.info(f"Query results:\n{stringified_query_results}")
+    logger.info(f"Selected text results:\n{stringified_selected_text_results}")
+
+    combined_context = stringified_selected_text_results + stringified_query_results
 
     # Load system and user prompts from files and format with context
     system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
     user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-    user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
+    user_prompt = user_prompt.format(query=query, selected_text=selected_text, context=combined_context)
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     system_prompt = system_prompt.strip()
     user_prompt = user_prompt.strip()

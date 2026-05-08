@@ -1,4 +1,4 @@
-<div id="promptUserModal" class="modal fade" tabindex="-1">
+<div id="askSelectedModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -6,9 +6,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="promptUserForm" hx-post="{% url 'api:general_question' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                <form id="askSelectedForm" data-input-modal="askSelectedModal" hx-post="{% url 'api:ask_selected' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
                     {% csrf_token %}
                     <input type="hidden" name="collection_name" value="{{ version }}">
+                    <input type="hidden" name="selected_text" id="selectedTextInput" value="">
                     <div class="mb-3">
                         <label for="query" class="form-label">Question</label>
                         <input id="query" name="query" type="text" class="form-control" required>

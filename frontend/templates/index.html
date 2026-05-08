@@ -30,8 +30,9 @@
         </div>
 
         <!-- Modals -->
-        {% include 'modals/prompt_user.html' %}
-        {% include 'modals/server_response.html' %}
+        {% include 'modals/inputs/general_question.html' %}
+        {% include 'modals/inputs/ask_selected.html' %}
+        {% include 'modals/outputs/server_response.html' %}
 
         <!-- Installed JS -->
         <script src="{% static 'js/installed/htmx.min.js' %}"></script>
@@ -39,6 +40,7 @@
         <script src="{% static 'js/installed/bootstrap.min.js' %}"></script>
         <!-- Custom JS -->
         <script src="{% static 'js/fAIth/htmx_updates.js' %}"></script>
+        <script src="{% static 'js/fAIth/text_selection.js' %}"></script>
     </body>
 </html>
 
