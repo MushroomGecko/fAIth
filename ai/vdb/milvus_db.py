@@ -112,7 +112,7 @@ class VectorDatabaseBuilder:
                         old_password="Milvus",
                         new_password=self.milvus_password
                     )
-                    logger.info(f"Updated password for root user")
+                    logger.info("Updated password for root user")
                 except Exception as e:
                     logger.error(f"Error updating password: {e}")
                     raise e
