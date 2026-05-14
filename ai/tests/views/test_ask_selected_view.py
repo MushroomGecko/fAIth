@@ -390,7 +390,11 @@ class TestAskSelectedView(SimpleTestCase):
             )
 
             async def mock_read(path):
-                return "Bible study prompt"
+                if "system.md" in str(path):
+                    return "You are a knowledgeable Bible study assistant."
+                elif "user.md" in str(path):
+                    return "Selected text: {selected_text}\nQuestion: {query}\nContext: {context}"
+                return ""
 
             mock_read_file.side_effect = mock_read
             # Return different strings to track combination

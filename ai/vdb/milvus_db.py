@@ -66,10 +66,12 @@ class VectorDatabaseBuilder:
             logger.error(f"Invalid database type: {self.database_type}")
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
 
-        # Always create a root client first for initialization operations
+        # Always create a root client with default credentials for initialization
+        # This is needed to set up custom credentials, create databases, and manage users
         self.root_client = MilvusClient(uri=self.milvus_url, token="root:Milvus")
         
-        # If using root user, use the root client; otherwise client will be set after user creation
+        # If using root user, we'll use the root_client and update password later in load_or_create_database
+        # If using a custom user, client will be set to None and created after user setup in load_or_create_database
         if self.milvus_username == "root":
             self.client = self.root_client
         else:

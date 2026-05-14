@@ -113,7 +113,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
                     mock_logger.error.assert_called()
 
     def test_init_creates_milvus_client(self):
-        """Test that MilvusClient is created with correct parameters."""
+        """Test that MilvusClient is created with default root credentials for initialization."""
         env_vars = {
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
@@ -128,9 +128,10 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
             with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     VectorDatabaseBuilder()
+                    # Root client should always be created with default credentials
                     mock_client_class.assert_called_once_with(
                         uri="http://milvus:19530",
-                        token="admin:admin"
+                        token="root:Milvus"
                     )
 
     def test_init_creates_embedding_engine(self):
@@ -179,8 +180,8 @@ class TestLoadDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -202,8 +203,8 @@ class TestLoadDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -229,8 +230,8 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -256,8 +257,8 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -284,8 +285,8 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -332,6 +333,178 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
                             builder.load_or_create_database()
 
 
+class TestVectorDatabaseBuilderEdgeCases(SimpleTestCase):
+    """Tests for edge cases and error scenarios in VectorDatabaseBuilder."""
+
+    def test_load_database_with_custom_user_before_initialization(self):
+        """Test that load_database fails gracefully when client is None (custom user before load_or_create)."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "admin",
+            "MILVUS_PASSWORD": "admin",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
+                    builder = VectorDatabaseBuilder()
+                    # Custom user means self.client is None
+                    assert builder.client is None
+                    # Calling load_database should fail
+                    with pytest.raises(AttributeError):
+                        builder.load_database()
+
+    def test_list_collections_with_custom_user_before_initialization(self):
+        """Test that list_collections fails gracefully when client is None (custom user before load_or_create)."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "admin",
+            "MILVUS_PASSWORD": "admin",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
+                    builder = VectorDatabaseBuilder()
+                    # Custom user means self.client is None
+                    assert builder.client is None
+                    # Calling list_collections should fail
+                    with pytest.raises(AttributeError):
+                        builder.list_collections_in_database()
+
+    def test_drop_collection_with_custom_user_before_initialization(self):
+        """Test that drop_collection handles gracefully when client is None (custom user before load_or_create)."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "admin",
+            "MILVUS_PASSWORD": "admin",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
+                    with patch("ai.vdb.milvus_db.logger") as mock_logger:
+                        builder = VectorDatabaseBuilder()
+                        # Custom user means self.client is None
+                        assert builder.client is None
+                        # Calling drop_collection should handle the error gracefully
+                        builder.drop_collection("some_collection")
+                        # Should have logged a warning
+                        mock_logger.warning.assert_called()
+
+    def test_custom_user_creation_error_in_load_or_create(self):
+        """Test error handling when custom user creation fails."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "custom_user",
+            "MILVUS_PASSWORD": "custom_password",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
+                    with patch("ai.vdb.milvus_db.logger"):
+                        # No databases exist, so custom user will be created
+                        mock_root_client = MagicMock()
+                        mock_root_client.list_databases.return_value = []
+                        mock_root_client.create_user.side_effect = Exception("User creation failed")
+                        mock_client_class.return_value = mock_root_client
+
+                        builder = VectorDatabaseBuilder()
+                        with pytest.raises(Exception, match="User creation failed"):
+                            builder.load_or_create_database()
+
+    def test_custom_user_client_reinitialization_error(self):
+        """Test error handling when reinitializing client after custom user creation."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "custom_user",
+            "MILVUS_PASSWORD": "custom_password",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
+                    with patch("ai.vdb.milvus_db.logger"):
+                        # No databases exist, so custom user will be created
+                        mock_root_client = MagicMock()
+                        mock_root_client.list_databases.return_value = []
+                        # User creation succeeds but client creation fails
+                        def side_effect(*args, **kwargs):
+                            if kwargs.get("token") == "root:Milvus":
+                                return mock_root_client
+                            else:
+                                raise Exception("Client initialization failed")
+                        
+                        mock_client_class.side_effect = side_effect
+
+                        builder = VectorDatabaseBuilder()
+                        with pytest.raises(Exception, match="Client initialization failed"):
+                            builder.load_or_create_database()
+
+    def test_root_user_client_is_not_none_after_init(self):
+        """Test that root user has a valid client immediately after init."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
+                    builder = VectorDatabaseBuilder()
+                    # Root user should have client set immediately
+                    assert builder.client is not None
+                    assert builder.root_client is not None
+                    assert builder.client is builder.root_client
+
+    def test_custom_user_client_is_none_after_init(self):
+        """Test that custom user has None client until load_or_create_database is called."""
+        env_vars = {
+            "MILVUS_HOST": "http://milvus",
+            "MILVUS_PORT": "19530",
+            "MILVUS_DATABASE_NAME": "faith_db",
+            "MILVUS_USERNAME": "custom_user",
+            "MILVUS_PASSWORD": "custom_password",
+            "DATABASE_TYPE": "hybrid",
+            "EMBEDDING_MODEL_ID": "test-model",
+        }
+        with patch("ai.vdb.milvus_db.os.getenv") as mock_getenv:
+            mock_getenv.side_effect = create_mock_getenv(**env_vars)
+            with patch("ai.vdb.milvus_db.Embedding"):
+                with patch("ai.vdb.milvus_db.MilvusClient"):
+                    builder = VectorDatabaseBuilder()
+                    # Custom user should have None client initially
+                    assert builder.client is None
+                    # But root_client should exist
+                    assert builder.root_client is not None
+
+
 class TestListCollectionsInDatabase(SimpleTestCase):
     """Tests for list_collections_in_database method."""
 
@@ -341,8 +514,8 @@ class TestListCollectionsInDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -367,8 +540,8 @@ class TestListCollectionsInDatabase(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -395,8 +568,8 @@ class TestDropCollection(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -437,8 +610,8 @@ class TestDropCollection(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -469,8 +642,8 @@ class TestCreateCollections(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "dense",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -503,8 +676,8 @@ class TestCreateCollections(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "dense",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -566,8 +739,8 @@ class TestClose(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
@@ -589,8 +762,8 @@ class TestClose(SimpleTestCase):
             "MILVUS_HOST": "http://milvus",
             "MILVUS_PORT": "19530",
             "MILVUS_DATABASE_NAME": "faith_db",
-            "MILVUS_USERNAME": "admin",
-            "MILVUS_PASSWORD": "admin",
+            "MILVUS_USERNAME": "root",
+            "MILVUS_PASSWORD": "secure_password",
             "DATABASE_TYPE": "hybrid",
             "EMBEDDING_MODEL_ID": "test-model",
         }
