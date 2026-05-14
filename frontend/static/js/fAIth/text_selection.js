@@ -1,95 +1,102 @@
-// Function to enable all elements with text-highlight class
+// Enable all .text-highlight elements
 function enableTextHighlightInteractables()
 {
     document.querySelectorAll('.text-highlight').forEach(element => {
-        if (element.tagName === 'BUTTON') 
+        if (element.tagName === 'BUTTON')
         {
+            // Native disabled property works directly on <button> elements
             element.disabled = false;
-        } 
-        else 
+        }
+        else
         {
+            // For non-button elements (e.g. <a>), remove Bootstrap's disabled class and
+            // ARIA attributes since the native disabled property has no effect on them.
             element.classList.remove('disabled');
+            element.removeAttribute('aria-disabled');
+            element.removeAttribute('tabindex');
         }
     });
 }
 
-// Function to disable all elements with text-highlight class
+// Disable all .text-highlight elements
 function disableTextHighlightInteractables()
 {
     document.querySelectorAll('.text-highlight').forEach(element => {
-        if (element.tagName === 'BUTTON') 
+        if (element.tagName === 'BUTTON')
         {
+            // Native disabled property works directly on <button> elements
             element.disabled = true;
-        } 
-        else 
+        }
+        else
         {
+            // For non-button elements (e.g. <a>), Bootstrap's disabled class adds
+            // pointer-events: none and reduced opacity. aria-disabled and tabindex="-1"
+            // additionally block keyboard focus and screen reader activation.
             element.classList.add('disabled');
+            element.setAttribute('aria-disabled', 'true');
+            element.setAttribute('tabindex', '-1');
         }
     });
 }
 
-// Initialize selected data variable
-var selectedText = "";
-
-// Disable text highlight interactables on page load
+// Disable text-highlight interactables on page load
 disableTextHighlightInteractables();
 
-document.addEventListener("mouseup", (event) => {
-    handleTouch(event);
-});
-document.addEventListener("touchend", (event) => {
-    handleTouch(event);
-});
-
-document.addEventListener("mousedown", (event) => {
-    // Don't disable if clicking inside a modal or on a text-highlight element
-    if (!event.target.closest('.text-highlight') && !event.target.closest('.modal') && !event.target.closest('.modal-backdrop'))
+// Update the hidden input and button state on any selection change (mouse, touch, or keyboard).
+// When the selection clears, only reset if a modal is not open, otherwise clicking into the
+// modal's question input would wipe the stored selection before the form is submitted.
+document.addEventListener('selectionchange', () => {
+    const text = document.getSelection().toString();
+    if (text !== '')
     {
-        disableTextHighlightInteractables();
-    }
-});
-document.addEventListener("touchstart", (event) => {
-    // Don't disable if clicking inside a modal or on a text-highlight element
-    if (!event.target.closest('.text-highlight') && !event.target.closest('.modal') && !event.target.closest('.modal-backdrop'))
-    {
-        disableTextHighlightInteractables();
-    }
-});
-
-function handleTouch(event)
-{
-    // Get the selected text
-    selectedText = document.getSelection();
-
-    if (selectedText.toString() !== "") { // check if selectedText is not an empty string
-
-        // Set the selected text in the hidden input field
-        console.log(selectedText);
-        document.getElementById('selectedTextInput').value = selectedText;
-        // Enable the text highlight buttons
+        document.getElementById('selectedTextInput').value = text;
         enableTextHighlightInteractables();
     }
-    else
+    else if (!document.querySelector('.modal.show'))
     {
-        // Disable when no text is selected
+        document.getElementById('selectedTextInput').value = '';
         disableTextHighlightInteractables();
     }
-}
+});
 
-// Maintain highlighted content data while mouse clicking on highlight button to prevent internal deselection
+// Preserve selection when clicking a .text-highlight element (mousedown clears selection by default).
+// Disable interactables when starting an interaction outside modals and .text-highlight elements.
 document.addEventListener('mousedown', (event) => {
     if (event.target.closest('.text-highlight'))
     {
-        // Prevent the button from clearing the selection
         event.preventDefault();
+    }
+    else if (!event.target.closest('.modal') && !event.target.closest('.modal-backdrop'))
+    {
+        disableTextHighlightInteractables();
     }
 });
 
-// Maintain highlighted content data while screen tapping on highlight button to prevent internal deselection
+// Same logic for touch: { passive: false } is required to allow preventDefault().
+// Without it, modern browsers silently ignore the call and the selection is cleared.
 document.addEventListener('touchstart', (event) => {
     if (event.target.closest('.text-highlight'))
     {
-        // Prevent the button from clearing the selection
+        // Preserve selection by preventing default browser touch handling.
+        // Because this suppresses the synthesized click, touchend manually opens the modal below.
         event.preventDefault();
+    }
+    else if (!event.target.closest('.modal') && !event.target.closest('.modal-backdrop'))
+    {
+        disableTextHighlightInteractables();
+    }
+}, { passive: false });
+
+// Manually trigger Bootstrap modal on touch because touchstart's preventDefault suppresses the
+// synthesized click that data-bs-toggle="modal" relies on.
+document.addEventListener('touchend', (event) => {
+    const target = event.target.closest('.text-highlight[data-bs-toggle="modal"]');
+    if (target)
+    {
+        const modalEl = document.querySelector(target.getAttribute('data-bs-target'));
+        if (modalEl)
+        {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
     }
 });
