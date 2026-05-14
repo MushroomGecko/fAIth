@@ -230,7 +230,7 @@ class TestGeneralQuestionView(SimpleTestCase):
             # Verify template rendering
             mock_render.assert_called_once()
             call_args = mock_render.call_args
-            assert call_args[0][0] == "partials/general_question.html"
+            assert call_args[0][0] == "partials/text.html"
             assert call_args[0][1]["response_content"] is not None
 
     def test_general_question_response_content_type(self):
