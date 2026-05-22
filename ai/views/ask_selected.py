@@ -9,7 +9,7 @@ from ninja import Form, Router
 
 from ai.serializers.ask_selected import AskSelectedInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-from ai.utils import async_read_file, clean_llm_output, stringify_vdb_results
+from ai.utils import async_read_file, clean_llm_output, stringify_vdb_results, unify_vdb_results
 from fAIth.api_tags import APITags
 
 # Set up logging
@@ -69,17 +69,18 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
     half_limit = MILVUS_SEARCH_LIMIT // 2
     query_results = await vector_database.search(collection_name=collection_name, query=query, limit=half_limit)
     selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=half_limit)
-    stringified_query_results = await stringify_vdb_results(query_results)
-    stringified_selected_text_results = await stringify_vdb_results(selected_text_results)
-    logger.info(f"Query results:\n{stringified_query_results}")
-    logger.info(f"Selected text results:\n{stringified_selected_text_results}")
 
-    combined_context = stringified_selected_text_results + stringified_query_results
+    # Combine the results
+    unified_results = await unify_vdb_results(query_results + selected_text_results)
+
+    # Stringify the results
+    stringified_unified_results = await stringify_vdb_results(unified_results)
+    logger.info(f"Unified results:\n{stringified_unified_results}")
 
     # Load system and user prompts from files and format with context
     system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
     user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-    user_prompt = user_prompt.format(query=query, selected_text=selected_text, context=combined_context)
+    user_prompt = user_prompt.format(query=query, selected_text=selected_text, context=stringified_unified_results)
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     system_prompt = system_prompt.strip()
     user_prompt = user_prompt.strip()

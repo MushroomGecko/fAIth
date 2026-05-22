@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Any
 from pathlib import Path
 
 import markdown
@@ -8,16 +9,16 @@ import markdown
 logger = logging.getLogger(__name__)
 
 
-async def async_read_file(file_path, encoding='utf-8'):
+async def async_read_file(file_path: str | Path, encoding: str = 'utf-8') -> str | None:
     """
     Asynchronously read a file without blocking the event loop.
 
     Parameters:
-        file_path (str or Path): Path to the file to read.
+        file_path (str | Path): Path to the file to read.
         encoding (str): File encoding (default: 'utf-8').
 
     Returns:
-        str: File contents, or None if an error occurs.
+        str | None: File contents, or None if an error occurs.
     """
     try:
         def read_sync():
@@ -29,7 +30,44 @@ async def async_read_file(file_path, encoding='utf-8'):
         return None
 
 
-async def stringify_vdb_results(vdb_results):
+async def unify_vdb_results(vdb_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Unify vector database search results by deduplicating entries with identical text content.
+
+    Removes duplicate results that contain the same text, preserving the first occurrence
+    of each unique text. This is useful when combining results from multiple searches
+    where the same passage may be retrieved multiple times.
+
+    Parameters:
+        vdb_results (list[dict[str, Any]]): Search results from Milvus vector database.
+            Expected format: [{"entity": {"text": "...", "book": "...", ...}}, ...]
+
+    Returns:
+        list[dict[str, Any]]: Unified search results with duplicates removed, or empty list if invalid or error occurs.
+    """
+
+    if isinstance(vdb_results, list):
+        try:
+            seen_texts = set()
+            unified_results = []
+            for result in vdb_results:
+                entity = result.get("entity", {})
+                if entity:
+                    text = entity.get("text", "")
+                    # Only add results with unique text content
+                    if text and text not in seen_texts:
+                        seen_texts.add(text)
+                        unified_results.append(result)
+            return unified_results
+        except Exception as e:
+            logger.error(f"Error unifying vector database results: {e}")
+            return []
+    else:
+        logger.error(f"Invalid vector database results: {vdb_results}")
+        return []
+
+
+async def stringify_vdb_results(vdb_results: list[dict[str, Any]]) -> str:
     """
     Format vector database search results into a human-readable string.
 
@@ -39,7 +77,7 @@ async def stringify_vdb_results(vdb_results):
     Each result is joined with newlines for readability.
 
     Parameters:
-        vdb_results (list): Search results from Milvus vector database.
+        vdb_results (list[dict[str, Any]]): Search results from Milvus vector database.
             Expected format: [{"entity": {"text": "...", "book": "...", ...}}, ...]
 
     Returns:
