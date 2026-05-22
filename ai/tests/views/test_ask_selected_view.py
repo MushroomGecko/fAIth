@@ -139,6 +139,7 @@ class TestAskSelectedView(SimpleTestCase):
         payload.collection_name = "bsb"
 
         with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
+             patch("ai.views.ask_selected.unify_vdb_results") as mock_unify, \
              patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
              patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
              patch("ai.views.ask_selected.render_to_string") as mock_render:
@@ -152,6 +153,7 @@ class TestAskSelectedView(SimpleTestCase):
                 return "Bible study prompt"
 
             mock_read_file.side_effect = mock_read
+            mock_unify.return_value = []  # Empty after unification
             mock_stringify.return_value = ""  # Empty vector results
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "Template"
@@ -159,8 +161,8 @@ class TestAskSelectedView(SimpleTestCase):
             response = self._call_ask_selected(request, payload)
 
             assert response.status_code == 200
-            # Verify stringify was called for both query and selected_text searches (2 calls total)
-            assert mock_stringify.call_count == 2
+            # Verify stringify was called once on unified results (not twice)
+            assert mock_stringify.call_count == 1
 
     def test_ask_selected_loads_correct_prompt_files(self):
         """Test that ask_selected loads prompts from correct file paths."""
@@ -380,6 +382,7 @@ class TestAskSelectedView(SimpleTestCase):
         payload.collection_name = "bsb"
 
         with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
+             patch("ai.views.ask_selected.unify_vdb_results") as mock_unify, \
              patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
              patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
              patch("ai.views.ask_selected.render_to_string") as mock_render:
@@ -397,11 +400,9 @@ class TestAskSelectedView(SimpleTestCase):
                 return ""
 
             mock_read_file.side_effect = mock_read
-            # Return different strings to track combination
-            mock_stringify.side_effect = [
-                "From question search result",  # First call (query search)
-                "From selected_text search result"  # Second call (selected_text search)
-            ]
+            # Unified results stringified into combined context
+            mock_unify.return_value = []
+            mock_stringify.return_value = "Combined results from both searches"
             mock_clean.return_value = "<p>Combined response</p>"
             mock_render.return_value = "<html>Response</html>"
 
@@ -409,7 +410,6 @@ class TestAskSelectedView(SimpleTestCase):
 
             # Verify LLM was called with combined context
             call_args = request.state["completions_obj"].completions.call_args
-            # The combined context should include both search results
             user_prompt = call_args[0][1]
-            assert "From question search result" in user_prompt
-            assert "From selected_text search result" in user_prompt
+            # The combined context should be in the prompt
+            assert "Combined results from both searches" in user_prompt
