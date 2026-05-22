@@ -66,8 +66,16 @@ class VectorDatabaseBuilder:
             logger.error(f"Invalid database type: {self.database_type}")
             raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
 
-        # Establish synchronous connection to Milvus
-        self.client = MilvusClient(uri=self.milvus_url, token=f"{self.milvus_username}:{self.milvus_password}")
+        # Always create a root client with default credentials for initialization
+        # This is needed to set up custom credentials, create databases, and manage users
+        self.root_client = MilvusClient(uri=self.milvus_url, token="root:Milvus")
+        
+        # If using root user, we'll use the root_client and update password later in load_or_create_database
+        # If using a custom user, client will be set to None and created after user setup in load_or_create_database
+        if self.milvus_username == "root":
+            self.client = self.root_client
+        else:
+            self.client = None
 
     def load_database(self):
         """
@@ -94,7 +102,42 @@ class VectorDatabaseBuilder:
             Exception: If creation or loading fails.
         """
         # Check if database exists in Milvus
-        if self.milvus_database_name not in self.client.list_databases():
+        if self.milvus_database_name not in self.root_client.list_databases():
+            # No database implies that the password is still the default "Milvus"
+            if self.milvus_username == "root":
+                # Update root password to the one from .env
+                try:
+                    self.root_client.update_password(
+                        user_name=self.milvus_username,
+                        old_password="Milvus",
+                        new_password=self.milvus_password
+                    )
+                    logger.info("Updated password for root user")
+                except Exception as e:
+                    logger.error(f"Error updating password: {e}")
+                    raise e
+            else:
+                # Create a custom user with credentials from .env
+                try:
+                    self.root_client.create_user(
+                        user_name=self.milvus_username,
+                        password=self.milvus_password
+                    )
+                    logger.info(f"Created custom user: {self.milvus_username}")
+                    
+                    # Reinitialize client with the new user credentials
+                    self.client = MilvusClient(
+                        uri=self.milvus_url,
+                        token=f"{self.milvus_username}:{self.milvus_password}"
+                    )
+                    logger.info(f"Initialized client with user: {self.milvus_username}")
+                    
+                    # Close the root client since we're done with it
+                    self.root_client.close()
+                except Exception as e:
+                    logger.error(f"Error creating user or reinitializing client: {e}")
+                    raise e
+
             # Create and switch to new database
             try:
                 logger.info(f"Database {self.milvus_database_name} does not exist. Creating database.")
@@ -105,7 +148,7 @@ class VectorDatabaseBuilder:
                 logger.error(f"Error creating database: {e}")
                 raise e
         else:
-            # Database already exists, just switch to it
+            # Database already exists
             try:
                 logger.info(f"Database {self.milvus_database_name} exists. Using database.")
                 self.load_database()
