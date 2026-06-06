@@ -42,7 +42,10 @@ class TestSummarizeChapterView(SimpleTestCase):
                      "Genesis": {
                          1: {
                              "1": "In the beginning God created the heavens and the earth.",
-                             "2": "And the earth was formless and void..."
+                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
+                             "3": "And God said, \"Let there be light,\" and there was light.",
+                             "4": "And God saw that the light was good, and He separated the light from the darkness.",
+                             "5": "God called the light \"day,\" and the darkness He called \"night.\" And there was evening, and there was morning—the first day."
                          }
                      }
                  }
@@ -94,7 +97,10 @@ class TestSummarizeChapterView(SimpleTestCase):
                      "Genesis": {
                          1: {
                              "1": "In the beginning God created the heavens and the earth.",
-                             "2": "And the earth was formless and void..."
+                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
+                             "3": "And God said, \"Let there be light,\" and there was light.",
+                             "4": "And God saw that the light was good, and He separated the light from the darkness.",
+                             "5": "God called the light \"day,\" and the darkness He called \"night.\" And there was evening, and there was morning—the first day."
                          }
                      }
                  }
@@ -144,7 +150,10 @@ class TestSummarizeChapterView(SimpleTestCase):
              patch("ai.views.summarize_chapter.ALL_VERSES", {
                  "bsb": {
                      "Genesis": {
-                         1: {"1": "In the beginning God created the heavens and the earth."}
+                         1: {
+                             "1": "In the beginning God created the heavens and the earth.",
+                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters."
+                         }
                      }
                  }
              }):
@@ -188,7 +197,10 @@ class TestSummarizeChapterView(SimpleTestCase):
              patch("ai.views.summarize_chapter.ALL_VERSES", {
                  "bsb": {
                      "Genesis": {
-                         1: {"1": "In the beginning God created the heavens and the earth."}
+                         1: {
+                             "1": "In the beginning God created the heavens and the earth.",
+                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters."
+                         }
                      }
                  }
              }):
@@ -212,8 +224,12 @@ class TestSummarizeChapterView(SimpleTestCase):
             assert call_args[0][0] == "partials/text.html"
             assert call_args[0][1]["response_content"] is not None
 
-    def test_summarize_chapter_response_content_type(self):
-        """Test that summarize_chapter returns HTML content type."""
+    def test_summarize_chapter_converts_chapter_to_int(self):
+        """Test that summarize_chapter converts the chapter string to an integer for ALL_VERSES lookup.
+
+        ALL_VERSES is keyed by int chapter numbers. If the string-to-int conversion were removed,
+        the lookup would raise a KeyError and completions would never be called.
+        """
         request = HttpRequest()
         request.method = "POST"
         request.state = {
@@ -222,7 +238,7 @@ class TestSummarizeChapterView(SimpleTestCase):
 
         payload = MagicMock()
         payload.book = "Genesis"
-        payload.chapter = "1"
+        payload.chapter = "5"  # string — view must convert to int 5 to hit the key below
         payload.collection_name = "bsb"
 
         with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
@@ -231,57 +247,20 @@ class TestSummarizeChapterView(SimpleTestCase):
              patch("ai.views.summarize_chapter.ALL_VERSES", {
                  "bsb": {
                      "Genesis": {
-                         1: {"1": "In the beginning God created the heavens and the earth."}
+                         5: {  # int key — only reachable via int("5")
+                             "1": "This is the book of the generations of Adam.",
+                             "2": "Male and female He created them.",
+                         }
                      }
                  }
              }):
 
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
             async def mock_read(path):
-                return "Bible prompt"
-
-            mock_read_file.side_effect = mock_read
-            mock_clean.return_value = "<p>Summary</p>"
-            mock_render.return_value = "<html>Response</html>"
-
-            response = self._call_summarize_chapter(request, payload)
-
-            # Verify HTML content type
-            assert "text/html" in response["content-type"]
-
-    def test_summarize_chapter_extracts_payload_fields(self):
-        """Test that summarize_chapter correctly extracts fields from payload."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
-
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {"1": "In the beginning God created the heavens and the earth."}
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
-
-            async def mock_read(path):
-                return "Bible prompt"
+                if "user.md" in str(path):
+                    return "Summarize {book} Chapter {chapter}:\n{verses}"
+                return "System prompt"
 
             mock_read_file.side_effect = mock_read
             mock_clean.return_value = "<p>Summary</p>"
@@ -289,48 +268,13 @@ class TestSummarizeChapterView(SimpleTestCase):
 
             _ = self._call_summarize_chapter(request, payload)
 
-            # Verify correct fields were extracted and used
+            # If int() conversion didn't happen, ALL_VERSES["bsb"]["Genesis"]["5"] would
+            # raise KeyError and completions would never be reached.
             request.state["completions_obj"].completions.assert_called_once()
-
-    def test_summarize_chapter_converts_chapter_to_int(self):
-        """Test that summarize_chapter converts chapter string to integer."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "5"
-        payload.collection_name = "bsb"
-
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         5: {"1": "Adam lived 130 years..."}
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
-
-            async def mock_read(path):
-                return "Bible prompt"
-
-            mock_read_file.side_effect = mock_read
-            mock_clean.return_value = "<p>Summary</p>"
-            mock_render.return_value = "<html>Response</html>"
-
-            response = self._call_summarize_chapter(request, payload)
-
-            # Verify successful response (proves int conversion worked)
-            assert response.status_code == 200
+            call_args = request.state["completions_obj"].completions.call_args
+            user_prompt = call_args[0][1]
+            assert "Genesis" in user_prompt
+            assert "5" in user_prompt
 
     def test_summarize_chapter_stringifies_verses(self):
         """Test that summarize_chapter properly stringifies verses with newlines."""
@@ -347,8 +291,8 @@ class TestSummarizeChapterView(SimpleTestCase):
 
         verses_dict = {
             "1": "In the beginning God created the heavens and the earth.",
-            "2": "And the earth was formless and void...",
-            "3": "And God said..."
+            "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
+            "3": "And God said, \"Let there be light,\" and there was light."
         }
 
         with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
@@ -383,8 +327,8 @@ class TestSummarizeChapterView(SimpleTestCase):
             
             # Should contain all three verses joined with newlines
             assert "In the beginning God created the heavens and the earth." in user_prompt
-            assert "And the earth was formless and void..." in user_prompt
-            assert "And God said..." in user_prompt
+            assert "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters." in user_prompt
+            assert "And God said, \"Let there be light,\" and there was light." in user_prompt
 
     def test_summarize_chapter_cleans_llm_output(self):
         """Test that summarize_chapter cleans LLM output."""
@@ -405,7 +349,7 @@ class TestSummarizeChapterView(SimpleTestCase):
              patch("ai.views.summarize_chapter.ALL_VERSES", {
                  "bsb": {
                      "Genesis": {
-                         1: {"1": "In the beginning..."}
+                         1: {"1": "In the beginning God created the heavens and the earth."}
                      }
                  }
              }):
@@ -448,7 +392,7 @@ class TestSummarizeChapterView(SimpleTestCase):
              patch("ai.views.summarize_chapter.ALL_VERSES", {
                  "bsb": {
                      "Genesis": {
-                         1: {"1": "In the beginning..."}
+                         1: {"1": "In the beginning God created the heavens and the earth."}
                      }
                  }
              }), \
@@ -474,42 +418,55 @@ class TestSummarizeChapterView(SimpleTestCase):
             mock_mark_safe.assert_called_once_with(cleaned_html)
 
     def test_summarize_chapter_different_collections(self):
-        """Test that summarize_chapter works with different collection names."""
-        for collection in ["bsb", "niv", "kjv"]:
-            request = HttpRequest()
-            request.method = "POST"
-            request.state = {
-                "completions_obj": AsyncMock(),
-            }
+        """Test that collection_name is used as the key into ALL_VERSES.
 
-            payload = MagicMock()
-            payload.book = "Genesis"
-            payload.chapter = "1"
-            payload.collection_name = collection
+        Each collection has distinct verse text; the test verifies that the correct
+        collection's verses appear in the user prompt, confirming collection_name
+        drives the lookup rather than defaulting to a fixed key.
+        """
+        collections = {
+            "bsb": "BSB-specific verse text for Genesis one.",
+            "niv": "NIV-specific verse text for Genesis one.",
+            "kjv": "KJV-specific verse text for Genesis one.",
+        }
 
-            with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-                 patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-                 patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-                 patch("ai.views.summarize_chapter.ALL_VERSES", {
-                     collection: {
-                         "Genesis": {
-                             1: {"1": "In the beginning..."}
+        for collection, unique_verse in collections.items():
+            with self.subTest(collection=collection):
+                request = HttpRequest()
+                request.method = "POST"
+                request.state = {"completions_obj": AsyncMock()}
+
+                payload = MagicMock()
+                payload.book = "Genesis"
+                payload.chapter = "1"
+                payload.collection_name = collection
+
+                with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
+                     patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
+                     patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
+                     patch("ai.views.summarize_chapter.ALL_VERSES", {
+                         collection: {
+                             "Genesis": {
+                                 1: {"1": unique_verse}
+                             }
                          }
-                     }
-                 }):
+                     }):
 
-                request.state["completions_obj"].completions = AsyncMock(
-                    return_value="Summary"
-                )
+                    request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
-                async def mock_read(path):
-                    return "Bible prompt"
+                    async def mock_read(path):
+                        if "user.md" in str(path):
+                            return "Summarize {book} Chapter {chapter}:\n{verses}"
+                        return "System prompt"
 
-                mock_read_file.side_effect = mock_read
-                mock_clean.return_value = "<p>Summary</p>"
-                mock_render.return_value = "<html>Response</html>"
+                    mock_read_file.side_effect = mock_read
+                    mock_clean.return_value = "<p>Summary</p>"
+                    mock_render.return_value = "<html>Response</html>"
 
-                response = self._call_summarize_chapter(request, payload)
+                    _ = self._call_summarize_chapter(request, payload)
 
-                # Verify successful response for each collection
-                assert response.status_code == 200
+                    # Verify the verse text unique to this collection made it into the prompt,
+                    # confirming collection_name was used as the ALL_VERSES key.
+                    call_args = request.state["completions_obj"].completions.call_args
+                    user_prompt = call_args[0][1]
+                    assert unique_verse in user_prompt
