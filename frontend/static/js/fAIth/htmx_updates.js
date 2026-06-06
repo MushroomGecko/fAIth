@@ -18,3 +18,14 @@ document.querySelectorAll('[data-input-modal]').forEach(form =>
         responseModal.show();
     });
 });
+
+// When response modal closes, ensure input modals are also closed
+document.getElementById('serverResponseModal').addEventListener('hide.bs.modal', function()
+{
+    document.querySelectorAll('[data-input-modal]').forEach(form =>
+    {
+        const modalId = form.dataset.inputModal;
+        const inputModal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+        if (inputModal) inputModal.hide();
+    });
+});

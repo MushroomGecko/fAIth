@@ -1,0 +1,15 @@
+<div id="summarizeChapterModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <form id="summarizeChapterForm" data-input-modal="summarizeChapterModal" hx-post="{% url 'api:summarize_chapter' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                    {% csrf_token %}
+                    <input type="hidden" name="book" value="{{ book }}">
+                    <input type="hidden" name="chapter" value="{{ chapter }}">
+                    <input type="hidden" name="collection_name" value="{{ version }}">
+                    <button type="submit" id="summarizeChapterSubmit" style="display: none;"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

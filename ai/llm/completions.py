@@ -60,9 +60,9 @@ class Completions:
         # Initialize async OpenAI-compatible client
         self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)
 
-    async def completions(self, system_prompt: str, user_prompt: str, query: str):
+    async def completions(self, system_prompt: str, user_prompt: str, query: str = None) -> str:
         """
-        Generate an LLM completion asynchronously.
+        Generate an LLM completion asynchronously with optional query formatting.
 
         Sends a chat completion request with system context and user query.
         The user_prompt can contain a {query} placeholder that will be formatted.
@@ -70,7 +70,7 @@ class Completions:
         Parameters:
             system_prompt (str): System message defining the LLM's role and behavior.
             user_prompt (str): User message template, may contain {query} placeholder.
-            query (str): The actual query to format into user_prompt.
+            query (str): The actual query to format into user_prompt. Optional, defaults to None.
 
         Returns:
             str: Generated completion text from the LLM.
@@ -78,10 +78,17 @@ class Completions:
         Raises:
             Exception: If the LLM service is unavailable or request fails.
         """
+
+        # Format user prompt if query is provided
+        if query is not None and query.strip():
+            user_prompt = user_prompt.format(query=query)
+        else:
+            user_prompt = user_prompt
+        
         # Build message list: system instruction followed by user query
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt.format(query=query)}
+            {"role": "user", "content": user_prompt}
         ]
         
         # Request completion from LLM with model-specific parameters

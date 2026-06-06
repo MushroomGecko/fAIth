@@ -25,13 +25,39 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 # Global configuration variables - must be initialized in order
+
+# Path to the root directory containing Bible data files. Set by set_bible_data_root().
+# Format: pathlib.Path object pointing to {Django BASE_DIR}/fAIth/bible_data
 BIBLE_DATA_ROOT = None
+
+# The default Bible version to display. Set by set_default_version().
+# Format: str (e.g., "bsb", "kjv") - must exist in VERSION_SELECTION
 DEFAULT_VERSION = ''
+
+# The default book to display. Set by set_default_book().
+# Format: str (e.g., "Genesis", "John") - must exist in IN_ORDER_BOOKS
 DEFAULT_BOOK = ''
+
+# The default chapter to display. Set by set_default_chapter().
+# Format: int (e.g., 1, 28) - must be valid for the DEFAULT_BOOK
 DEFAULT_CHAPTER = ''
+
+# Available Bible versions from filesystem and ENABLED_VERSIONS env var. Set by set_version_selection().
+# Format: list of str (e.g., ["bsb", "kjv", "niv"]) - filtered by environment and filesystem
 VERSION_SELECTION = []
+
+# All 66 Bible books in canonical order (OT: 39, NT: 27). Set by set_in_order_books().
+# Format: list of str (e.g., ["Genesis", "Exodus", ..., "Revelation"])
 IN_ORDER_BOOKS = []
+
+# Maps book names to their chapter counts by scanning DEFAULT_VERSION directory. Set by set_chapter_selection().
+# Format: dict[str, int] (e.g., {"Genesis": 50, "Exodus": 40, "Matthew": 28})
 CHAPTER_SELECTION = {}
+
+# Nested structure of all Bible verses by version, book, chapter, and verse number. Set by set_all_verses().
+# Format: dict[version][book][chapter][verse_num] = verse_text
+# Verse formatting: numeric keys become "{verse_num}) {text}", non-numeric keys (headers) become '<span class="header">{text}</span>'
+# Example: ALL_VERSES["bsb"]["Genesis"][1]["1"] = "1) In the beginning God created the heavens and the earth."
 ALL_VERSES = {}
 
 def set_bible_data_root():
