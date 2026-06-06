@@ -82,6 +82,9 @@ Drivers:
 DOCKER_COMPOSE_TPL = """
 services:
 {services}
+
+volumes:
+{volumes}
 """.lstrip("\n")
 
 
@@ -92,6 +95,8 @@ def build_services_section(
     milvus_setup,
     embedding_setup,
     llm_setup,
+    searxng_valkey_setup,
+    searxng_core_setup,
     webapp_setup,
 ):
     """
@@ -102,6 +107,7 @@ def build_services_section(
     Parameters:
         postgres_setup, etcd_setup, seaweedfs_setup, milvus_setup: Included only if non-empty (local service enabled)
         embedding_setup, llm_setup: Included only if non-empty (local service enabled)
+        searxng_valkey_setup, searxng_core_setup: Always included (search engine)
         webapp_setup: Always included (final service)
 
     Returns:
@@ -126,6 +132,12 @@ def build_services_section(
     # Conditionally include LLM service
     if llm_setup.strip():
         services.append(llm_setup.lstrip("\n").rstrip("\n"))
+
+    # Always include SearXNG services (before webapp)
+    if searxng_valkey_setup.strip():
+        services.append(searxng_valkey_setup.lstrip("\n").rstrip("\n"))
+    if searxng_core_setup.strip():
+        services.append(searxng_core_setup.lstrip("\n").rstrip("\n"))
 
     # Always include webapp (final service)
     services.append(webapp_setup.lstrip("\n").rstrip("\n"))
@@ -161,6 +173,45 @@ INTEL_SETUP = """
     devices:
       - /dev/dri
     group_add: [video, render]
+""".lstrip("\n")
+
+# SearXNG Valkey (cache/rate-limiter) service
+SEARXNG_VALKEY_BLOCK = """
+  search-engine-valkey:
+    container_name: search-engine-valkey-faith
+    image: docker.io/valkey/valkey:latest
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: always
+    volumes:
+      - searxng-valkey-data:/data/
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+""".lstrip("\n")
+
+# SearXNG core service
+SEARXNG_CORE_BLOCK = """
+  search-engine-core:
+    container_name: search-engine-core-faith
+    image: docker.io/searxng/searxng:latest
+    restart: always
+    volumes:
+      - ./searxng_settings.yml:/etc/searxng/settings.yml:ro
+      - searxng-data:/var/cache/searxng/
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      search-engine-valkey:
+        condition: service_healthy
 """.lstrip("\n")
 
 # Postgres service configuration
@@ -470,6 +521,7 @@ def build_webapp_setup(
     embedding_url,
     llm_enabled,
     llm_url,
+    searxng_enabled,
     webapp_port,
     uvicorn_workers,
     start_period,
@@ -493,6 +545,7 @@ def build_webapp_setup(
         embedding_url: Embedding service URL (constructed from container name + port)
         llm_enabled (bool): True if using local LLM service
         llm_url: LLM service URL (constructed from container name + port)
+        searxng_enabled (bool): True if using local SearXNG service
         webapp_port: Port to expose webapp on
         uvicorn_workers: Number of uvicorn workers
         start_period: Healthcheck start period
@@ -520,6 +573,10 @@ def build_webapp_setup(
 
     if llm_enabled:
         depends_on_services.append("""      llm:
+        condition: service_healthy""")
+
+    if searxng_enabled:
+        depends_on_services.append("""      search-engine-core:
         condition: service_healthy""")
 
     # Only include depends_on section if there are dependencies
@@ -556,6 +613,24 @@ def build_webapp_setup(
 
 
 # Shell entrypoint script - Alternative startup sequence with permissions
+SEARXNG_SETTINGS_TPL = """
+use_default_settings: true
+
+server:
+  secret_key: "{secret_key}"
+
+search:
+  formats:
+    - html
+    - json
+  max_results_per_category: {image_limit}
+
+engines:
+  - name: radio browser
+    disabled: true
+""".lstrip("\n")
+
+
 SHELL_ENTRYPOINT = """
 #!/bin/sh
 
@@ -949,6 +1024,11 @@ if __name__ == "__main__":
     # HuggingFace configuration
     HF_TOKEN = str(os.getenv("HF_TOKEN") or "").strip()
 
+    # SearXNG configuration
+    SEARXNG_ENABLED = str(os.getenv("SEARXNG_ENABLED") or "True").strip().lower() == "true"
+    SEARXNG_SECRET = str(os.getenv("SEARXNG_SECRET") or "").strip()
+    SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT") or 10).strip())
+
     # Healthcheck configuration
     START_PERIOD = "3600s"
     INTERVAL = "30s"
@@ -1069,6 +1149,7 @@ if __name__ == "__main__":
         embedding_url=embedding_url,
         llm_enabled=local_llm_enabled,
         llm_url=llm_url,
+        searxng_enabled=SEARXNG_ENABLED,
         webapp_port=WEBAPP_PORT,
         uvicorn_workers=UVICORN_WORKERS,
         start_period=START_PERIOD,
@@ -1086,10 +1167,28 @@ if __name__ == "__main__":
         milvus_setup=milvus_block,
         embedding_setup=embedding_block,
         llm_setup=llm_block,
+        searxng_valkey_setup=SEARXNG_VALKEY_BLOCK if SEARXNG_ENABLED else "",
+        searxng_core_setup=SEARXNG_CORE_BLOCK if SEARXNG_ENABLED else "",
         webapp_setup=webapp_block,
     )
 
-    docker_compose_str = DOCKER_COMPOSE_TPL.format(services=services_section)
+    volumes_section = "  searxng-data:\n  searxng-valkey-data:" if SEARXNG_ENABLED else ""
+
+    docker_compose_str = DOCKER_COMPOSE_TPL.format(
+        services=services_section,
+        volumes=volumes_section,
+    )
+
+    # Prepare SearXNG settings with proper formatting
+    if SEARXNG_ENABLED:
+        searxng_settings_str = (
+            SEARXNG_SETTINGS_TPL.format(
+                secret_key=SEARXNG_SECRET,
+                image_limit=SEARXNG_IMAGE_LIMIT,
+            )
+            .lstrip("\n")
+            .rstrip("\n")
+        )
 
     # Prepare shell entrypoint script with proper formatting
     shell_entrypoint_str = (
@@ -1104,6 +1203,10 @@ if __name__ == "__main__":
     # Write generated files
     with Path("docker-compose.yml").open("w", encoding="utf-8") as f:
         f.write(docker_compose_str)
+
+    if SEARXNG_ENABLED:
+        with Path("searxng_settings.yml").open("w", encoding="utf-8") as f:
+            f.write(searxng_settings_str)
 
     with Path("webapp_entrypoint.sh").open("w", encoding="utf-8") as f:
         f.write(shell_entrypoint_str)

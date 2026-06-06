@@ -29,9 +29,9 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 3. Activate the venv with `.venv/bin/activate`
 4. Install required packages with `pip install -r requirements.txt`
 5. Copy `.env_template` to `.env`
-6. Change `DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, and `MILVUS_PASSWORD` in the new `.env` file to use more secure secrets. You can generate secure values with:
+6. Change `DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, `MILVUS_PASSWORD`, and `SEARXNG_SECRET` in the new `.env` file to use more secure secrets. You can generate secure values with:
    - `DJANGO_SECRET_KEY`: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
-   - `POSTGRES_PASSWORD` and `MILVUS_PASSWORD`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+   - `POSTGRES_PASSWORD`, `MILVUS_PASSWORD`, and `SEARXNG_SECRET`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 7. (Optional) Set `HF_TOKEN` if you wish to use models from HuggingFace that require authentication
 8. If you wish to host fAIth on your local network, add your local IP to the `DJANGO_ALLOWED_HOSTS` list
 9. Configure the remaining `.env` settings to fit your environment:

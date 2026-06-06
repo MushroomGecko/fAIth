@@ -4,7 +4,7 @@ services:
     image: postgres:latest
     environment:
       POSTGRES_USER: faith_user
-      POSTGRES_PASSWORD: CHANGE_ME_use_a_strong_password
+      POSTGRES_PASSWORD: YG6psiW2Vh9EeMTTflm6s4E_1wuo1QC8RosV6HGBXfk
       POSTGRES_DB: faith_db
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/postgres:/var/lib/postgresql
@@ -219,6 +219,39 @@ services:
                 - nvidia.com/gpu=all
               capabilities: [gpu]
 
+  search-engine-valkey:
+    container_name: search-engine-valkey-faith
+    image: docker.io/valkey/valkey:latest
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: always
+    volumes:
+      - searxng-valkey-data:/data/
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  search-engine-core:
+    container_name: search-engine-core-faith
+    image: docker.io/searxng/searxng:latest
+    restart: always
+    volumes:
+      - ./searxng_settings.yml:/etc/searxng/settings.yml:ro
+      - searxng-data:/var/cache/searxng/
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      search-engine-valkey:
+        condition: service_healthy
+
   webapp:
     build:
       context: .
@@ -247,6 +280,12 @@ services:
         condition: service_healthy
       llm:
         condition: service_healthy
+      search-engine-core:
+        condition: service_healthy
 
     volumes:
       - .:/app
+
+volumes:
+  searxng-data:
+  searxng-valkey-data:

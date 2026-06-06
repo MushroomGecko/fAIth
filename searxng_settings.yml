@@ -1,0 +1,14 @@
+use_default_settings: true
+
+server:
+  secret_key: "W83xDe0AtURdD93fsG5MMsZyxwKqPjblfstwVvoSLdw"
+
+search:
+  formats:
+    - html
+    - json
+  max_results_per_category: 10
+
+engines:
+  - name: radio browser
+    disabled: true

@@ -50,11 +50,13 @@ document.addEventListener('selectionchange', () => {
     if (text !== '')
     {
         document.getElementById('selectedTextInput').value = text;
+        document.getElementById('selectedTextImageSearch').value = text;
         enableTextHighlightInteractables();
     }
     else if (!document.querySelector('.modal.show'))
     {
         document.getElementById('selectedTextInput').value = '';
+        document.getElementById('selectedTextImageSearch').value = '';
         disableTextHighlightInteractables();
     }
 });

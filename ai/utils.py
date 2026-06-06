@@ -4,6 +4,7 @@ from typing import Any
 from pathlib import Path
 
 import markdown
+import httpx
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -130,3 +131,42 @@ async def clean_llm_output(text: str) -> str:
     cleaned_text = cleaned_text.replace('\n', '')
 
     return cleaned_text
+
+async def search_for_images(selected_text: str) -> list[str]:
+    """
+    Search for images via the local SearXNG instance.
+
+    Queries SearXNG's JSON API over the internal Docker network.
+    Not accessible from outside the container network. Results are deduplicated
+    and ranked by SearXNG across multiple image engines (Bing, DuckDuckGo,
+    Google Images, etc.).
+
+    Parameters:
+        selected_text (str): The search query to find images for.
+
+    Returns:
+        list[str]: Direct image URLs (img_src) from the search results.
+            Empty strings are included where a result had no img_src.
+    """
+    # SearXNG is only reachable via Docker service name — not localhost
+    url = "http://search-engine-core:8080/search"
+    params = {
+        "q": selected_text,
+        "categories": "images",
+        "format": "json",
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+    # Extract direct image URLs from each result
+    image_results = data.get("results", [])
+    image_urls = []
+    for result in image_results:
+        img_src = result.get("img_src", "")
+        if img_src:
+            image_urls.append(img_src)
+
+    return image_urls
