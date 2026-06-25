@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 
 from fAIth.bible_globals import (
     ALL_VERSES,
@@ -11,10 +12,18 @@ from fAIth.bible_globals import (
     IN_ORDER_BOOKS,
     VERSION_SELECTION,
 )
+from fAIth.function_globals import derive_boolean_from_string
 from frontend.utils import async_redirect, async_render
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+# Frontend global variables
+SEARXNG_ENABLED = derive_boolean_from_string(os.getenv("SEARXNG_ENABLED", "False"))
+
+CONTROL_VARIABLES = {
+    'SEARXNG_ENABLED': SEARXNG_ENABLED,
+}
 
 async def full_view(request, book, chapter, version):
     """
@@ -119,6 +128,9 @@ async def full_view(request, book, chapter, version):
             
             # Current URL for navigation state
             'current_url': request.path_info,
+
+            # Control variables
+            'control_variables': CONTROL_VARIABLES,
         }
         
         # Render the full view with the given context
