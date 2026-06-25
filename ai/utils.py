@@ -132,7 +132,7 @@ async def clean_llm_output(text: str) -> str:
 
     return cleaned_text
 
-async def search_for_images(selected_text: str) -> list[str]:
+async def search_for_images(selected_text: str, searxng_image_limit: int = 10) -> list[str]:
     """
     Search for images via the local SearXNG instance.
 
@@ -143,6 +143,7 @@ async def search_for_images(selected_text: str) -> list[str]:
 
     Parameters:
         selected_text (str): The search query to find images for.
+        searxng_image_limit (int): The maximum number of images to return.
 
     Returns:
         list[str]: Direct image URLs (img_src) from the search results.
@@ -169,4 +170,4 @@ async def search_for_images(selected_text: str) -> list[str]:
         if img_src:
             image_urls.append(img_src)
 
-    return image_urls
+    return image_urls[:searxng_image_limit]

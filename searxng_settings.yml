@@ -7,7 +7,6 @@ search:
   formats:
     - html
     - json
-  max_results_per_category: 10
 
 engines:
   - name: radio browser

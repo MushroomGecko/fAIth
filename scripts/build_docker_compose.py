@@ -623,7 +623,6 @@ search:
   formats:
     - html
     - json
-  max_results_per_category: {image_limit}
 
 engines:
   - name: radio browser
@@ -1027,7 +1026,6 @@ if __name__ == "__main__":
     # SearXNG configuration
     SEARXNG_ENABLED = str(os.getenv("SEARXNG_ENABLED") or "True").strip().lower() == "true"
     SEARXNG_SECRET = str(os.getenv("SEARXNG_SECRET") or "").strip()
-    SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT") or 10).strip())
 
     # Healthcheck configuration
     START_PERIOD = "3600s"
@@ -1184,7 +1182,6 @@ if __name__ == "__main__":
         searxng_settings_str = (
             SEARXNG_SETTINGS_TPL.format(
                 secret_key=SEARXNG_SECRET,
-                image_limit=SEARXNG_IMAGE_LIMIT,
             )
             .lstrip("\n")
             .rstrip("\n")
