@@ -222,12 +222,21 @@ services:
   search-engine-valkey:
     container_name: search-engine-valkey-faith
     image: docker.io/valkey/valkey:latest
-    command: valkey-server --save 30 1 --loglevel warning
+    # NOTE: command MUST use list form (not a shell string) because Compose's
+    # shell-word parser treats bare `>` and `&` (required by the ACL rule syntax
+    # below) as redirection/background operators and silently truncates the command.
+    command: [
+      valkey-server,
+      --port, "6379",
+      --save, "30", "1",
+      --requirepass, "lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA",
+      --user, "valkey", on, ">lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA", "~*", "&*", "+@all",
+    ]
     restart: always
     volumes:
       - searxng-valkey-data:/data/
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      test: ["CMD", "valkey-cli", "-p", "6379", "-a", "lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA", "--no-auth-warning", "ping"]
       start_period: 10s
       interval: 10s
       timeout: 5s

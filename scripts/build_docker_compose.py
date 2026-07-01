@@ -180,12 +180,21 @@ SEARXNG_VALKEY_BLOCK = """
   search-engine-valkey:
     container_name: search-engine-valkey-faith
     image: docker.io/valkey/valkey:latest
-    command: valkey-server --save 30 1 --loglevel warning
+    # NOTE: command MUST use list form (not a shell string) because Compose's
+    # shell-word parser treats bare `>` and `&` (required by the ACL rule syntax
+    # below) as redirection/background operators and silently truncates the command.
+    command: [
+      valkey-server,
+      --port, "{valkey_port}",
+      --save, "30", "1",
+      --requirepass, "{valkey_password}",
+      --user, "{valkey_username}", on, ">{valkey_password}", "~*", "&*", "+@all",
+    ]
     restart: always
     volumes:
       - searxng-valkey-data:/data/
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      test: ["CMD", "valkey-cli", "-p", "{valkey_port}", "-a", "{valkey_password}", "--no-auth-warning", "ping"]
       start_period: 10s
       interval: 10s
       timeout: 5s
@@ -620,12 +629,29 @@ server:
   secret_key: "{secret_key}"
 
 search:
+  safe_search: {safe_search_level}
   formats:
     - html
     - json
 
+valkey:
+  url: valkey://{valkey_username}:{valkey_password}@search-engine-valkey-faith:{valkey_port}/0
+
+# These are dev icon-pack engines (categories: [images, icons]), so SearXNG includes
+# them whenever the `images` category is searched. That surfaces irrelevant tech
+# logos (e.g. Android, Arch Linux) in otherwise unrelated image searches.
 engines:
-  - name: radio browser
+  - name: devicons
+    disabled: true
+  - name: flaticon
+    disabled: true
+  - name: material icons
+    disabled: true
+  - name: lucide
+    disabled: true
+  - name: selfhst icons
+    disabled: true
+  - name: uxwing
     disabled: true
 """.lstrip("\n")
 
@@ -1026,6 +1052,18 @@ if __name__ == "__main__":
     # SearXNG configuration
     SEARXNG_ENABLED = str(os.getenv("SEARXNG_ENABLED") or "True").strip().lower() == "true"
     SEARXNG_SECRET = str(os.getenv("SEARXNG_SECRET") or "").strip()
+    SEARXNG_SAFE_SEARCH_LEVEL = int(str(os.getenv("SEARXNG_SAFE_SEARCH_LEVEL") or 2).strip())
+    VALKEY_PORT = str(os.getenv("VALKEY_PORT") or "6379").strip()
+    VALKEY_USERNAME = str(os.getenv("VALKEY_USERNAME") or "valkey").strip()
+    VALKEY_PASSWORD = str(os.getenv("VALKEY_PASSWORD") or "").strip()
+
+    if SEARXNG_ENABLED and not VALKEY_PASSWORD or VALKEY_PASSWORD == "CHANGE_ME_use_a_strong_password":
+        raise ValueError("VALKEY_PASSWORD must be set when SEARXNG_ENABLED is True and must not be the default value")
+
+    if SEARXNG_ENABLED and SEARXNG_SAFE_SEARCH_LEVEL not in (0, 1, 2):
+        raise ValueError(
+            f"SEARXNG_SAFE_SEARCH_LEVEL must be 0 (Off), 1 (Moderate), or 2 (Strict). Got: `{SEARXNG_SAFE_SEARCH_LEVEL}`"
+        )
 
     # Healthcheck configuration
     START_PERIOD = "3600s"
@@ -1165,7 +1203,15 @@ if __name__ == "__main__":
         milvus_setup=milvus_block,
         embedding_setup=embedding_block,
         llm_setup=llm_block,
-        searxng_valkey_setup=SEARXNG_VALKEY_BLOCK if SEARXNG_ENABLED else "",
+        searxng_valkey_setup=(
+            SEARXNG_VALKEY_BLOCK.format(
+                valkey_port=VALKEY_PORT,
+                valkey_username=VALKEY_USERNAME,
+                valkey_password=VALKEY_PASSWORD,
+            )
+            if SEARXNG_ENABLED
+            else ""
+        ),
         searxng_core_setup=SEARXNG_CORE_BLOCK if SEARXNG_ENABLED else "",
         webapp_setup=webapp_block,
     )
@@ -1182,6 +1228,10 @@ if __name__ == "__main__":
         searxng_settings_str = (
             SEARXNG_SETTINGS_TPL.format(
                 secret_key=SEARXNG_SECRET,
+                safe_search_level=SEARXNG_SAFE_SEARCH_LEVEL,
+                valkey_username=VALKEY_USERNAME,
+                valkey_password=VALKEY_PASSWORD,
+                valkey_port=VALKEY_PORT,
             )
             .lstrip("\n")
             .rstrip("\n")
