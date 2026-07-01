@@ -4,7 +4,7 @@ services:
     image: postgres:latest
     environment:
       POSTGRES_USER: faith_user
-      POSTGRES_PASSWORD: YG6psiW2Vh9EeMTTflm6s4E_1wuo1QC8RosV6HGBXfk
+      POSTGRES_PASSWORD: CHANGE_ME_use_a_strong_password
       POSTGRES_DB: faith_db
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/postgres:/var/lib/postgresql
@@ -171,7 +171,7 @@ services:
 
   embedding:
     container_name: llama-cpp-embedding-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -185,18 +185,10 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: cdi
-              device_ids:
-                - nvidia.com/gpu=all
-              capabilities: [gpu]
 
   llm:
     container_name: llama-cpp-llm-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -210,14 +202,6 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: cdi
-              device_ids:
-                - nvidia.com/gpu=all
-              capabilities: [gpu]
 
   search-engine-valkey:
     container_name: search-engine-valkey-faith
@@ -229,14 +213,14 @@ services:
       valkey-server,
       --port, "6379",
       --save, "30", "1",
-      --requirepass, "lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA",
-      --user, "valkey", on, ">lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA", "~*", "&*", "+@all",
+      --requirepass, "CHANGE_ME_use_a_strong_password",
+      --user, "valkey", on, ">CHANGE_ME_use_a_strong_password", "~*", "&*", "+@all",
     ]
     restart: always
     volumes:
       - searxng-valkey-data:/data/
     healthcheck:
-      test: ["CMD", "valkey-cli", "-p", "6379", "-a", "lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA", "--no-auth-warning", "ping"]
+      test: ["CMD", "valkey-cli", "-p", "6379", "-a", "CHANGE_ME_use_a_strong_password", "--no-auth-warning", "ping"]
       start_period: 10s
       interval: 10s
       timeout: 5s

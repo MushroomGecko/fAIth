@@ -1,7 +1,7 @@
 use_default_settings: true
 
 server:
-  secret_key: "W83xDe0AtURdD93fsG5MMsZyxwKqPjblfstwVvoSLdw"
+  secret_key: "CHANGE_ME_use_a_strong_password"
 
 search:
   safe_search: 2
@@ -10,7 +10,7 @@ search:
     - json
 
 valkey:
-  url: valkey://valkey:lyV057j2i8OwTVhkq5rI_mDu7gz-TmLqSb4SHhdr0cA@search-engine-valkey-faith:6379/0
+  url: valkey://valkey:CHANGE_ME_use_a_strong_password@search-engine-valkey-faith:6379/0
 
 # These are dev icon-pack engines (categories: [images, icons]), so SearXNG includes
 # them whenever the `images` category is searched. That surfaces irrelevant tech
