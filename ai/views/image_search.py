@@ -42,11 +42,14 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     
     # Extract validated data from payload
     selected_text = payload.selected_text
+    verses_text = payload.verses_text
+    book = payload.book
+    chapter = payload.chapter
 
     # Load system and user prompts from files and format with context
     system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
     user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-    user_prompt = user_prompt.format(selected_text=selected_text)
+    user_prompt = user_prompt.format(selected_text=selected_text, verses_text=verses_text, book=book, chapter=chapter)
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     system_prompt = system_prompt.strip()
     user_prompt = user_prompt.strip()

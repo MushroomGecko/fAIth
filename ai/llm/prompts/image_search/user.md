@@ -1,5 +1,10 @@
 The user is studying the Bible and has selected the following text. Generate an image search query that will return authentic, Christian imagery directly relevant to it.
 
+**Full Verse Context:**
+{book} {chapter}
+
+{verses_text}
+
 **Selected Text:**
 {selected_text}
 
