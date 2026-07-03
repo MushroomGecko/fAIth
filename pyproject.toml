@@ -1,21 +1,3 @@
-[tool.black]
-line-length = 9999
-target-version = ["py314"]
-extend-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.venv
-  | _build
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-line_length = 9999
-
 [tool.ruff]
 line-length = 9999
 target-version = "py314"

@@ -29,7 +29,7 @@ How have you tested this change? Please describe the test cases you've verified.
 
 ## Checklist
 
-- [ ] My code follows the project style guidelines (PEP 8, ruff, black)
+- [ ] My code follows the project style guidelines (PEP 8, ruff)
 - [ ] I have updated the README.md if needed
 - [ ] I have added/updated docstrings for new functions
 - [ ] I have added/updated unit tests
