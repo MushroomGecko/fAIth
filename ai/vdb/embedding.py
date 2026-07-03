@@ -8,7 +8,6 @@ from openai import AsyncOpenAI, OpenAI
 logger = logging.getLogger(__name__)
 
 
-
 class Embedding:
     """
     Client for generating text embeddings using a remote embedding model.

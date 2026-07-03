@@ -18,6 +18,7 @@ if "DJANGO_SETTINGS_MODULE" not in os.environ:
 # Start Django
 try:
     import django
+
     django.setup()
 except Exception as e:
     # Allow script to proceed; some paths may not require Django

@@ -16,6 +16,7 @@ class GeneralQuestionInputSerializer(BaseModel):
         collection_name (str): Name of the Milvus collection to search (max 3 chars).
         query (str): User's question or search query (required, non-empty after strip).
     """
+
     collection_name: str
     query: str
 

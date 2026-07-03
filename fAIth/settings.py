@@ -18,7 +18,7 @@ from pathlib import Path
 from fAIth.function_globals import derive_boolean_from_string
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(name)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 # Build paths inside the project like this: BASE_DIR.joinpath('subdir').
@@ -53,17 +53,7 @@ INSTALLED_APPS = [
     "frontend",
 ]
 
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_asgi_lifespan.middleware.LifespanStateMiddleware"
-]
+MIDDLEWARE = ["django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware", "django.contrib.sessions.middleware.SessionMiddleware", "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware", "django.contrib.auth.middleware.AuthenticationMiddleware", "django.contrib.messages.middleware.MessageMiddleware", "django.middleware.clickjacking.XFrameOptionsMiddleware", "django_asgi_lifespan.middleware.LifespanStateMiddleware"]
 
 ROOT_URLCONF = "fAIth.urls"
 
@@ -102,16 +92,7 @@ if not postgres_password or postgres_password == "CHANGE_ME_use_a_strong_passwor
 if postgres_host.startswith(("http://", "https://")):
     postgres_host = postgres_host.replace("http://", "").replace("https://", "")
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'HOST': postgres_host,
-        'PORT': postgres_port,
-        'USER': postgres_user,
-        'PASSWORD': postgres_password,
-        'NAME': postgres_database
-    }
-}
+DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "HOST": postgres_host, "PORT": postgres_port, "USER": postgres_user, "PASSWORD": postgres_password, "NAME": postgres_database}}
 
 
 # Password validation
@@ -161,8 +142,4 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-NINJA_DOCS_CONF = {
-    "title": "fAIth API",
-    "version": "1.0.0",
-    "ui": "swagger"
-}
+NINJA_DOCS_CONF = {"title": "fAIth API", "version": "1.0.0", "ui": "swagger"}

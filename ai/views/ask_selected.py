@@ -62,7 +62,6 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
     selected_text = payload.selected_text
     query = payload.query
 
-
     # Search vector database for relevant context
     vector_database = request.state["milvus_db"]
     # Split in half since we are using two queries

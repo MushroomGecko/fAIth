@@ -22,9 +22,11 @@ system_prompt = fAIth.settings.BASE_DIR.joinpath("ai", "llm", "prompts", "testin
 user_prompt = fAIth.settings.BASE_DIR.joinpath("ai", "llm", "prompts", "testing", "user.md").open("r", encoding="utf-8").read()
 query = "Name the 12 apostles of Jesus Christ."
 
+
 async def test_unified_runner_async():
     llm = Completions()
     logger.info(await llm.completions(system_prompt, user_prompt, query))
+
 
 if __name__ == "__main__":
     try:

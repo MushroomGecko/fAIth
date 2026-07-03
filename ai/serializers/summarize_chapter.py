@@ -17,6 +17,7 @@ class SummarizeChapterInputSerializer(BaseModel):
         chapter (str): Chapter to summarize.
         collection_name (str): Name of the Milvus collection to search (max 3 chars).
     """
+
     book: str
     chapter: str
     collection_name: str

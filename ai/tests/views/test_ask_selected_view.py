@@ -36,16 +36,10 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             # Mock the database and LLM calls
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             # Mock file reads
             async def mock_read(path):
@@ -91,15 +85,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 if "system.md" in str(path):
@@ -138,16 +126,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.unify_vdb_results") as mock_unify, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.unify_vdb_results") as mock_unify, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -178,15 +159,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -219,15 +194,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -259,15 +228,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -296,16 +259,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render, \
-             patch("ai.views.ask_selected.MILVUS_SEARCH_LIMIT", 10):
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render, patch("ai.views.ask_selected.MILVUS_SEARCH_LIMIT", 10):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -338,15 +294,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -381,16 +331,9 @@ class TestAskSelectedView(SimpleTestCase):
         payload.selected_text = "For God so loved the world"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, \
-             patch("ai.views.ask_selected.unify_vdb_results") as mock_unify, \
-             patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.ask_selected.clean_llm_output") as mock_clean, \
-             patch("ai.views.ask_selected.render_to_string") as mock_render:
-
+        with patch("ai.views.ask_selected.async_read_file") as mock_read_file, patch("ai.views.ask_selected.unify_vdb_results") as mock_unify, patch("ai.views.ask_selected.stringify_vdb_results") as mock_stringify, patch("ai.views.ask_selected.clean_llm_output") as mock_clean, patch("ai.views.ask_selected.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 if "system.md" in str(path):

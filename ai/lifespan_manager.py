@@ -28,9 +28,7 @@ async def milvus_db_lifespan_manager() -> LifespanManager:
 
     # Initialize and load Milvus database with all collections
     milvus_db = await VectorDatabaseQuerier.load_database_and_collections()
-    state = {
-        "milvus_db": milvus_db
-    }
+    state = {"milvus_db": milvus_db}
 
     try:
         yield state
@@ -62,9 +60,7 @@ async def completions_lifespan_manager() -> LifespanManager:
 
     # Initialize the LLM Completions object
     completions_obj = Completions()
-    state = {
-        "completions_obj": completions_obj
-    }
+    state = {"completions_obj": completions_obj}
 
     try:
         yield state

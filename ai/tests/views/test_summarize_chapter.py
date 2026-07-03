@@ -34,26 +34,8 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {
-                             "1": "In the beginning God created the heavens and the earth.",
-                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-                             "3": "And God said, \"Let there be light,\" and there was light.",
-                             "4": "And God saw that the light was good, and He separated the light from the darkness.",
-                             "5": "God called the light \"day,\" and the darkness He called \"night.\" And there was evening, and there was morning—the first day."
-                         }
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="In the beginning, God created the heavens and the earth."
-            )
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth.", "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.", "3": 'And God said, "Let there be light," and there was light.', "4": "And God saw that the light was good, and He separated the light from the darkness.", "5": 'God called the light "day," and the darkness He called "night." And there was evening, and there was morning—the first day.'}}}}):
+            request.state["completions_obj"].completions = AsyncMock(return_value="In the beginning, God created the heavens and the earth.")
 
             async def mock_read(path):
                 if "system.md" in str(path):
@@ -89,26 +71,8 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {
-                             "1": "In the beginning God created the heavens and the earth.",
-                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-                             "3": "And God said, \"Let there be light,\" and there was light.",
-                             "4": "And God saw that the light was good, and He separated the light from the darkness.",
-                             "5": "God called the light \"day,\" and the darkness He called \"night.\" And there was evening, and there was morning—the first day."
-                         }
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Creation summary"
-            )
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth.", "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.", "3": 'And God said, "Let there be light," and there was light.', "4": "And God saw that the light was good, and He separated the light from the darkness.", "5": 'God called the light "day," and the darkness He called "night." And there was evening, and there was morning—the first day.'}}}}):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Creation summary")
 
             async def mock_read(path):
                 if "system.md" in str(path):
@@ -144,23 +108,8 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {
-                             "1": "In the beginning God created the heavens and the earth.",
-                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters."
-                         }
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth.", "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters."}}}}):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
             async def mock_read(path):
                 return "Bible prompt"
@@ -191,23 +140,8 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {
-                             "1": "In the beginning God created the heavens and the earth.",
-                             "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters."
-                         }
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth.", "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters."}}}}):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
             async def mock_read(path):
                 return "Bible prompt"
@@ -241,20 +175,24 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "5"  # string — view must convert to int 5 to hit the key below
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         5: {  # int key — only reachable via int("5")
-                             "1": "This is the book of the generations of Adam.",
-                             "2": "Male and female He created them.",
-                         }
-                     }
-                 }
-             }):
-
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch(
+                "ai.views.summarize_chapter.ALL_VERSES",
+                {
+                    "bsb": {
+                        "Genesis": {
+                            5: {  # int key — only reachable via int("5")
+                                "1": "This is the book of the generations of Adam.",
+                                "2": "Male and female He created them.",
+                            }
+                        }
+                    }
+                },
+            ),
+        ):
             request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
             async def mock_read(path):
@@ -289,26 +227,10 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        verses_dict = {
-            "1": "In the beginning God created the heavens and the earth.",
-            "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-            "3": "And God said, \"Let there be light,\" and there was light."
-        }
+        verses_dict = {"1": "In the beginning God created the heavens and the earth.", "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.", "3": 'And God said, "Let there be light," and there was light.'}
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: verses_dict
-                     }
-                 }
-             }):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: verses_dict}}}):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
             async def mock_read(path):
                 if "user.md" in str(path):
@@ -328,7 +250,7 @@ class TestSummarizeChapterView(SimpleTestCase):
             # Should contain all three verses joined with newlines
             assert "In the beginning God created the heavens and the earth." in user_prompt
             assert "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters." in user_prompt
-            assert "And God said, \"Let there be light,\" and there was light." in user_prompt
+            assert 'And God said, "Let there be light," and there was light.' in user_prompt
 
     def test_summarize_chapter_cleans_llm_output(self):
         """Test that summarize_chapter cleans LLM output."""
@@ -343,21 +265,9 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {"1": "In the beginning God created the heavens and the earth."}
-                     }
-                 }
-             }):
-
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth."}}}}):
             raw_output = "**Creation** of the world\n\n- Light\n- Water"
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value=raw_output
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value=raw_output)
 
             async def mock_read(path):
                 return "Bible prompt"
@@ -386,21 +296,8 @@ class TestSummarizeChapterView(SimpleTestCase):
         payload.chapter = "1"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-             patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-             patch("ai.views.summarize_chapter.ALL_VERSES", {
-                 "bsb": {
-                     "Genesis": {
-                         1: {"1": "In the beginning God created the heavens and the earth."}
-                     }
-                 }
-             }), \
-             patch("ai.views.summarize_chapter.mark_safe") as mock_mark_safe:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="Summary"
-            )
+        with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth."}}}}), patch("ai.views.summarize_chapter.mark_safe") as mock_mark_safe:
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
             async def mock_read(path):
                 return "Bible prompt"
@@ -441,17 +338,7 @@ class TestSummarizeChapterView(SimpleTestCase):
                 payload.chapter = "1"
                 payload.collection_name = collection
 
-                with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, \
-                     patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, \
-                     patch("ai.views.summarize_chapter.render_to_string") as mock_render, \
-                     patch("ai.views.summarize_chapter.ALL_VERSES", {
-                         collection: {
-                             "Genesis": {
-                                 1: {"1": unique_verse}
-                             }
-                         }
-                     }):
-
+                with patch("ai.views.summarize_chapter.async_read_file") as mock_read_file, patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean, patch("ai.views.summarize_chapter.render_to_string") as mock_render, patch("ai.views.summarize_chapter.ALL_VERSES", {collection: {"Genesis": {1: {"1": unique_verse}}}}):
                     request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
                     async def mock_read(path):

@@ -22,6 +22,7 @@ router = Router()
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT", 10)).strip())
 
+
 @router.post("/image_search", tags=[APITags.AI], url_name="image_search")
 async def image_search(request, payload: ImageSearchInputSerializer = Form(...)):
     """

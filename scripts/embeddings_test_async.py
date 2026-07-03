@@ -19,9 +19,11 @@ logger = logging.getLogger(__name__)
 
 batch = ["Hello, world!", "hi there"]
 
+
 async def test_unified_runner_async():
     embedding = Embedding()
     logger.info(list(await embedding.async_embed(batch)))
+
 
 if __name__ == "__main__":
     try:

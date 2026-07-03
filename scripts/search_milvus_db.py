@@ -18,6 +18,7 @@ if "DJANGO_SETTINGS_MODULE" not in os.environ:
 
 try:
     import django
+
     django.setup()
 except Exception as e:
     # Allow script to proceed; some paths may not require Django
@@ -42,14 +43,15 @@ async def main():
 
         # Print results
         logger.info("\n########################")
-        logger.info(f"Results for \"{query}\":")
+        logger.info(f'Results for "{query}":')
 
         # Print results
         logger.info(f"{vector_database_querier.database_type} Search:")
         for i, result in enumerate(results):
-            logger.info(f"{i+1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}")
+            logger.info(f"{i + 1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}")
     # Cleanly close async client to avoid warnings/errors
     await vector_database_querier.close()
+
 
 if __name__ == "__main__":
     try:

@@ -35,16 +35,10 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             # Mock the database and LLM calls
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             # Mock file reads
             async def mock_read(path):
@@ -85,15 +79,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 if "system.md" in str(path):
@@ -130,15 +118,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -167,15 +149,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -207,15 +183,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -246,15 +216,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -282,16 +246,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render, \
-             patch("ai.views.general_question.MILVUS_SEARCH_LIMIT", 5):
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render, patch("ai.views.general_question.MILVUS_SEARCH_LIMIT", 5):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"
@@ -320,15 +277,9 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, \
-             patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, \
-             patch("ai.views.general_question.clean_llm_output") as mock_clean, \
-             patch("ai.views.general_question.render_to_string") as mock_render:
-
+        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
             request.state["milvus_db"].search = AsyncMock(return_value=[])
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="The Son of God!"
-            )
+            request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
             async def mock_read(path):
                 return "Bible study prompt"

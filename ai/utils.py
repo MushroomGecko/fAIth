@@ -10,7 +10,7 @@ import markdown
 logger = logging.getLogger(__name__)
 
 
-async def async_read_file(file_path: str | Path, encoding: str = 'utf-8') -> str | None:
+async def async_read_file(file_path: str | Path, encoding: str = "utf-8") -> str | None:
     """
     Asynchronously read a file without blocking the event loop.
 
@@ -22,9 +22,11 @@ async def async_read_file(file_path: str | Path, encoding: str = 'utf-8') -> str
         str | None: File contents, or None if an error occurs.
     """
     try:
+
         def read_sync():
             with Path(file_path).open("r", encoding=encoding) as file:
                 return file.read()
+
         return await asyncio.to_thread(read_sync)
     except Exception as e:
         logger.error(f"Error reading file {file_path}: {e}")
@@ -128,9 +130,10 @@ async def clean_llm_output(text: str) -> str:
     cleaned_text = await asyncio.to_thread(markdown.markdown, cleaned_text)
 
     # Remove newlines for better HTML rendering (newlines don't matter in HTML)
-    cleaned_text = cleaned_text.replace('\n', '')
+    cleaned_text = cleaned_text.replace("\n", "")
 
     return cleaned_text
+
 
 async def search_for_images(selected_text: str, searxng_image_limit: int = 10) -> list[str]:
     """

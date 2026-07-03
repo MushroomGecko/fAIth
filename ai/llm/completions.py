@@ -8,7 +8,6 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 
 
-
 class Completions:
     """
     Asynchronous client for generating LLM completions using an OpenAI-compatible API.
@@ -86,17 +85,10 @@ class Completions:
             user_prompt = user_prompt
 
         # Build message list: system instruction followed by user query
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
 
         # Request completion from LLM with model-specific parameters
-        response = await self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            extra_body=self.model_arguments
-        )
+        response = await self.client.chat.completions.create(model=self.model_name, messages=messages, extra_body=self.model_arguments)
 
         # Extract and return the generated text
         return response.choices[0].message.content

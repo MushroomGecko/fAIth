@@ -28,6 +28,9 @@ jobs:
     - name: Install Testing Dependencies
       run: |
         pip install ruff==0.15.2
-    - name: Run Ruff Tests
+    - name: Run Ruff Linting Tests
       run: |
         ruff check .
+    - name: Run Ruff Formatting Tests
+      run: |
+        ruff format .

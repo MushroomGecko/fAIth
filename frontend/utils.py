@@ -22,6 +22,7 @@ async def async_render(request, template, context):
     """
     return await sync_to_async(render, thread_sensitive=False)(request, template, context)
 
+
 async def async_redirect(url, args=[]):
     """
     Asynchronously redirect to a Django URL without blocking the event loop.

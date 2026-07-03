@@ -9,6 +9,7 @@ from enum import Enum
 
 class APITags(str, Enum):
     """Tags for organizing API endpoints in OpenAPI documentation."""
+
     HEALTH = "health"
     AI = "ai"
     BACKEND = "backend"

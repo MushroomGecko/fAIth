@@ -18,9 +18,11 @@ logger = logging.getLogger(__name__)
 
 batch = ["Hello, world!", "hi there"]
 
+
 def test_unified_runner():
     embedding = Embedding()
     logger.info(list(embedding.embed(batch)))
+
 
 if __name__ == "__main__":
     try:

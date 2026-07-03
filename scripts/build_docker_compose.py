@@ -1061,9 +1061,7 @@ if __name__ == "__main__":
         raise ValueError("VALKEY_PASSWORD must be set when SEARXNG_ENABLED is True and must not be the default value")
 
     if SEARXNG_ENABLED and SEARXNG_SAFE_SEARCH_LEVEL not in (0, 1, 2):
-        raise ValueError(
-            f"SEARXNG_SAFE_SEARCH_LEVEL must be 0 (Off), 1 (Moderate), or 2 (Strict). Got: `{SEARXNG_SAFE_SEARCH_LEVEL}`"
-        )
+        raise ValueError(f"SEARXNG_SAFE_SEARCH_LEVEL must be 0 (Off), 1 (Moderate), or 2 (Strict). Got: `{SEARXNG_SAFE_SEARCH_LEVEL}`")
 
     # Healthcheck configuration
     START_PERIOD = "3600s"

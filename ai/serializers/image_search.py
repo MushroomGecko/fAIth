@@ -18,6 +18,7 @@ class ImageSearchInputSerializer(BaseModel):
         book (str): The book from the user to search an image for.
         chapter (str): The chapter from the user to search an image for.
     """
+
     selected_text: str
     verses_text: str
     book: str

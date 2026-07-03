@@ -5,6 +5,7 @@ from django.apps import AppConfig
 
 logger = logging.getLogger(__name__)
 
+
 class FrontendConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "frontend"
@@ -12,10 +13,11 @@ class FrontendConfig(AppConfig):
     def ready(self):
         """Ready the frontend app."""
         # Initialize the globals if not running under pytest
-        if 'pytest' in sys.modules or any('pytest' in arg for arg in sys.argv):
+        if "pytest" in sys.modules or any("pytest" in arg for arg in sys.argv):
             logger.info("Running under pytest, skipping frontend globals initialization.")
         else:
             import fAIth.bible_globals as globals_module
+
             globals_module.set_bible_data_root()
             globals_module.set_version_selection()
             globals_module.set_default_version()

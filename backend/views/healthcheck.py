@@ -14,11 +14,13 @@ logger = logging.getLogger(__name__)
 # Create router for healthcheck API
 router = Router()
 
+
 @sync_to_async
 def check_db():
     """Verify database connectivity."""
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1")
+
 
 @router.get("/healthcheck", tags=[APITags.HEALTH], url_name="healthcheck")
 async def healthcheck(request):
@@ -47,17 +49,9 @@ async def healthcheck(request):
         await check_db()
 
         # 200 - OK
-        return HttpResponse(
-            json.dumps({"status": "OK"}),
-            status=200,
-            content_type="application/json"
-        )
+        return HttpResponse(json.dumps({"status": "OK"}), status=200, content_type="application/json")
     except Exception as e:
         logger.error(f"Healthcheck failed: {str(e)}")
         # Return actual error details for debugging
         # 503 - Service Unavailable
-        return HttpResponse(
-            json.dumps({"status": "error", "message": str(e)}),
-            status=503,
-            content_type="application/json"
-        )
+        return HttpResponse(json.dumps({"status": "error", "message": str(e)}), status=503, content_type="application/json")

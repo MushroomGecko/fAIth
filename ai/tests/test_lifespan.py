@@ -37,8 +37,7 @@ class TestMilvusDbLifespanManager:
     @pytest.mark.asyncio
     async def test_milvus_db_lifespan_logs_initialization(self):
         """Lifespan manager should log initialization message."""
-        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, \
-             patch("ai.lifespan_manager.logger") as mock_logger:
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, patch("ai.lifespan_manager.logger") as mock_logger:
             mock_vdb_instance = AsyncMock()
             mock_vdb_class.load_database_and_collections = AsyncMock(return_value=mock_vdb_instance)
 
@@ -50,8 +49,7 @@ class TestMilvusDbLifespanManager:
     @pytest.mark.asyncio
     async def test_milvus_db_lifespan_logs_shutdown(self):
         """Lifespan manager should log shutdown message."""
-        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, \
-             patch("ai.lifespan_manager.logger") as mock_logger:
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, patch("ai.lifespan_manager.logger") as mock_logger:
             mock_vdb_instance = AsyncMock()
             mock_vdb_class.load_database_and_collections = AsyncMock(return_value=mock_vdb_instance)
 
@@ -63,8 +61,7 @@ class TestMilvusDbLifespanManager:
     @pytest.mark.asyncio
     async def test_milvus_db_lifespan_handles_close_error(self):
         """Lifespan manager should catch and log errors during close."""
-        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, \
-             patch("ai.lifespan_manager.logger") as mock_logger:
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, patch("ai.lifespan_manager.logger") as mock_logger:
             mock_vdb_instance = AsyncMock()
             mock_vdb_instance.close.side_effect = RuntimeError("Close error")
             mock_vdb_class.load_database_and_collections = AsyncMock(return_value=mock_vdb_instance)
@@ -89,6 +86,7 @@ class TestMilvusDbLifespanManager:
                 pass
 
             mock_vdb_instance.close.assert_called_once()
+
 
 class TestCompletionsLifespanManager:
     """Test suite for the LLM Completions lifespan manager."""
@@ -120,8 +118,7 @@ class TestCompletionsLifespanManager:
     @pytest.mark.asyncio
     async def test_completions_lifespan_logs_initialization(self):
         """Lifespan manager should log initialization message."""
-        with patch("ai.lifespan_manager.Completions") as mock_completions_class, \
-             patch("ai.lifespan_manager.logger") as mock_logger:
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class, patch("ai.lifespan_manager.logger") as mock_logger:
             mock_completions_instance = AsyncMock()
             mock_completions_class.return_value = mock_completions_instance
 
@@ -133,8 +130,7 @@ class TestCompletionsLifespanManager:
     @pytest.mark.asyncio
     async def test_completions_lifespan_logs_shutdown(self):
         """Lifespan manager should log shutdown message."""
-        with patch("ai.lifespan_manager.Completions") as mock_completions_class, \
-             patch("ai.lifespan_manager.logger") as mock_logger:
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class, patch("ai.lifespan_manager.logger") as mock_logger:
             mock_completions_instance = AsyncMock()
             mock_completions_class.return_value = mock_completions_instance
 
@@ -146,8 +142,7 @@ class TestCompletionsLifespanManager:
     @pytest.mark.asyncio
     async def test_completions_lifespan_handles_close_error(self):
         """Lifespan manager should catch and log errors during close."""
-        with patch("ai.lifespan_manager.Completions") as mock_completions_class, \
-             patch("ai.lifespan_manager.logger") as mock_logger:
+        with patch("ai.lifespan_manager.Completions") as mock_completions_class, patch("ai.lifespan_manager.logger") as mock_logger:
             mock_completions_instance = AsyncMock()
             mock_completions_instance.close.side_effect = RuntimeError("Close error")
             mock_completions_class.return_value = mock_completions_instance
@@ -180,8 +175,7 @@ class TestLifespanManagerIntegration:
     @pytest.mark.asyncio
     async def test_both_managers_initialize_and_close(self):
         """Test that both managers can be used together and properly close."""
-        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, \
-             patch("ai.lifespan_manager.Completions") as mock_completions_class:
+        with patch("ai.lifespan_manager.VectorDatabaseQuerier") as mock_vdb_class, patch("ai.lifespan_manager.Completions") as mock_completions_class:
             mock_vdb_instance = AsyncMock()
             mock_completions_instance = AsyncMock()
             mock_vdb_class.load_database_and_collections = AsyncMock(return_value=mock_vdb_instance)
