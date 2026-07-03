@@ -31,7 +31,7 @@ FROM python:3.14-slim
 RUN useradd -m -r faith_user && mkdir /app && chown -R faith_user /app
 
 # Copy the Python dependencies from the builder stage
-COPY --from=builder /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
+COPY --from=builder /usr/local/lib/python3.14/site-packages/ /usr/local/lib/python3.14/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 # Set the working directory
