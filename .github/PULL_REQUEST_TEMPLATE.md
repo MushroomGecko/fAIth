@@ -20,6 +20,7 @@ How have you tested this change? Please describe the test cases you've verified.
 - [ ] Added/updated unit tests (pytest)
 - [ ] Run `pytest` locally and all tests pass
 - [ ] Run `ruff check` and code passes linting
+- [ ] Run `ruff format` and code is formatted
 - [ ] Tested with Docker Compose setup (`docker compose up`)
 - [ ] Verified database migrations (if applicable)
 - [ ] Tested AI/LLM functionality (if modified)
@@ -36,6 +37,7 @@ How have you tested this change? Please describe the test cases you've verified.
 - [ ] I have tested my changes (see Testing section)
 - [ ] All tests pass locally (`pytest`)
 - [ ] Linting passes (`ruff check`)
+- [ ] Formatting passes (`ruff format --check`)
 - [ ] I have not introduced any breaking changes without documentation
 
 ## Related Issues
