@@ -1,11 +1,11 @@
 """Tests for the general_question API endpoint."""
 
 import asyncio
-from unittest.mock import patch, AsyncMock, MagicMock
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from django.test import SimpleTestCase
 from django.http import HttpRequest
+from django.test import SimpleTestCase
 
 from ai.views.general_question import general_question
 

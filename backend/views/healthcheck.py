@@ -27,7 +27,7 @@ async def healthcheck(request):
 
     Verifies that the application and database are functioning correctly.
     Used by load balancers, monitoring systems, and deployment orchestration.
-    
+
     Check application and database health.
 
     Attempts to establish a database connection and execute a simple query.
@@ -45,7 +45,7 @@ async def healthcheck(request):
         # Application is running if we reach this point (implicit check)
         # Explicitly verify database connectivity
         await check_db()
-        
+
         # 200 - OK
         return HttpResponse(
             json.dumps({"status": "OK"}),

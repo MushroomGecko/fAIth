@@ -1,6 +1,8 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 from django.test import SimpleTestCase
+
 from ai.vdb.embedding import Embedding
 
 
@@ -608,7 +610,7 @@ class TestEmbeddingIntegration(SimpleTestCase):
                     shared_embeddings = [
                         MagicMock(embedding=[0.1, 0.2, 0.3]),
                     ]
-                    
+
                     mock_sync_response = MagicMock()
                     mock_sync_response.data = shared_embeddings
                     mock_client.embeddings.create.return_value = mock_sync_response

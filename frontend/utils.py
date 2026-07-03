@@ -1,7 +1,7 @@
 import logging
 
 from asgiref.sync import sync_to_async
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 # Set up logging

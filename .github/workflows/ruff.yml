@@ -13,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         pip install -r requirements.txt
     - name: Install Testing Dependencies
       run: |
-        pip install ruff==0.14.1
+        pip install ruff==0.15.2
     - name: Run Ruff Tests
       run: |
         ruff check fAIth/ frontend/ backend/ ai/

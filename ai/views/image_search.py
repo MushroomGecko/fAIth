@@ -39,7 +39,7 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
             - 400 Bad Request: Validation errors or missing required fields
     """
     file_directory = "image_search"
-    
+
     # Extract validated data from payload
     selected_text = payload.selected_text
     verses_text = payload.verses_text
@@ -54,7 +54,7 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     except Exception as e:
         logger.error(f"Error formatting user prompt: {e}")
         return HttpResponse(f"Error formatting user prompt: {e}", status=500, content_type="text/html")
-    
+
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     try:
         system_prompt = system_prompt.strip()
@@ -93,14 +93,14 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     except Exception as e:
         logger.error(f"Error rendering template: {e}")
         return HttpResponse(f"Error rendering template: {e}", status=500, content_type="text/html")
-    
+
     # Simply validate the output
     try:
         _ = ServerTextResponseSerializer(response_content=rendered_template)
     except Exception as e:
         logger.error(f"Error validating output: {e}")
         return HttpResponse(f"Error validating output: {e}", status=500, content_type="text/html")
-    
+
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

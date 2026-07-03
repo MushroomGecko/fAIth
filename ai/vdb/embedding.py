@@ -2,7 +2,7 @@ import logging
 import os
 
 import numpy as np
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI, OpenAI
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class Embedding:
         """
         # Prepare prompts by applying template if configured
         embeddings = []
-        
+
         if prompt_type == "query":
             # Apply query template if available, else use text as-is
             batch_prompts = batch if self.query_template == "" else [self.query_template.format(text=text) for text in batch]
@@ -153,7 +153,7 @@ class Embedding:
         """
         # Prepare prompts by applying template if configured
         embeddings = []
-        
+
         if prompt_type == "query":
             # Apply query template if available, else use text as-is
             batch_prompts = batch if self.query_template == "" else [self.query_template.format(text=text) for text in batch]

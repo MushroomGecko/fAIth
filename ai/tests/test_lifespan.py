@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ai.lifespan_manager import milvus_db_lifespan_manager, completions_lifespan_manager
+from ai.lifespan_manager import completions_lifespan_manager, milvus_db_lifespan_manager
 
 
 class TestMilvusDbLifespanManager:

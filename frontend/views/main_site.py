@@ -91,7 +91,7 @@ async def full_view(request, book, chapter, version):
             # Previous chapter in same book
             previous_book = book
             previous_chapter = chapter - 1
-        
+
         # Get next chapter and book
         if chapter + 1 > CHAPTER_SELECTION[book] and book == IN_ORDER_BOOKS[-1]:
             # Wrap around to start of Bible
@@ -125,17 +125,17 @@ async def full_view(request, book, chapter, version):
             'in_order': IN_ORDER_BOOKS,
             'chapter_selection': CHAPTER_SELECTION,
             'version_selection': VERSION_SELECTION,
-            
+
             # Current URL for navigation state
             'current_url': request.path_info,
 
             # Control variables
             'control_variables': CONTROL_VARIABLES,
         }
-        
+
         # Render the full view with the given context
         return await async_render(request, 'index.html', context)
-    
+
     except Exception as e:
         logger.error(f"Unexpected error in full_view for {book} {chapter} ({processed_version}): {e}")
         # Return a redirect to the default book, chapter, and version
@@ -159,7 +159,7 @@ async def book_chapter_view(request, book, chapter):
             logger.warning(f"Invalid book in book_chapter_view: {book}")
             # Return a redirect to the default book, chapter, and version
             return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
-        
+
         # Validate chapter format
         try:
             chapter = int(chapter)
@@ -196,7 +196,7 @@ async def book_view(request, book):
             logger.warning(f"Invalid book in book_view: {book}")
             # Return a redirect to the default book, chapter, and version
             return await async_redirect('full_view', args=[DEFAULT_BOOK, DEFAULT_CHAPTER, DEFAULT_VERSION])
-        
+
         # Return a redirect to the full view with the given book, chapter 1, and default version
         return await async_redirect('full_view', args=[book, 1, DEFAULT_VERSION])
     except Exception as e:

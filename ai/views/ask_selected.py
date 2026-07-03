@@ -56,12 +56,12 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
             - 400 Bad Request: Validation errors or missing required fields
     """
     file_directory = "ask_selected"
-    
+
     # Extract validated data from payload
     collection_name = payload.collection_name
     selected_text = payload.selected_text
     query = payload.query
-    
+
 
     # Search vector database for relevant context
     vector_database = request.state["milvus_db"]
@@ -102,10 +102,10 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
         "response_content": mark_safe(cleaned_result),
     }
     rendered_template = render_to_string(template_name, context)
-    
+
     # Simply validate the output
     _ = ServerTextResponseSerializer(response_content=rendered_template)
-    
+
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

@@ -1,4 +1,5 @@
 import logging
+
 from pydantic import BaseModel
 
 # Set up logging

@@ -98,11 +98,11 @@ def set_version_selection():
         if not BIBLE_DATA_ROOT or not BIBLE_DATA_ROOT.exists():
             logger.error("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'VERSION_SELECTION'.")
             raise ValueError("'BIBLE_DATA_ROOT' is not set or does not exist. Cannot set 'VERSION_SELECTION'.")
-        
+
         # Get enabled versions from environment or use empty list
         enabled_versions = json.loads(str(os.getenv("ENABLED_VERSIONS", "[]")).strip())
         available_versions = [item.name for item in BIBLE_DATA_ROOT.iterdir()]
-        
+
         # Filter to only versions that exist in filesystem
         valid_versions = []
         for version in enabled_versions:
@@ -110,7 +110,7 @@ def set_version_selection():
                 valid_versions.append(version)
             else:
                 logger.warning(f"Version {version} not found in the filesystem. Not including in the list of valid versions.")
-        
+
         # If no enabled versions are valid, use all available versions
         if not valid_versions:
             logger.warning("No valid versions found in `ENABLED_VERSIONS` environment variable. Including all versions in the filesystem.")
@@ -141,7 +141,7 @@ def set_default_version():
         if not VERSION_SELECTION:
             logger.error("'VERSION_SELECTION' is not set. Cannot set 'DEFAULT_VERSION'.")
             raise ValueError("'VERSION_SELECTION' is not set. Cannot set 'DEFAULT_VERSION'.")
-        
+
         # Get default version from environment or use 'bsb' as fallback
         DEFAULT_VERSION = str(os.getenv("DEFAULT_VERSION", "bsb")).strip()
         if DEFAULT_VERSION not in VERSION_SELECTION:
@@ -201,7 +201,7 @@ def set_default_book():
         if not IN_ORDER_BOOKS:
             logger.error("'IN_ORDER_BOOKS' is not set. Cannot set 'DEFAULT_BOOK'.")
             raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot set 'DEFAULT_BOOK'.")
-        
+
         # Get default book from environment or use 'Genesis' as fallback
         DEFAULT_BOOK = str(os.getenv("DEFAULT_BOOK", "Genesis")).strip()
         if DEFAULT_BOOK not in IN_ORDER_BOOKS:
@@ -239,13 +239,13 @@ def set_chapter_selection():
         if not IN_ORDER_BOOKS:
             logger.error("'IN_ORDER_BOOKS' is not set. Cannot set 'CHAPTER_SELECTION'.")
             raise ValueError("'IN_ORDER_BOOKS' is not set. Cannot set 'CHAPTER_SELECTION'.")
-        
+
         # Verify the default version directory exists
         default_version_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION)
         if not default_version_path.exists():
             logger.error(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
             raise ValueError(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
-        
+
         # Scan each book directory and count chapters
         for book_title in IN_ORDER_BOOKS:
             book_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION, book_title)
@@ -287,7 +287,7 @@ def set_default_chapter():
         if not DEFAULT_BOOK:
             logger.error("'DEFAULT_BOOK' is not set. Cannot set 'DEFAULT_CHAPTER'.")
             raise ValueError("'DEFAULT_BOOK' is not set. Cannot set 'DEFAULT_CHAPTER'.")
-        
+
         # Get default chapter from environment or use 1 as fallback
         DEFAULT_CHAPTER = int(str(os.getenv("DEFAULT_CHAPTER", "1")).strip())
         if DEFAULT_BOOK not in CHAPTER_SELECTION:
@@ -331,7 +331,7 @@ def set_all_verses():
         if not CHAPTER_SELECTION:
             logger.error("'CHAPTER_SELECTION' is not set. Cannot set 'ALL_VERSES'.")
             raise ValueError("'CHAPTER_SELECTION' is not set. Cannot set 'ALL_VERSES'.")
-        
+
         # Load verses for each version, book, and chapter
         for version in VERSION_SELECTION:
             version = version.lower()
@@ -399,7 +399,7 @@ def check_globals():
         if not ALL_VERSES:
             logger.error("'ALL_VERSES' is not set. Cannot verify globals.")
             raise ValueError("'ALL_VERSES' is not set. Cannot verify globals.")
-        
+
         logger.info("All globals successfully verified.")
     except ValueError:
         raise

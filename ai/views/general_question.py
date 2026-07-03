@@ -9,7 +9,6 @@ from ninja import Form, Router
 
 from ai.serializers.general_question import GeneralQuestionInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-
 from ai.utils import async_read_file, clean_llm_output, stringify_vdb_results
 from fAIth.api_tags import APITags
 
@@ -56,7 +55,7 @@ async def general_question(request, payload: GeneralQuestionInputSerializer = Fo
             - 400 Bad Request: Validation errors or missing required fields
     """
     file_directory = "general_question"
-    
+
     # Extract validated data from payload
     query = payload.query
     collection_name = payload.collection_name
@@ -92,10 +91,10 @@ async def general_question(request, payload: GeneralQuestionInputSerializer = Fo
         "response_content": mark_safe(cleaned_result),
     }
     rendered_template = render_to_string(template_name, context)
-    
+
     # Simply validate the output
     _ = ServerTextResponseSerializer(response_content=rendered_template)
-    
+
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

@@ -1,15 +1,17 @@
-import pytest
-import os
-from unittest.mock import patch, AsyncMock, MagicMock
-from django.test import SimpleTestCase
 import json
+import os
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from django.test import SimpleTestCase
+
 from ai.llm.completions import Completions
 
 
 @pytest.mark.asyncio
 class TestCompletionsInit(SimpleTestCase):
     """Tests for Completions initialization."""
-    
+
     def test_completions_init_with_env_variables_local_mode(self):
         """Test that Completions initializes correctly in local mode (LLM_PORT set)."""
         with patch.dict(os.environ, {
@@ -39,7 +41,7 @@ class TestCompletionsInit(SimpleTestCase):
                 call_args = mock_client.call_args
                 assert call_args.kwargs['base_url'] == "https://openrouter.ai/api/v1"
                 assert call_args.kwargs['api_key'] == "sk-or-key"
-    
+
     def test_completions_init_with_default_model_local_mode(self):
         """Test that Completions uses default model when not specified in local mode."""
         with patch.dict(os.environ, {"BASE_LLM_URL": "http://llm:11436/v1"}, clear=True):
@@ -79,14 +81,14 @@ class TestCompletionsInit(SimpleTestCase):
                 call_args = mock_client.call_args
                 assert call_args.kwargs['base_url'] == "https://openrouter.ai/api/v1"
                 assert call_args.kwargs['api_key'] == "sk-or-key"
-    
+
     def test_completions_init_without_model_raises_error(self):
         """Test that Completions raises error when model ID is not set."""
         with patch.dict(os.environ, {"LLM_MODEL_ID": ""}, clear=True):
             with patch('ai.llm.completions.logger') as mock_logger:
                 with pytest.raises(ValueError):
                     Completions()
-                
+
                 mock_logger.error.assert_called()
 
     def test_completions_init_without_url_raises_error(self):

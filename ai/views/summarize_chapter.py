@@ -7,9 +7,8 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from ninja import Form, Router
 
-from ai.serializers.summarize_chapter import SummarizeChapterInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-
+from ai.serializers.summarize_chapter import SummarizeChapterInputSerializer
 from ai.utils import async_read_file, clean_llm_output
 from fAIth.api_tags import APITags
 from fAIth.bible_globals import ALL_VERSES
@@ -58,7 +57,7 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
             - 400 Bad Request: Validation errors or missing required fields
     """
     file_directory = "summarize_chapter"
-    
+
     # Extract validated data from payload
     book = payload.book
     chapter = int(payload.chapter)
@@ -74,7 +73,7 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
     system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
     user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
     user_prompt = user_prompt.format(chapter=chapter, book=book, verses=stringified_verses)
-    
+
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     system_prompt = system_prompt.strip()
     user_prompt = user_prompt.strip()
@@ -96,10 +95,10 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
         "response_content": mark_safe(cleaned_result),
     }
     rendered_template = render_to_string(template_name, context)
-    
+
     # Simply validate the output
     _ = ServerTextResponseSerializer(response_content=rendered_template)
-    
+
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

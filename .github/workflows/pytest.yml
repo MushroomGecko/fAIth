@@ -13,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         pip install -r requirements.txt
     - name: Install Testing Dependencies
       run: |
-        pip install pytest==9.0.2 pytest-django==4.11.1 pytest-asyncio==1.3.0
+        pip install pytest==9.1.1 pytest-django==4.12.0 pytest-asyncio==1.4.0
     - name: Run Pytest Tests
       run: |
         pytest -v

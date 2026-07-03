@@ -3,10 +3,10 @@ import json
 import logging
 import os
 
-from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
+from pymilvus import AnnSearchRequest, AsyncMilvusClient, CollectionSchema, DataType, FieldSchema, Function, FunctionType, MilvusClient, WeightedRanker
 
-from ai.vdb.embedding import Embedding
 import fAIth.bible_globals as bible_globals
+from ai.vdb.embedding import Embedding
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class VectorDatabaseBuilder:
 
         # Initialize embedding engine for generating vector embeddings
         self.embedding_engine = Embedding()
-        
+
         # Validate and load database type (determines schema and indexing strategy)
         self.database_type = str(os.getenv("DATABASE_TYPE") or "hybrid").strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
@@ -69,7 +69,7 @@ class VectorDatabaseBuilder:
         # Always create a root client with default credentials for initialization
         # This is needed to set up custom credentials, create databases, and manage users
         self.root_client = MilvusClient(uri=self.milvus_url, token="root:Milvus")
-        
+
         # If using root user, we'll use the root_client and update password later in load_or_create_database
         # If using a custom user, client will be set to None and created after user setup in load_or_create_database
         if self.milvus_username == "root":
@@ -124,14 +124,14 @@ class VectorDatabaseBuilder:
                         password=self.milvus_password
                     )
                     logger.info(f"Created custom user: {self.milvus_username}")
-                    
+
                     # Reinitialize client with the new user credentials
                     self.client = MilvusClient(
                         uri=self.milvus_url,
                         token=f"{self.milvus_username}:{self.milvus_password}"
                     )
                     logger.info(f"Initialized client with user: {self.milvus_username}")
-                    
+
                     # Close the root client since we're done with it
                     self.root_client.close()
                 except Exception as e:
@@ -298,7 +298,7 @@ class VectorDatabaseBuilder:
                     "bm25_b": 0.75
                 }
             )
-        
+
         # Add dense (HNSW) index if using dense or hybrid mode
         if self.database_type == "dense" or self.database_type == "hybrid":
             # HNSW index for fast approximate nearest neighbor search
@@ -328,12 +328,12 @@ class VectorDatabaseBuilder:
                     if not path.exists():
                         logger.error(f"Bible data file not found: {path}")
                         continue
-                    
+
                     with path.open("r", encoding="utf-8") as file:
                         verse_numbers = []
                         verse_texts = []
                         json_data = json.load(file)
-                        
+
                         # Extract verse data, skipping headers
                         for verse in json_data.keys():
                             if "header_" in verse:
@@ -343,7 +343,7 @@ class VectorDatabaseBuilder:
                             # Remove HTML tags for cleaner storage (e.g., <span class="wj">...</span>)
                             verse_clean_text = verse_clean_text.replace("<span class=\"wj\">", "").replace("</span>", "").strip()
                             verse_texts.append(verse_clean_text)
-                        
+
                         # Generate embeddings for all verses
                         verse_embeddings = self.embedding_engine.embed(verse_texts, prompt_type="document", normalize=False)
 
@@ -361,7 +361,7 @@ class VectorDatabaseBuilder:
                             if self.database_type == "dense" or self.database_type == "hybrid":
                                 record["dense_embedding"] = verse_embedding
                             data.append(record)
-                        
+
                         # Insert records into collection
                         self.client.insert(collection_name=collection_name, data=data)
                         logger.info(f"Added {book} {chapter} to {collection_name} collection")
@@ -479,7 +479,7 @@ class VectorDatabaseQuerier:
             logger.info(f"Loaded collection: {collection}")
 
         return self
-    
+
     async def list_collections_in_database(self):
         """
         List all collections in the database.

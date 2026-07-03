@@ -1,11 +1,11 @@
 """Tests for the summarize_chapter API endpoint."""
 
 import asyncio
-from unittest.mock import patch, AsyncMock, MagicMock
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from django.test import SimpleTestCase
 from django.http import HttpRequest
+from django.test import SimpleTestCase
 
 from ai.views.summarize_chapter import summarize_chapter
 
@@ -324,7 +324,7 @@ class TestSummarizeChapterView(SimpleTestCase):
             # Verify the user prompt contains stringified verses joined with newlines
             call_args = request.state["completions_obj"].completions.call_args
             user_prompt = call_args[0][1]
-            
+
             # Should contain all three verses joined with newlines
             assert "In the beginning God created the heavens and the earth." in user_prompt
             assert "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters." in user_prompt
@@ -363,7 +363,7 @@ class TestSummarizeChapterView(SimpleTestCase):
                 return "Bible prompt"
 
             mock_read_file.side_effect = mock_read
-            
+
             cleaned_html = "<p><strong>Creation</strong> of the world</p><ul><li>Light</li><li>Water</li></ul>"
             mock_clean.return_value = cleaned_html
             mock_render.return_value = "<html>Response</html>"
@@ -406,7 +406,7 @@ class TestSummarizeChapterView(SimpleTestCase):
                 return "Bible prompt"
 
             mock_read_file.side_effect = mock_read
-            
+
             cleaned_html = "<p>Summary</p>"
             mock_clean.return_value = cleaned_html
             mock_mark_safe.return_value = cleaned_html

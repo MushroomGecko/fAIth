@@ -1,10 +1,10 @@
 import asyncio
 import logging
-from typing import Any
 from pathlib import Path
+from typing import Any
 
-import markdown
 import httpx
+import markdown
 
 # Set up logging
 logger = logging.getLogger(__name__)

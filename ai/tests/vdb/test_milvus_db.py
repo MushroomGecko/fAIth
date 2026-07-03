@@ -1,7 +1,9 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from django.test import SimpleTestCase
+
 from ai.vdb.milvus_db import VectorDatabaseBuilder, VectorDatabaseQuerier
 
 
@@ -455,7 +457,7 @@ class TestVectorDatabaseBuilderEdgeCases(SimpleTestCase):
                                 return mock_root_client
                             else:
                                 raise Exception("Client initialization failed")
-                        
+
                         mock_client_class.side_effect = side_effect
 
                         builder = VectorDatabaseBuilder()
@@ -845,11 +847,11 @@ class TestVectorDatabaseQuerierLoadDatabaseAndCollections(SimpleTestCase):
                     with patch("ai.vdb.milvus_db.logger"):
                         mock_temp_client = AsyncMock()
                         mock_temp_client.list_databases.return_value = ["faith_db", "other_db"]
-                        
+
                         mock_collections = ["web", "bsb"]
                         mock_async_client = AsyncMock()
                         mock_async_client.list_collections.return_value = mock_collections
-                        
+
                         mock_async_client_class.side_effect = [mock_temp_client, mock_async_client]
 
                         querier = await VectorDatabaseQuerier.load_database_and_collections()
