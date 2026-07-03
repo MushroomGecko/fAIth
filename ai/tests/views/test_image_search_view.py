@@ -1,11 +1,11 @@
 """Tests for the image_search API endpoint."""
 
 import asyncio
-from unittest.mock import patch, AsyncMock, MagicMock
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from django.test import SimpleTestCase
 from django.http import HttpRequest
+from django.test import SimpleTestCase
 
 from ai.views.image_search import image_search
 
@@ -355,8 +355,7 @@ class TestImageSearchView(SimpleTestCase):
         payload = self._build_payload()
 
         with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
+             patch("ai.views.image_search.search_for_images") as mock_search:
 
             async def mock_read(path):
                 if "system.md" in str(path):
