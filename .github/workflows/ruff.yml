@@ -30,4 +30,4 @@ jobs:
         pip install ruff==0.15.2
     - name: Run Ruff Tests
       run: |
-        ruff check fAIth/ frontend/ backend/ ai/
+        ruff check .

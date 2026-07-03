@@ -1,16 +1,16 @@
-import os
+import logging
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
-import logging
 
 # Ensure project root is on sys.path when running this script directly
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from ai.vdb.embedding import Embedding
-import fAIth.settings
+from ai.vdb.embedding import Embedding  # noqa: E402
+
 load_dotenv()
 
 # Set up logging

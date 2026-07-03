@@ -1,8 +1,8 @@
+import asyncio
+import logging
 import os
 import sys
 from pathlib import Path
-import asyncio
-import logging
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -23,12 +23,13 @@ except Exception as e:
     # Allow script to proceed; some paths may not require Django
     logger.warning(f"Warning: Django setup failed: {e}")
 
-from ai.vdb.milvus_db import VectorDatabaseQuerier
+from ai.vdb.milvus_db import VectorDatabaseQuerier  # noqa: E402
+
 
 async def main():
     # Get DB object
     vector_database_querier = await VectorDatabaseQuerier.load_database_and_collections()
-    
+
     # Print the collection names
     logger.info(await vector_database_querier.list_collections_in_database())
 
