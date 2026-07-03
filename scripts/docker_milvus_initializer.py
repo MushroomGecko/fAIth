@@ -1,7 +1,7 @@
+import logging
 import os
 import sys
 from pathlib import Path
-import logging
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -18,15 +18,16 @@ if "DJANGO_SETTINGS_MODULE" not in os.environ:
 # Start Django
 try:
     import django
+
     django.setup()
 except Exception as e:
     # Allow script to proceed; some paths may not require Django
     logger.warning(f"Warning: Django setup failed: {e}")
 
 # Get the version selection
-from fAIth.bible_globals import VERSION_SELECTION
 # Import the Milvus database class
-from ai.vdb.milvus_db import VectorDatabaseBuilder
+from ai.vdb.milvus_db import VectorDatabaseBuilder  # noqa: E402
+from fAIth.bible_globals import VERSION_SELECTION  # noqa: E402
 
 # Get DB object
 try:

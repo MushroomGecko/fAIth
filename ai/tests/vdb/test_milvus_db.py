@@ -1,14 +1,18 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from django.test import SimpleTestCase
+
 from ai.vdb.milvus_db import VectorDatabaseBuilder, VectorDatabaseQuerier
 
 
 def create_mock_getenv(**env_vars):
     """Create a mock getenv function with predefined environment variables."""
+
     def mock_getenv(key, default=None):
         return env_vars.get(key, default)
+
     return mock_getenv
 
 
@@ -129,10 +133,7 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
                 with patch("ai.vdb.milvus_db.MilvusClient") as mock_client_class:
                     VectorDatabaseBuilder()
                     # Root client should always be created with default credentials
-                    mock_client_class.assert_called_once_with(
-                        uri="http://milvus:19530",
-                        token="root:Milvus"
-                    )
+                    mock_client_class.assert_called_once_with(uri="http://milvus:19530", token="root:Milvus")
 
     def test_init_creates_embedding_engine(self):
         """Test that Embedding engine is created during initialization."""
@@ -168,8 +169,12 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
             with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient"):
-                    with pytest.raises(ValueError, match="MILVUS_PASSWORD environment variable is not set or was set to the default value"):
+                    with pytest.raises(
+                        ValueError,
+                        match="MILVUS_PASSWORD environment variable is not set or was set to the default value",
+                    ):
                         VectorDatabaseBuilder()
+
 
 class TestLoadDatabase(SimpleTestCase):
     """Tests for load_database method."""
@@ -304,8 +309,6 @@ class TestLoadOrCreateDatabase(SimpleTestCase):
 
                         mock_client.create_database.assert_called_once_with("faith_db")
                         mock_client.use_database.assert_called_with("faith_db")
-
-
 
     def test_create_database_error(self):
         """Test error handling during database creation."""
@@ -449,13 +452,14 @@ class TestVectorDatabaseBuilderEdgeCases(SimpleTestCase):
                         # No databases exist, so custom user will be created
                         mock_root_client = MagicMock()
                         mock_root_client.list_databases.return_value = []
+
                         # User creation succeeds but client creation fails
                         def side_effect(*args, **kwargs):
                             if kwargs.get("token") == "root:Milvus":
                                 return mock_root_client
                             else:
                                 raise Exception("Client initialization failed")
-                        
+
                         mock_client_class.side_effect = side_effect
 
                         builder = VectorDatabaseBuilder()
@@ -845,11 +849,11 @@ class TestVectorDatabaseQuerierLoadDatabaseAndCollections(SimpleTestCase):
                     with patch("ai.vdb.milvus_db.logger"):
                         mock_temp_client = AsyncMock()
                         mock_temp_client.list_databases.return_value = ["faith_db", "other_db"]
-                        
+
                         mock_collections = ["web", "bsb"]
                         mock_async_client = AsyncMock()
                         mock_async_client.list_collections.return_value = mock_collections
-                        
+
                         mock_async_client_class.side_effect = [mock_temp_client, mock_async_client]
 
                         querier = await VectorDatabaseQuerier.load_database_and_collections()

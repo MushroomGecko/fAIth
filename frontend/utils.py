@@ -1,7 +1,7 @@
 import logging
 
 from asgiref.sync import sync_to_async
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 # Set up logging
@@ -21,6 +21,7 @@ async def async_render(request, template, context):
         HttpResponse: Rendered HTML response.
     """
     return await sync_to_async(render, thread_sensitive=False)(request, template, context)
+
 
 async def async_redirect(url, args=[]):
     """

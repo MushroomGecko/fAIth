@@ -2,11 +2,10 @@ import logging
 import os
 
 import numpy as np
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI, OpenAI
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
 
 
 class Embedding:
@@ -102,15 +101,19 @@ class Embedding:
         """
         # Prepare prompts by applying template if configured
         embeddings = []
-        
+
         if prompt_type == "query":
             # Apply query template if available, else use text as-is
-            batch_prompts = batch if self.query_template == "" else [self.query_template.format(text=text) for text in batch]
+            batch_prompts = (
+                batch if self.query_template == "" else [self.query_template.format(text=text) for text in batch]
+            )
             response = self.client.embeddings.create(model=self.model_name, input=batch_prompts)
             embeddings = [item.embedding for item in response.data]
         elif prompt_type == "document":
             # Apply document template if available, else use text as-is
-            batch_prompts = batch if self.document_template == "" else [self.document_template.format(text=text) for text in batch]
+            batch_prompts = (
+                batch if self.document_template == "" else [self.document_template.format(text=text) for text in batch]
+            )
             response = self.client.embeddings.create(model=self.model_name, input=batch_prompts)
             embeddings = [item.embedding for item in response.data]
         else:
@@ -153,15 +156,19 @@ class Embedding:
         """
         # Prepare prompts by applying template if configured
         embeddings = []
-        
+
         if prompt_type == "query":
             # Apply query template if available, else use text as-is
-            batch_prompts = batch if self.query_template == "" else [self.query_template.format(text=text) for text in batch]
+            batch_prompts = (
+                batch if self.query_template == "" else [self.query_template.format(text=text) for text in batch]
+            )
             response = await self.async_client.embeddings.create(model=self.model_name, input=batch_prompts)
             embeddings = [item.embedding for item in response.data]
         elif prompt_type == "document":
             # Apply document template if available, else use text as-is
-            batch_prompts = batch if self.document_template == "" else [self.document_template.format(text=text) for text in batch]
+            batch_prompts = (
+                batch if self.document_template == "" else [self.document_template.format(text=text) for text in batch]
+            )
             response = await self.async_client.embeddings.create(model=self.model_name, input=batch_prompts)
             embeddings = [item.embedding for item in response.data]
         else:

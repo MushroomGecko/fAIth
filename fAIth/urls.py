@@ -21,7 +21,7 @@ api.add_router("", backend_api)
 api.add_router("v1/", ai_api)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('frontend.urls')),
-    path('', api.urls),
+    path("admin/", admin.site.urls),
+    path("", include("frontend.urls")),
+    path("", api.urls),
 ]

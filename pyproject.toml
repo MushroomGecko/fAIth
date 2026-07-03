@@ -1,17 +1,19 @@
-[tool.black]
-line-length = 9999
-target-version = ["py312"]
-extend-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.venv
-  | _build
-  | build
-  | dist
-)/
-'''
+[tool.ruff]
+line-length = 120
+target-version = "py314"
 
-[tool.isort]
-profile = "black"
-line_length = 9999
+[tool.ruff.lint]
+# Full PEP 8 coverage plus import ordering and naming conventions.
+# E, W = pycodestyle errors and warnings (PEP 8 style)
+# F    = Pyflakes (unused imports/vars, undefined names, real bugs)
+# I    = isort (import ordering)
+# N    = pep8-naming
+select = ["E", "W", "F", "I", "N"]
+
+# Some lines cannot be safely formatted and that's alright.
+ignore = ["E501"]
+
+[tool.ruff.lint.pep8-naming]
+# `fAIth` is the canonical project/package name; renaming would be an unwanted
+# repo-wide refactor, so exempt it from module-name checks (N999).
+extend-ignore-names = ["fAIth"]

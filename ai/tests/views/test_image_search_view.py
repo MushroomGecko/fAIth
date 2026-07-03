@@ -44,13 +44,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -75,13 +74,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -103,7 +101,10 @@ class TestImageSearchView(SimpleTestCase):
             assert call_args[0][0] == "You are a helpful image search assistant."
             # All payload fields should be interpolated into the user prompt
             assert "For God so loved the world" in call_args[0][1]
-            assert "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life." in call_args[0][1]
+            assert (
+                "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."
+                in call_args[0][1]
+            )
             assert "John" in call_args[0][1]
             assert "3" in call_args[0][1]
             assert call_args[0][2] == "For God so loved the world"
@@ -113,13 +114,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -144,13 +144,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -171,14 +170,13 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render, \
-             patch("ai.views.image_search.SEARXNG_IMAGE_LIMIT", 7):
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+            patch("ai.views.image_search.SEARXNG_IMAGE_LIMIT", 7),
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -198,13 +196,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = []  # No images returned
             mock_render.return_value = "<html>Response</html>"
 
@@ -225,13 +222,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = [
                 "http://example.com/img1.jpg",
                 "http://example.com/img2.jpg",
@@ -264,13 +260,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -299,14 +294,13 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render, \
-             patch("ai.views.image_search.ServerTextResponseSerializer") as mock_serializer:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+            patch("ai.views.image_search.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
 
@@ -331,10 +325,11 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
             # async_read_file raises before any prompt formatting can happen
             mock_read_file.side_effect = FileNotFoundError("missing system.md")
 
@@ -354,8 +349,10 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search:
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+        ):
 
             async def mock_read(path):
                 if "system.md" in str(path):
@@ -376,13 +373,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                side_effect=RuntimeError("LLM unavailable")
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(side_effect=RuntimeError("LLM unavailable"))
 
             async def mock_read(path):
                 return "Bible image search prompt"
@@ -400,13 +396,12 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.side_effect = RuntimeError("SearXNG unreachable")
 
             async def mock_read(path):
@@ -424,14 +419,13 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render, \
-             patch("ai.views.image_search.ServerTextResponseSerializer") as mock_serializer:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+            patch("ai.views.image_search.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.side_effect = RuntimeError("template missing")
 
@@ -450,14 +444,13 @@ class TestImageSearchView(SimpleTestCase):
         request = self._build_request()
         payload = self._build_payload()
 
-        with patch("ai.views.image_search.async_read_file") as mock_read_file, \
-             patch("ai.views.image_search.search_for_images") as mock_search, \
-             patch("ai.views.image_search.render_to_string") as mock_render, \
-             patch("ai.views.image_search.ServerTextResponseSerializer") as mock_serializer:
-
-            request.state["completions_obj"].completions = AsyncMock(
-                return_value="cross resurrection"
-            )
+        with (
+            patch("ai.views.image_search.async_read_file") as mock_read_file,
+            patch("ai.views.image_search.search_for_images") as mock_search,
+            patch("ai.views.image_search.render_to_string") as mock_render,
+            patch("ai.views.image_search.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="cross resurrection")
             mock_search.return_value = ["http://example.com/img1.jpg"]
             mock_render.return_value = "<html>Response</html>"
             mock_serializer.side_effect = ValueError("invalid response_content")

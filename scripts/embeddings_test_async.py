@@ -1,17 +1,17 @@
-import os
-import sys
-from pathlib import Path
-from dotenv import load_dotenv
 import asyncio
 import logging
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Ensure project root is on sys.path when running this script directly
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from ai.vdb.embedding import Embedding
-import fAIth.settings
+from ai.vdb.embedding import Embedding  # noqa: E402
+
 load_dotenv()
 
 # Set up logging
@@ -19,9 +19,11 @@ logger = logging.getLogger(__name__)
 
 batch = ["Hello, world!", "hi there"]
 
+
 async def test_unified_runner_async():
     embedding = Embedding()
     logger.info(list(await embedding.async_embed(batch)))
+
 
 if __name__ == "__main__":
     try:

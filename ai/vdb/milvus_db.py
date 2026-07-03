@@ -3,10 +3,20 @@ import json
 import logging
 import os
 
-from pymilvus import MilvusClient, AsyncMilvusClient, CollectionSchema, FieldSchema, DataType, Function, FunctionType, AnnSearchRequest, WeightedRanker
+from pymilvus import (
+    AnnSearchRequest,
+    AsyncMilvusClient,
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    Function,
+    FunctionType,
+    MilvusClient,
+    WeightedRanker,
+)
 
-from ai.vdb.embedding import Embedding
 import fAIth.bible_globals as bible_globals
+from ai.vdb.embedding import Embedding
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -59,17 +69,19 @@ class VectorDatabaseBuilder:
 
         # Initialize embedding engine for generating vector embeddings
         self.embedding_engine = Embedding()
-        
+
         # Validate and load database type (determines schema and indexing strategy)
         self.database_type = str(os.getenv("DATABASE_TYPE") or "hybrid").strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
             logger.error(f"Invalid database type: {self.database_type}")
-            raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
+            raise ValueError(
+                f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid"
+            )
 
         # Always create a root client with default credentials for initialization
         # This is needed to set up custom credentials, create databases, and manage users
         self.root_client = MilvusClient(uri=self.milvus_url, token="root:Milvus")
-        
+
         # If using root user, we'll use the root_client and update password later in load_or_create_database
         # If using a custom user, client will be set to None and created after user setup in load_or_create_database
         if self.milvus_username == "root":
@@ -108,9 +120,7 @@ class VectorDatabaseBuilder:
                 # Update root password to the one from .env
                 try:
                     self.root_client.update_password(
-                        user_name=self.milvus_username,
-                        old_password="Milvus",
-                        new_password=self.milvus_password
+                        user_name=self.milvus_username, old_password="Milvus", new_password=self.milvus_password
                     )
                     logger.info("Updated password for root user")
                 except Exception as e:
@@ -119,19 +129,15 @@ class VectorDatabaseBuilder:
             else:
                 # Create a custom user with credentials from .env
                 try:
-                    self.root_client.create_user(
-                        user_name=self.milvus_username,
-                        password=self.milvus_password
-                    )
+                    self.root_client.create_user(user_name=self.milvus_username, password=self.milvus_password)
                     logger.info(f"Created custom user: {self.milvus_username}")
-                    
+
                     # Reinitialize client with the new user credentials
                     self.client = MilvusClient(
-                        uri=self.milvus_url,
-                        token=f"{self.milvus_username}:{self.milvus_password}"
+                        uri=self.milvus_url, token=f"{self.milvus_username}:{self.milvus_password}"
                     )
                     logger.info(f"Initialized client with user: {self.milvus_username}")
-                    
+
                     # Close the root client since we're done with it
                     self.root_client.close()
                 except Exception as e:
@@ -249,7 +255,9 @@ class VectorDatabaseBuilder:
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
-                    FieldSchema(name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_engine.embedding_size()),
+                    FieldSchema(
+                        name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_engine.embedding_size()
+                    ),
                     FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048, enable_analyzer=True),
                     FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=8),
                     FieldSchema(name="book", dtype=DataType.VARCHAR, max_length=32),
@@ -263,7 +271,9 @@ class VectorDatabaseBuilder:
             schema = CollectionSchema(
                 fields=[
                     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
-                    FieldSchema(name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_engine.embedding_size()),
+                    FieldSchema(
+                        name="dense_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.embedding_engine.embedding_size()
+                    ),
                     FieldSchema(name="sparse_embedding", dtype=DataType.SPARSE_FLOAT_VECTOR),
                     FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048, enable_analyzer=True),
                     FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=8),
@@ -292,13 +302,9 @@ class VectorDatabaseBuilder:
                 field_name="sparse_embedding",
                 index_type="SPARSE_INVERTED_INDEX",
                 metric_type="BM25",
-                params={
-                    "inverted_index_algo": "DAAT_MAXSCORE",
-                    "bm25_k1": 1.2,
-                    "bm25_b": 0.75
-                }
+                params={"inverted_index_algo": "DAAT_MAXSCORE", "bm25_k1": 1.2, "bm25_b": 0.75},
             )
-        
+
         # Add dense (HNSW) index if using dense or hybrid mode
         if self.database_type == "dense" or self.database_type == "hybrid":
             # HNSW index for fast approximate nearest neighbor search
@@ -328,12 +334,12 @@ class VectorDatabaseBuilder:
                     if not path.exists():
                         logger.error(f"Bible data file not found: {path}")
                         continue
-                    
+
                     with path.open("r", encoding="utf-8") as file:
                         verse_numbers = []
                         verse_texts = []
                         json_data = json.load(file)
-                        
+
                         # Extract verse data, skipping headers
                         for verse in json_data.keys():
                             if "header_" in verse:
@@ -341,27 +347,33 @@ class VectorDatabaseBuilder:
                             verse_numbers.append(int(verse))
                             verse_clean_text = json_data[verse]
                             # Remove HTML tags for cleaner storage (e.g., <span class="wj">...</span>)
-                            verse_clean_text = verse_clean_text.replace("<span class=\"wj\">", "").replace("</span>", "").strip()
+                            verse_clean_text = (
+                                verse_clean_text.replace('<span class="wj">', "").replace("</span>", "").strip()
+                            )
                             verse_texts.append(verse_clean_text)
-                        
+
                         # Generate embeddings for all verses
-                        verse_embeddings = self.embedding_engine.embed(verse_texts, prompt_type="document", normalize=False)
+                        verse_embeddings = self.embedding_engine.embed(
+                            verse_texts, prompt_type="document", normalize=False
+                        )
 
                         # Build data records with embeddings
                         data = []
-                        for verse_number, verse_text, verse_embedding in zip(verse_numbers, verse_texts, verse_embeddings):
+                        for verse_number, verse_text, verse_embedding in zip(
+                            verse_numbers, verse_texts, verse_embeddings
+                        ):
                             record = {
                                 "text": verse_text,
                                 "version": collection_name,
                                 "book": book,
                                 "chapter": chapter,
-                                "verse": verse_number
+                                "verse": verse_number,
                             }
                             # Include appropriate embedding(s) based on database type
                             if self.database_type == "dense" or self.database_type == "hybrid":
                                 record["dense_embedding"] = verse_embedding
                             data.append(record)
-                        
+
                         # Insert records into collection
                         self.client.insert(collection_name=collection_name, data=data)
                         logger.info(f"Added {book} {chapter} to {collection_name} collection")
@@ -428,7 +440,9 @@ class VectorDatabaseQuerier:
         self.database_type = str(os.getenv("DATABASE_TYPE") or "hybrid").strip().lower()
         if self.database_type not in ["sparse", "dense", "hybrid"]:
             logger.error(f"Invalid database type: {self.database_type}")
-            raise ValueError(f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid")
+            raise ValueError(
+                f"Invalid database type: {self.database_type}. Valid database types are: sparse, dense, hybrid"
+            )
 
         # Async client is initialized by load_database_and_collections()
         self.async_client = None
@@ -479,7 +493,7 @@ class VectorDatabaseQuerier:
             logger.info(f"Loaded collection: {collection}")
 
         return self
-    
+
     async def list_collections_in_database(self):
         """
         List all collections in the database.
@@ -518,7 +532,9 @@ class VectorDatabaseQuerier:
         # Generate query embedding for dense/hybrid search
         if self.database_type == "dense" or self.database_type == "hybrid":
             # Async embedding generation
-            query_embedding = (await self.embedding_engine.async_embed([query], prompt_type="query", normalize=False))[0]
+            query_embedding = (await self.embedding_engine.async_embed([query], prompt_type="query", normalize=False))[
+                0
+            ]
         else:
             query_embedding = None
 
@@ -569,7 +585,7 @@ class VectorDatabaseQuerier:
                 reqs=request_types,
                 ranker=WeightedRanker(self.sparse_weight, self.dense_weight),
                 limit=limit,
-                output_fields=["version", "book", "chapter", "verse", "text"]
+                output_fields=["version", "book", "chapter", "verse", "text"],
             )
             return hybrid_results[0]
 

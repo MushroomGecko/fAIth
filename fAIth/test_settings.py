@@ -5,6 +5,7 @@ Sets the env vars that settings.py requires before importing it, so pytest-djang
 can load settings during collection without a real .env file present.
 These values are test-only stubs and must never be used in production.
 """
+
 import os
 
 os.environ.setdefault("DJANGO_SECRET_KEY", "test-only-secret-key-not-for-production")

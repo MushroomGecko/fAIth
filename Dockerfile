@@ -1,5 +1,5 @@
 ### Stage 1: Builder ###
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Create the app directory
 RUN mkdir /app
@@ -25,13 +25,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 
 ### Stage 2: Production ###
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 # Create non-root user
 RUN useradd -m -r faith_user && mkdir /app && chown -R faith_user /app
 
 # Copy the Python dependencies from the builder stage
-COPY --from=builder /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
+COPY --from=builder /usr/local/lib/python3.14/site-packages/ /usr/local/lib/python3.14/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 # Set the working directory

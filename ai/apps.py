@@ -10,6 +10,7 @@ from ai.lifespan_manager import (
 
 logger = logging.getLogger(__name__)
 
+
 class AiConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "ai"

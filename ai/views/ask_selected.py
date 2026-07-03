@@ -56,19 +56,20 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
             - 400 Bad Request: Validation errors or missing required fields
     """
     file_directory = "ask_selected"
-    
+
     # Extract validated data from payload
     collection_name = payload.collection_name
     selected_text = payload.selected_text
     query = payload.query
-    
 
     # Search vector database for relevant context
     vector_database = request.state["milvus_db"]
     # Split in half since we are using two queries
     half_limit = MILVUS_SEARCH_LIMIT // 2
     query_results = await vector_database.search(collection_name=collection_name, query=query, limit=half_limit)
-    selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=half_limit)
+    selected_text_results = await vector_database.search(
+        collection_name=collection_name, query=selected_text, limit=half_limit
+    )
 
     # Combine the results
     unified_results = await unify_vdb_results(query_results + selected_text_results)
@@ -102,10 +103,10 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
         "response_content": mark_safe(cleaned_result),
     }
     rendered_template = render_to_string(template_name, context)
-    
+
     # Simply validate the output
     _ = ServerTextResponseSerializer(response_content=rendered_template)
-    
+
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

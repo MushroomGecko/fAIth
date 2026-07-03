@@ -17,6 +17,7 @@ class AskSelectedInputSerializer(BaseModel):
         selected_text (str): The selected text from the user.
         query (str): User's question or search query (required, non-empty after strip).
     """
+
     collection_name: str
     selected_text: str
     query: str

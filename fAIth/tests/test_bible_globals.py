@@ -1,21 +1,23 @@
-import pytest
 import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 from django.conf import settings
 from django.test import SimpleTestCase
 
 # Import the global functions
 import fAIth.bible_globals as bible_globals
 
+
 def reset_bible_globals():
     """Reset the bible globals to their default values."""
 
     # Reset the globals to their default values
     bible_globals.BIBLE_DATA_ROOT = None
-    bible_globals.DEFAULT_VERSION = ''
-    bible_globals.DEFAULT_BOOK = ''
-    bible_globals.DEFAULT_CHAPTER = ''
+    bible_globals.DEFAULT_VERSION = ""
+    bible_globals.DEFAULT_BOOK = ""
+    bible_globals.DEFAULT_CHAPTER = ""
     bible_globals.VERSION_SELECTION = []
     bible_globals.IN_ORDER_BOOKS = []
     bible_globals.CHAPTER_SELECTION = {}
@@ -24,26 +26,28 @@ def reset_bible_globals():
 
 class FailingObject:
     """Create an object that raises an exception on any operation."""
+
     def __getattr__(self, name):
         raise RuntimeError("Something went wrong")
 
 
 class TestSetBibleDataRoot(SimpleTestCase):
     """Tests for set_bible_data_root function."""
+
     ROOT_DIR = Path(__file__).resolve().parents[2]
 
     # Success tests
     def test_set_bible_data_success(self):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        EXPECTED_PATH = self.ROOT_DIR.joinpath('fAIth', 'bible_data')
+        expected_path = self.ROOT_DIR.joinpath("fAIth", "bible_data")
         # Should set the global variable to the expected path
-        assert bible_globals.BIBLE_DATA_ROOT == EXPECTED_PATH
+        assert bible_globals.BIBLE_DATA_ROOT == expected_path
 
     def test_set_bible_data_wrong_endpoint(self):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        wrong_path = self.ROOT_DIR.joinpath('fAIth', 'this_is_wrong')
+        wrong_path = self.ROOT_DIR.joinpath("fAIth", "this_is_wrong")
         # Should not set the global variable to the wrong endpoint
         assert bible_globals.BIBLE_DATA_ROOT != wrong_path
 
@@ -51,22 +55,22 @@ class TestSetBibleDataRoot(SimpleTestCase):
     def test_set_bible_data_no_endpoint(self):
         reset_bible_globals()
         # Should raise an error if there is no endpoint
-        with patch.object(settings, 'BASE_DIR', self.ROOT_DIR):
-            with patch.object(Path, 'joinpath', side_effect=Exception("Invalid endpoint")):
+        with patch.object(settings, "BASE_DIR", self.ROOT_DIR):
+            with patch.object(Path, "joinpath", side_effect=Exception("Invalid endpoint")):
                 with pytest.raises(ValueError):
                     bible_globals.set_bible_data_root()
 
     def test_set_bible_data_wrong_root_dir(self):
         reset_bible_globals()
         # Should raise an error if the root directory is wrong
-        with patch.object(settings, 'BASE_DIR', "this_is_wrong"):
+        with patch.object(settings, "BASE_DIR", "this_is_wrong"):
             with pytest.raises(ValueError):
                 bible_globals.set_bible_data_root()
 
     def test_set_bible_data_no_root_dir(self):
         reset_bible_globals()
         # Should raise an error if the root directory is not set
-        with patch.object(settings, 'BASE_DIR', None):
+        with patch.object(settings, "BASE_DIR", None):
             with pytest.raises(ValueError):
                 bible_globals.set_bible_data_root()
 
@@ -85,62 +89,62 @@ class TestSetVersionSelection(SimpleTestCase):
     @patch.dict(os.environ, {"ENABLED_VERSIONS": '["bsb", "web"]'})
     def test_set_version_selection_all_versions_found(self):
         reset_bible_globals()
-        mock_versions = [self.create_mock_version('bsb'), self.create_mock_version('web')]
-        with patch.object(bible_globals, 'BIBLE_DATA_ROOT') as mock_root:
+        mock_versions = [self.create_mock_version("bsb"), self.create_mock_version("web")]
+        with patch.object(bible_globals, "BIBLE_DATA_ROOT") as mock_root:
             mock_root.iterdir.return_value = mock_versions
             bible_globals.set_version_selection()
             # Should include all versions
             assert len(bible_globals.VERSION_SELECTION) == 2
-            assert 'bsb' in bible_globals.VERSION_SELECTION
-            assert 'web' in bible_globals.VERSION_SELECTION
+            assert "bsb" in bible_globals.VERSION_SELECTION
+            assert "web" in bible_globals.VERSION_SELECTION
 
     @patch.dict(os.environ, {"ENABLED_VERSIONS": '["bsb"]'})
     def test_set_version_selection_one_version_only(self):
         reset_bible_globals()
-        mock_versions = [self.create_mock_version('bsb'), self.create_mock_version('web')]
-        with patch.object(bible_globals, 'BIBLE_DATA_ROOT') as mock_root:
+        mock_versions = [self.create_mock_version("bsb"), self.create_mock_version("web")]
+        with patch.object(bible_globals, "BIBLE_DATA_ROOT") as mock_root:
             mock_root.iterdir.return_value = mock_versions
             bible_globals.set_version_selection()
             # Should include only the version that is found
             assert len(bible_globals.VERSION_SELECTION) == 1
-            assert bible_globals.VERSION_SELECTION == ['bsb']
-            assert 'web' not in bible_globals.VERSION_SELECTION
+            assert bible_globals.VERSION_SELECTION == ["bsb"]
+            assert "web" not in bible_globals.VERSION_SELECTION
 
     @patch.dict(os.environ, {"ENABLED_VERSIONS": '["bsb", "not_a_version"]'})
     def test_set_version_selection_one_version_not_found(self):
         reset_bible_globals()
-        mock_versions = [self.create_mock_version('bsb'), self.create_mock_version('web')]
-        with patch.object(bible_globals, 'BIBLE_DATA_ROOT') as mock_root:
+        mock_versions = [self.create_mock_version("bsb"), self.create_mock_version("web")]
+        with patch.object(bible_globals, "BIBLE_DATA_ROOT") as mock_root:
             mock_root.iterdir.return_value = mock_versions
             bible_globals.set_version_selection()
             # Should include only the version that is found
             assert len(bible_globals.VERSION_SELECTION) == 1
-            assert 'bsb' in bible_globals.VERSION_SELECTION
-            assert 'not_a_version' not in bible_globals.VERSION_SELECTION
+            assert "bsb" in bible_globals.VERSION_SELECTION
+            assert "not_a_version" not in bible_globals.VERSION_SELECTION
 
     @patch.dict(os.environ, {"ENABLED_VERSIONS": '["not_a_version_1", "not_a_version_2"]'})
     def test_set_version_selection_no_versions_found(self):
         reset_bible_globals()
-        mock_versions = [self.create_mock_version('bsb'), self.create_mock_version('web')]
-        with patch.object(bible_globals, 'BIBLE_DATA_ROOT') as mock_root:
+        mock_versions = [self.create_mock_version("bsb"), self.create_mock_version("web")]
+        with patch.object(bible_globals, "BIBLE_DATA_ROOT") as mock_root:
             mock_root.iterdir.return_value = mock_versions
             bible_globals.set_version_selection()
             # Should fallback to all available versions
             assert len(bible_globals.VERSION_SELECTION) == 2
-            assert 'bsb' in bible_globals.VERSION_SELECTION
-            assert 'web' in bible_globals.VERSION_SELECTION
+            assert "bsb" in bible_globals.VERSION_SELECTION
+            assert "web" in bible_globals.VERSION_SELECTION
 
-    @patch.dict(os.environ, {"ENABLED_VERSIONS": '[]'})
+    @patch.dict(os.environ, {"ENABLED_VERSIONS": "[]"})
     def test_set_version_selection_no_selected_versions(self):
         reset_bible_globals()
-        mock_versions = [self.create_mock_version('bsb'), self.create_mock_version('web')]
-        with patch.object(bible_globals, 'BIBLE_DATA_ROOT') as mock_root:
+        mock_versions = [self.create_mock_version("bsb"), self.create_mock_version("web")]
+        with patch.object(bible_globals, "BIBLE_DATA_ROOT") as mock_root:
             mock_root.iterdir.return_value = mock_versions
             bible_globals.set_version_selection()
             # Should include all available versions
             assert len(bible_globals.VERSION_SELECTION) == 2
-            assert 'bsb' in bible_globals.VERSION_SELECTION
-            assert 'web' in bible_globals.VERSION_SELECTION
+            assert "bsb" in bible_globals.VERSION_SELECTION
+            assert "web" in bible_globals.VERSION_SELECTION
 
     # Error tests
     def test_set_version_selection_error_thrown(self):
@@ -150,13 +154,14 @@ class TestSetVersionSelection(SimpleTestCase):
         # Should catch and throw an error
         with pytest.raises(ValueError):
             bible_globals.set_version_selection()
-    
+
     def test_set_version_selection_dependency_bible_data_root_not_set(self):
         """Test that set_version_selection fails when BIBLE_DATA_ROOT is not set."""
         reset_bible_globals()
         # BIBLE_DATA_ROOT is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_version_selection()
+
 
 class TestSetDefaultVersion(SimpleTestCase):
     """Tests for set_default_version function."""
@@ -166,19 +171,19 @@ class TestSetDefaultVersion(SimpleTestCase):
     def test_set_default_version_in_selection(self):
         """Test that set_default_version sets the global variable to the default version."""
         reset_bible_globals()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
         bible_globals.set_default_version()
         # Should set DEFAULT_VERSION to the global variable
-        assert bible_globals.DEFAULT_VERSION == 'web'
+        assert bible_globals.DEFAULT_VERSION == "web"
 
     @patch.dict(os.environ, {"DEFAULT_VERSION": "not_a_version"})
     def test_set_default_version_not_in_selection(self):
         """Test that set_default_version throws an error when the default version is not in the selection."""
         reset_bible_globals()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
         bible_globals.set_default_version()
         # Should set DEFAULT_VERSION to the first version in the selection
-        assert bible_globals.DEFAULT_VERSION == 'bsb'
+        assert bible_globals.DEFAULT_VERSION == "bsb"
 
     # Error tests
     def test_set_default_version_error_thrown(self):
@@ -188,7 +193,7 @@ class TestSetDefaultVersion(SimpleTestCase):
         # Should catch and throw an error
         with pytest.raises(ValueError):
             bible_globals.set_default_version()
-    
+
     def test_set_default_version_dependency_version_selection_not_set(self):
         """Test that set_default_version fails when VERSION_SELECTION is empty."""
         reset_bible_globals()
@@ -199,19 +204,74 @@ class TestSetDefaultVersion(SimpleTestCase):
 
 class TestSetInOrderBooks(SimpleTestCase):
     """Tests for set_in_order_books function."""
+
     in_order_books = [
-        "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua",
-        "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
-        "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
-        "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah",
-        "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel",
-        "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
-        "Haggai", "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John",
-        "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians",
-        "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
-        "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon",
-        "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John",
-        "3 John", "Jude", "Revelation"
+        "Genesis",
+        "Exodus",
+        "Leviticus",
+        "Numbers",
+        "Deuteronomy",
+        "Joshua",
+        "Judges",
+        "Ruth",
+        "1 Samuel",
+        "2 Samuel",
+        "1 Kings",
+        "2 Kings",
+        "1 Chronicles",
+        "2 Chronicles",
+        "Ezra",
+        "Nehemiah",
+        "Esther",
+        "Job",
+        "Psalms",
+        "Proverbs",
+        "Ecclesiastes",
+        "Song of Solomon",
+        "Isaiah",
+        "Jeremiah",
+        "Lamentations",
+        "Ezekiel",
+        "Daniel",
+        "Hosea",
+        "Joel",
+        "Amos",
+        "Obadiah",
+        "Jonah",
+        "Micah",
+        "Nahum",
+        "Habakkuk",
+        "Zephaniah",
+        "Haggai",
+        "Zechariah",
+        "Malachi",
+        "Matthew",
+        "Mark",
+        "Luke",
+        "John",
+        "Acts",
+        "Romans",
+        "1 Corinthians",
+        "2 Corinthians",
+        "Galatians",
+        "Ephesians",
+        "Philippians",
+        "Colossians",
+        "1 Thessalonians",
+        "2 Thessalonians",
+        "1 Timothy",
+        "2 Timothy",
+        "Titus",
+        "Philemon",
+        "Hebrews",
+        "James",
+        "1 Peter",
+        "2 Peter",
+        "1 John",
+        "2 John",
+        "3 John",
+        "Jude",
+        "Revelation",
     ]
 
     # Success tests
@@ -240,7 +300,7 @@ class TestSetInOrderBooks(SimpleTestCase):
     def test_set_in_order_books_missing_book(self):
         """Test that set_in_order_books fails if a book is missing."""
         reset_bible_globals()
-        missing_book = self.in_order_books.copy().remove('Genesis')
+        missing_book = self.in_order_books.copy().remove("Genesis")
         bible_globals.set_in_order_books()
         # Should fail because Genesis is missing
         assert bible_globals.IN_ORDER_BOOKS != missing_book
@@ -253,6 +313,7 @@ class TestSetInOrderBooks(SimpleTestCase):
         # Should fail because there are no books
         assert bible_globals.IN_ORDER_BOOKS != empty_books
 
+
 class TestSetDefaultBook(SimpleTestCase):
     """Tests for set_default_book function."""
 
@@ -264,7 +325,7 @@ class TestSetDefaultBook(SimpleTestCase):
         bible_globals.set_in_order_books()
         bible_globals.set_default_book()
         # Should set DEFAULT_BOOK to the global variable
-        assert bible_globals.DEFAULT_BOOK == 'Genesis'
+        assert bible_globals.DEFAULT_BOOK == "Genesis"
 
     @patch.dict(os.environ, {"DEFAULT_BOOK": "not_a_book"})
     def test_set_default_book_not_in_selection(self):
@@ -273,7 +334,7 @@ class TestSetDefaultBook(SimpleTestCase):
         bible_globals.set_in_order_books()
         bible_globals.set_default_book()
         # Should set DEFAULT_BOOK to the first book in the selection
-        assert bible_globals.DEFAULT_BOOK == 'Genesis'
+        assert bible_globals.DEFAULT_BOOK == "Genesis"
 
     # Error tests
     def test_set_default_book_error_thrown(self):
@@ -283,7 +344,7 @@ class TestSetDefaultBook(SimpleTestCase):
         # Should catch and throw an error
         with pytest.raises(ValueError):
             bible_globals.set_default_book()
-    
+
     def test_set_default_book_dependency_in_order_books_not_set(self):
         """Test that set_default_book fails when IN_ORDER_BOOKS is empty."""
         reset_bible_globals()
@@ -294,6 +355,7 @@ class TestSetDefaultBook(SimpleTestCase):
 
 class TestSetChapterSelection(SimpleTestCase):
     """Tests for set_chapter_selection function."""
+
     books_with_chapters = {
         "Genesis": 50,
         "Exodus": 40,
@@ -397,7 +459,7 @@ class TestSetChapterSelection(SimpleTestCase):
         bible_globals.set_default_version()
         bible_globals.set_in_order_books()
         # Change DEFAULT_VERSION to 'web' for this test
-        bible_globals.DEFAULT_VERSION = 'web'
+        bible_globals.DEFAULT_VERSION = "web"
         bible_globals.set_chapter_selection()
         # Should succeed because web should have all the designated chapters per book
         for book in self.books_with_chapters:
@@ -411,12 +473,12 @@ class TestSetChapterSelection(SimpleTestCase):
         bible_globals.set_default_version()
         bible_globals.set_in_order_books()
         # Change DEFAULT_VERSION to 'web' for this test
-        bible_globals.DEFAULT_VERSION = 'web'
+        bible_globals.DEFAULT_VERSION = "web"
         bible_globals.set_chapter_selection()
         # Should fail because the chapters are off by one
         for book in self.books_with_chapters:
             assert bible_globals.CHAPTER_SELECTION[book] != self.books_with_chapters[book] - 1
-    
+
     # Dependency tests
     def test_set_chapter_selection_dependency_bible_data_root_not_set(self):
         """Test that set_chapter_selection fails when BIBLE_DATA_ROOT is not set."""
@@ -424,7 +486,7 @@ class TestSetChapterSelection(SimpleTestCase):
         # BIBLE_DATA_ROOT is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_chapter_selection()
-    
+
     def test_set_chapter_selection_dependency_default_version_not_set(self):
         """Test that set_chapter_selection fails when DEFAULT_VERSION is not set."""
         reset_bible_globals()
@@ -432,7 +494,7 @@ class TestSetChapterSelection(SimpleTestCase):
         # DEFAULT_VERSION is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_chapter_selection()
-    
+
     def test_set_chapter_selection_dependency_in_order_books_not_set(self):
         """Test that set_chapter_selection fails when IN_ORDER_BOOKS is not set."""
         reset_bible_globals()
@@ -442,7 +504,7 @@ class TestSetChapterSelection(SimpleTestCase):
         # IN_ORDER_BOOKS is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_chapter_selection()
-    
+
     # Error tests
     def test_set_chapter_selection_error_thrown(self):
         """Test that set_chapter_selection throws an error when an error occurs."""
@@ -464,12 +526,14 @@ class TestSetChapterSelection(SimpleTestCase):
         bible_globals.set_default_version()
         bible_globals.set_in_order_books()
         # Manually set DEFAULT_VERSION to a non-existent version
-        bible_globals.DEFAULT_VERSION = 'not_a_real_version'
+        bible_globals.DEFAULT_VERSION = "not_a_real_version"
         with pytest.raises(ValueError):
             bible_globals.set_chapter_selection()
 
+
 class TestSetDefaultChapter(SimpleTestCase):
     """Tests for set_default_chapter function."""
+
     books_with_chapters = {
         "Genesis": 50,
         "Exodus": 40,
@@ -546,7 +610,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         for book in self.books_with_chapters:
@@ -559,7 +623,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         for book in self.books_with_chapters:
@@ -574,7 +638,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         for book in self.books_with_chapters:
@@ -589,7 +653,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'web'
+        bible_globals.DEFAULT_VERSION = "web"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         for book in self.books_with_chapters:
@@ -602,7 +666,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'web'
+        bible_globals.DEFAULT_VERSION = "web"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         for book in self.books_with_chapters:
@@ -617,7 +681,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'web'
+        bible_globals.DEFAULT_VERSION = "web"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         for book in self.books_with_chapters:
@@ -635,7 +699,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         bible_globals.set_default_version()
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
-        bible_globals.DEFAULT_BOOK = 'Genesis'
+        bible_globals.DEFAULT_BOOK = "Genesis"
         # Make CHAPTER_SELECTION raise an error when accessed
         bible_globals.CHAPTER_SELECTION = FailingObject()
         with pytest.raises(ValueError):
@@ -647,7 +711,7 @@ class TestSetDefaultChapter(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_version_selection()
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         # Set DEFAULT_BOOK to something not in CHAPTER_SELECTION
@@ -658,7 +722,7 @@ class TestSetDefaultChapter(SimpleTestCase):
 
 class TestSetAllVerses(SimpleTestCase):
     """Tests for set_all_verses function."""
-    
+
     # Success tests
     def test_set_all_verses_success(self):
         """Test that set_all_verses loads all verses correctly."""
@@ -669,7 +733,7 @@ class TestSetAllVerses(SimpleTestCase):
         bible_globals.set_in_order_books()
         bible_globals.set_chapter_selection()
         bible_globals.set_all_verses()
-        
+
         # Verify structure is populated, not just empty dicts
         assert len(bible_globals.ALL_VERSES) > 0
         for version in bible_globals.ALL_VERSES:
@@ -677,7 +741,9 @@ class TestSetAllVerses(SimpleTestCase):
             for book in bible_globals.ALL_VERSES[version]:
                 assert len(bible_globals.ALL_VERSES[version][book]) > 0, f"No chapters found for {version}/{book}"
                 for chapter in bible_globals.ALL_VERSES[version][book]:
-                    assert len(bible_globals.ALL_VERSES[version][book][chapter]) > 0, f"No verses found for {version}/{book}/{chapter}"
+                    assert len(bible_globals.ALL_VERSES[version][book][chapter]) > 0, (
+                        f"No verses found for {version}/{book}/{chapter}"
+                    )
                     assert isinstance(bible_globals.ALL_VERSES[version][book][chapter], dict)
 
     # Error tests
@@ -697,9 +763,9 @@ class TestSetAllVerses(SimpleTestCase):
     def test_set_all_verses_dependency_bible_data_root_not_set(self):
         """Test that set_all_verses fails when BIBLE_DATA_ROOT is not set."""
         reset_bible_globals()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
         bible_globals.set_in_order_books()
-        bible_globals.CHAPTER_SELECTION = {'Genesis': 50}
+        bible_globals.CHAPTER_SELECTION = {"Genesis": 50}
         # BIBLE_DATA_ROOT is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_all_verses()
@@ -709,17 +775,17 @@ class TestSetAllVerses(SimpleTestCase):
         reset_bible_globals()
         bible_globals.set_bible_data_root()
         bible_globals.set_in_order_books()
-        bible_globals.CHAPTER_SELECTION = {'Genesis': 50}
+        bible_globals.CHAPTER_SELECTION = {"Genesis": 50}
         # VERSION_SELECTION is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_all_verses()
-    
+
     def test_set_all_verses_dependency_in_order_books_not_set(self):
         """Test that set_all_verses fails when IN_ORDER_BOOKS is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
-        bible_globals.CHAPTER_SELECTION = {'Genesis': 50}
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
+        bible_globals.CHAPTER_SELECTION = {"Genesis": 50}
         # IN_ORDER_BOOKS is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.set_all_verses()
@@ -728,7 +794,7 @@ class TestSetAllVerses(SimpleTestCase):
         """Test that set_all_verses fails when CHAPTER_SELECTION is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
         bible_globals.set_in_order_books()
         # CHAPTER_SELECTION is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
@@ -737,7 +803,7 @@ class TestSetAllVerses(SimpleTestCase):
 
 class TestCheckGlobals(SimpleTestCase):
     """Tests for check_globals function."""
-    
+
     # Success tests
     def test_check_globals_success(self):
         """Test that check_globals succeeds when all globals are set."""
@@ -751,7 +817,7 @@ class TestCheckGlobals(SimpleTestCase):
         bible_globals.set_default_chapter()
         bible_globals.set_all_verses()
         bible_globals.check_globals()
-    
+
     # Error tests
     def test_check_globals_error_thrown(self):
         """Test that check_globals raises ValueError when an error occurs."""
@@ -768,14 +834,14 @@ class TestCheckGlobals(SimpleTestCase):
         bible_globals.BIBLE_DATA_ROOT = FailingObject()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_bible_data_root_not_set(self):
         """Test that check_globals fails when BIBLE_DATA_ROOT is not set."""
         reset_bible_globals()
         # BIBLE_DATA_ROOT is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_version_selection_not_set(self):
         """Test that check_globals fails when VERSION_SELECTION is not set."""
         reset_bible_globals()
@@ -783,76 +849,76 @@ class TestCheckGlobals(SimpleTestCase):
         # VERSION_SELECTION is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_default_version_not_set(self):
         """Test that check_globals fails when DEFAULT_VERSION is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
         # DEFAULT_VERSION is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_in_order_books_not_set(self):
         """Test that check_globals fails when IN_ORDER_BOOKS is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
+        bible_globals.DEFAULT_VERSION = "bsb"
         # IN_ORDER_BOOKS is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_default_book_not_set(self):
         """Test that check_globals fails when DEFAULT_BOOK is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
         # DEFAULT_BOOK is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_chapter_selection_not_set(self):
         """Test that check_globals fails when CHAPTER_SELECTION is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
-        bible_globals.DEFAULT_BOOK = 'Genesis'
+        bible_globals.DEFAULT_BOOK = "Genesis"
         # CHAPTER_SELECTION is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_default_chapter_not_set(self):
         """Test that check_globals fails when DEFAULT_CHAPTER is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
-        bible_globals.DEFAULT_BOOK = 'Genesis'
-        bible_globals.CHAPTER_SELECTION = {'Genesis': 50}
+        bible_globals.DEFAULT_BOOK = "Genesis"
+        bible_globals.CHAPTER_SELECTION = {"Genesis": 50}
         # DEFAULT_CHAPTER is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_all_verses_not_set(self):
         """Test that check_globals fails when ALL_VERSES is not set."""
         reset_bible_globals()
         bible_globals.set_bible_data_root()
-        bible_globals.VERSION_SELECTION = ['bsb', 'web']
-        bible_globals.DEFAULT_VERSION = 'bsb'
+        bible_globals.VERSION_SELECTION = ["bsb", "web"]
+        bible_globals.DEFAULT_VERSION = "bsb"
         bible_globals.set_in_order_books()
-        bible_globals.DEFAULT_BOOK = 'Genesis'
-        bible_globals.CHAPTER_SELECTION = {'Genesis': 50}
+        bible_globals.DEFAULT_BOOK = "Genesis"
+        bible_globals.CHAPTER_SELECTION = {"Genesis": 50}
         bible_globals.DEFAULT_CHAPTER = 1
         # ALL_VERSES is empty by default after reset_bible_globals()
         with pytest.raises(ValueError):
             bible_globals.check_globals()
-    
+
     def test_check_globals_dependency_all_required(self):
         """Test that check_globals succeeds when all dependencies are met."""
         reset_bible_globals()

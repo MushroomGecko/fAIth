@@ -22,6 +22,7 @@ router = Router()
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT", 10)).strip())
 
+
 @router.post("/image_search", tags=[APITags.AI], url_name="image_search")
 async def image_search(request, payload: ImageSearchInputSerializer = Form(...)):
     """
@@ -39,7 +40,7 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
             - 400 Bad Request: Validation errors or missing required fields
     """
     file_directory = "image_search"
-    
+
     # Extract validated data from payload
     selected_text = payload.selected_text
     verses_text = payload.verses_text
@@ -50,11 +51,13 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     try:
         system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
         user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-        user_prompt = user_prompt.format(selected_text=selected_text, verses_text=verses_text, book=book, chapter=chapter)
+        user_prompt = user_prompt.format(
+            selected_text=selected_text, verses_text=verses_text, book=book, chapter=chapter
+        )
     except Exception as e:
         logger.error(f"Error formatting user prompt: {e}")
         return HttpResponse(f"Error formatting user prompt: {e}", status=500, content_type="text/html")
-    
+
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     try:
         system_prompt = system_prompt.strip()
@@ -80,7 +83,10 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     except Exception as e:
         logger.error(f"Error searching for images: {e}")
         return HttpResponse(f"Error searching for images: {e}", status=500, content_type="text/html")
-    html_urls = [f"<img src='{url}' style='width: 100%; height: auto; display: block; margin-bottom: 0.5rem;' />\n" for url in image_urls]
+    html_urls = [
+        f"<img src='{url}' style='width: 100%; height: auto; display: block; margin-bottom: 0.5rem;' />\n"
+        for url in image_urls
+    ]
     logger.info(f"HTML URLs: {html_urls}")
 
     # Render the response in an HTML template
@@ -93,14 +99,14 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     except Exception as e:
         logger.error(f"Error rendering template: {e}")
         return HttpResponse(f"Error rendering template: {e}", status=500, content_type="text/html")
-    
+
     # Simply validate the output
     try:
         _ = ServerTextResponseSerializer(response_content=rendered_template)
     except Exception as e:
         logger.error(f"Error validating output: {e}")
         return HttpResponse(f"Error validating output: {e}", status=500, content_type="text/html")
-    
+
     # Return rendered HTML to client
     # 200 - OK
     return HttpResponse(rendered_template, status=200, content_type="text/html")

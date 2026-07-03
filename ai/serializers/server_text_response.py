@@ -1,8 +1,10 @@
 import logging
+
 from pydantic import BaseModel
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class ServerTextResponseSerializer(BaseModel):
     """
@@ -13,4 +15,5 @@ class ServerTextResponseSerializer(BaseModel):
     Fields:
         response_content (str): The response content from the LLM.
     """
+
     response_content: str
