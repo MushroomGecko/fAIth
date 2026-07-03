@@ -14,7 +14,11 @@ class TestCompletionsInit(SimpleTestCase):
 
     def test_completions_init_with_env_variables_local_mode(self):
         """Test that Completions initializes correctly in local mode (LLM_PORT set)."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1", "LLM_API_KEY": "test-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1", "LLM_API_KEY": "test-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client:
                 completions = Completions()
 
@@ -25,7 +29,11 @@ class TestCompletionsInit(SimpleTestCase):
 
     def test_completions_init_with_env_variables_api_mode(self):
         """Test that Completions initializes correctly in API mode (BASE_LLM_URL set)."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client:
                 completions = Completions()
 
@@ -62,7 +70,11 @@ class TestCompletionsInit(SimpleTestCase):
 
     def test_completions_init_with_url_api_mode(self):
         """Test that Completions uses BASE_LLM_URL when LLM_PORT is not set (API mode)."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client:
                 Completions()
 
@@ -131,13 +143,19 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                result = await completions.completions(
+                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
 
                 assert result == "The Son of God!"
 
     async def test_completions_success_api_mode(self):
         """Test that completions method successfully generates a response in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -148,7 +166,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                result = await completions.completions(
+                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
 
                 assert result == "The Son of God!"
 
@@ -165,7 +185,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                await completions.completions(system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                await completions.completions(
+                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
 
                 # Verify the messages were formatted correctly
                 call_args = mock_client.chat.completions.create.call_args
@@ -179,7 +201,11 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_message_formatting_api_mode(self):
         """Test that completions correctly formats messages in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -190,7 +216,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                await completions.completions(system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                await completions.completions(
+                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
 
                 # Verify the messages were formatted correctly
                 call_args = mock_client.chat.completions.create.call_args
@@ -215,7 +243,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                await completions.completions(system_prompt="System", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                await completions.completions(
+                    system_prompt="System", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
 
                 # Verify correct model was used
                 call_args = mock_client.chat.completions.create.call_args
@@ -223,7 +253,11 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_uses_correct_model_api_mode(self):
         """Test that completions uses the correct model in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -234,7 +268,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                await completions.completions(system_prompt="System", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                await completions.completions(
+                    system_prompt="System", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
 
                 # Verify correct model was used
                 call_args = mock_client.chat.completions.create.call_args
@@ -242,7 +278,11 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_with_blank_extra_body_local_mode(self):
         """Test that completions handles blank extra_body (empty dict) correctly in local mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1", "LLM_MODEL_ARGUMENTS": "{}"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1", "LLM_MODEL_ARGUMENTS": "{}"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -253,7 +293,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(system_prompt="System", user_prompt="Prompt: {query}", query="test")
+                result = await completions.completions(
+                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                )
 
                 # Verify extra_body is passed as empty dict when no arguments are set
                 call_args = mock_client.chat.completions.create.call_args
@@ -263,7 +305,16 @@ class TestCompletionsMethod(SimpleTestCase):
 
     async def test_completions_with_blank_extra_body_api_mode(self):
         """Test that completions handles blank extra_body (empty dict) correctly in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key", "LLM_MODEL_ARGUMENTS": "{}"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_MODEL_ID": "test-model",
+                "BASE_LLM_URL": "https://openrouter.ai/api/v1",
+                "LLM_API_KEY": "sk-or-key",
+                "LLM_MODEL_ARGUMENTS": "{}",
+            },
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -274,7 +325,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(system_prompt="System", user_prompt="Prompt: {query}", query="test")
+                result = await completions.completions(
+                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                )
 
                 # Verify extra_body is passed as empty dict when no arguments are set
                 call_args = mock_client.chat.completions.create.call_args
@@ -285,7 +338,15 @@ class TestCompletionsMethod(SimpleTestCase):
     async def test_completions_with_filled_extra_body_local_mode(self):
         """Test that completions correctly passes filled extra_body with model arguments in local mode."""
         model_args = {"chat_template_kwargs": {"temperature": 0.7, "max_tokens": 512}}
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "http://llm:11436/v1", "LLM_MODEL_ARGUMENTS": json.dumps(model_args)}, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_MODEL_ID": "test-model",
+                "BASE_LLM_URL": "http://llm:11436/v1",
+                "LLM_MODEL_ARGUMENTS": json.dumps(model_args),
+            },
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -296,7 +357,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(system_prompt="System", user_prompt="Prompt: {query}", query="test")
+                result = await completions.completions(
+                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                )
 
                 # Verify extra_body is passed with model arguments
                 call_args = mock_client.chat.completions.create.call_args
@@ -307,7 +370,16 @@ class TestCompletionsMethod(SimpleTestCase):
     async def test_completions_with_filled_extra_body_api_mode(self):
         """Test that completions correctly passes filled extra_body with model arguments in API mode."""
         model_args = {"chat_template_kwargs": {"temperature": 0.7, "max_tokens": 512}}
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key", "LLM_MODEL_ARGUMENTS": json.dumps(model_args)}, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "LLM_MODEL_ID": "test-model",
+                "BASE_LLM_URL": "https://openrouter.ai/api/v1",
+                "LLM_API_KEY": "sk-or-key",
+                "LLM_MODEL_ARGUMENTS": json.dumps(model_args),
+            },
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -318,7 +390,9 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(system_prompt="System", user_prompt="Prompt: {query}", query="test")
+                result = await completions.completions(
+                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                )
 
                 # Verify extra_body is passed with model arguments
                 call_args = mock_client.chat.completions.create.call_args
@@ -346,7 +420,11 @@ class TestCompletionsClose(SimpleTestCase):
 
     async def test_close_success_api_mode(self):
         """Test that close successfully closes the client in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.close = AsyncMock()
@@ -374,7 +452,11 @@ class TestCompletionsClose(SimpleTestCase):
 
     async def test_close_handles_error_api_mode(self):
         """Test that close handles errors gracefully in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.close = AsyncMock(side_effect=Exception("Close failed"))
@@ -404,7 +486,11 @@ class TestCompletionsClose(SimpleTestCase):
 
     async def test_close_logging_api_mode(self):
         """Test that close logs when closing in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client.close = AsyncMock()
@@ -439,7 +525,9 @@ class TestCompletionsIntegration(SimpleTestCase):
                 completions = Completions()
 
                 # Use completions
-                result = await completions.completions(system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                result = await completions.completions(
+                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
                 assert result == "The Son of God!"
 
                 # Close
@@ -448,7 +536,11 @@ class TestCompletionsIntegration(SimpleTestCase):
 
     async def test_completions_lifecycle_api_mode(self):
         """Test the full lifecycle of Completions object in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
@@ -463,7 +555,9 @@ class TestCompletionsIntegration(SimpleTestCase):
                 completions = Completions()
 
                 # Use completions
-                result = await completions.completions(system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?")
+                result = await completions.completions(
+                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                )
                 assert result == "The Son of God!"
 
                 # Close
@@ -478,7 +572,11 @@ class TestCompletionsIntegration(SimpleTestCase):
                 mock_client_class.return_value = mock_client
 
                 # Create responses for multiple calls
-                responses = [MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 1"))]), MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 2"))]), MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 3"))])]
+                responses = [
+                    MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 1"))]),
+                    MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 2"))]),
+                    MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 3"))]),
+                ]
                 mock_client.chat.completions.create = AsyncMock(side_effect=responses)
 
                 completions = Completions()
@@ -494,13 +592,21 @@ class TestCompletionsIntegration(SimpleTestCase):
 
     async def test_multiple_completions_calls_api_mode(self):
         """Test multiple consecutive completions calls in API mode."""
-        with patch.dict(os.environ, {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {"LLM_MODEL_ID": "test-model", "BASE_LLM_URL": "https://openrouter.ai/api/v1", "LLM_API_KEY": "sk-or-key"},
+            clear=True,
+        ):
             with patch("ai.llm.completions.AsyncOpenAI") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value = mock_client
 
                 # Create responses for multiple calls
-                responses = [MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 1"))]), MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 2"))]), MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 3"))])]
+                responses = [
+                    MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 1"))]),
+                    MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 2"))]),
+                    MagicMock(choices=[MagicMock(message=MagicMock(content="Answer 3"))]),
+                ]
                 mock_client.chat.completions.create = AsyncMock(side_effect=responses)
 
                 completions = Completions()

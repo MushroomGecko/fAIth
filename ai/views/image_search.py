@@ -51,7 +51,9 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     try:
         system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
         user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-        user_prompt = user_prompt.format(selected_text=selected_text, verses_text=verses_text, book=book, chapter=chapter)
+        user_prompt = user_prompt.format(
+            selected_text=selected_text, verses_text=verses_text, book=book, chapter=chapter
+        )
     except Exception as e:
         logger.error(f"Error formatting user prompt: {e}")
         return HttpResponse(f"Error formatting user prompt: {e}", status=500, content_type="text/html")
@@ -81,7 +83,10 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     except Exception as e:
         logger.error(f"Error searching for images: {e}")
         return HttpResponse(f"Error searching for images: {e}", status=500, content_type="text/html")
-    html_urls = [f"<img src='{url}' style='width: 100%; height: auto; display: block; margin-bottom: 0.5rem;' />\n" for url in image_urls]
+    html_urls = [
+        f"<img src='{url}' style='width: 100%; height: auto; display: block; margin-bottom: 0.5rem;' />\n"
+        for url in image_urls
+    ]
     logger.info(f"HTML URLs: {html_urls}")
 
     # Render the response in an HTML template

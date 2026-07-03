@@ -18,8 +18,12 @@ load_dotenv()
 # Set up logging
 logger = logging.getLogger(__name__)
 
-system_prompt = fAIth.settings.BASE_DIR.joinpath("ai", "llm", "prompts", "testing", "system.md").open("r", encoding="utf-8").read()
-user_prompt = fAIth.settings.BASE_DIR.joinpath("ai", "llm", "prompts", "testing", "user.md").open("r", encoding="utf-8").read()
+system_prompt = (
+    fAIth.settings.BASE_DIR.joinpath("ai", "llm", "prompts", "testing", "system.md").open("r", encoding="utf-8").read()
+)
+user_prompt = (
+    fAIth.settings.BASE_DIR.joinpath("ai", "llm", "prompts", "testing", "user.md").open("r", encoding="utf-8").read()
+)
 query = "Name the 12 apostles of Jesus Christ."
 
 

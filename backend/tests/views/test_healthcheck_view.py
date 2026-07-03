@@ -168,7 +168,10 @@ class TestHealthcheckView(SimpleTestCase):
         request = self.factory.get("/healthcheck/")
 
         error_message = "Unexpected error occurred"
-        with patch("backend.views.healthcheck.connection") as mock_connection, patch("backend.views.healthcheck.logger") as mock_logger:
+        with (
+            patch("backend.views.healthcheck.connection") as mock_connection,
+            patch("backend.views.healthcheck.logger") as mock_logger,
+        ):
             mock_connection.cursor.side_effect = Exception(error_message)
 
             self._call_healthcheck(request)

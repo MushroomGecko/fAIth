@@ -111,11 +111,15 @@ def set_version_selection():
             if version in available_versions:
                 valid_versions.append(version)
             else:
-                logger.warning(f"Version {version} not found in the filesystem. Not including in the list of valid versions.")
+                logger.warning(
+                    f"Version {version} not found in the filesystem. Not including in the list of valid versions."
+                )
 
         # If no enabled versions are valid, use all available versions
         if not valid_versions:
-            logger.warning("No valid versions found in `ENABLED_VERSIONS` environment variable. Including all versions in the filesystem.")
+            logger.warning(
+                "No valid versions found in `ENABLED_VERSIONS` environment variable. Including all versions in the filesystem."
+            )
             valid_versions = available_versions
         VERSION_SELECTION = valid_versions
     except Exception as e:
@@ -148,7 +152,9 @@ def set_default_version():
         # Get default version from environment or use 'bsb' as fallback
         DEFAULT_VERSION = str(os.getenv("DEFAULT_VERSION", "bsb")).strip()
         if DEFAULT_VERSION not in VERSION_SELECTION:
-            logger.warning(f"Default version {DEFAULT_VERSION} is not in the list of available versions. Defaulting to first version in the list.")
+            logger.warning(
+                f"Default version {DEFAULT_VERSION} is not in the list of available versions. Defaulting to first version in the list."
+            )
             DEFAULT_VERSION = VERSION_SELECTION[0]
     except Exception as e:
         logger.error(f"Error: {e}. 'DEFAULT_VERSION' cannot be set.")
@@ -169,7 +175,74 @@ def set_in_order_books():
     """
     global IN_ORDER_BOOKS
     logger.info("Setting Bible books in order.")
-    IN_ORDER_BOOKS = ["Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"]
+    IN_ORDER_BOOKS = [
+        "Genesis",
+        "Exodus",
+        "Leviticus",
+        "Numbers",
+        "Deuteronomy",
+        "Joshua",
+        "Judges",
+        "Ruth",
+        "1 Samuel",
+        "2 Samuel",
+        "1 Kings",
+        "2 Kings",
+        "1 Chronicles",
+        "2 Chronicles",
+        "Ezra",
+        "Nehemiah",
+        "Esther",
+        "Job",
+        "Psalms",
+        "Proverbs",
+        "Ecclesiastes",
+        "Song of Solomon",
+        "Isaiah",
+        "Jeremiah",
+        "Lamentations",
+        "Ezekiel",
+        "Daniel",
+        "Hosea",
+        "Joel",
+        "Amos",
+        "Obadiah",
+        "Jonah",
+        "Micah",
+        "Nahum",
+        "Habakkuk",
+        "Zephaniah",
+        "Haggai",
+        "Zechariah",
+        "Malachi",
+        "Matthew",
+        "Mark",
+        "Luke",
+        "John",
+        "Acts",
+        "Romans",
+        "1 Corinthians",
+        "2 Corinthians",
+        "Galatians",
+        "Ephesians",
+        "Philippians",
+        "Colossians",
+        "1 Thessalonians",
+        "2 Thessalonians",
+        "1 Timothy",
+        "2 Timothy",
+        "Titus",
+        "Philemon",
+        "Hebrews",
+        "James",
+        "1 Peter",
+        "2 Peter",
+        "1 John",
+        "2 John",
+        "3 John",
+        "Jude",
+        "Revelation",
+    ]
     logger.info("Bible books successfully set in order.")
 
 
@@ -197,7 +270,9 @@ def set_default_book():
         # Get default book from environment or use 'Genesis' as fallback
         DEFAULT_BOOK = str(os.getenv("DEFAULT_BOOK", "Genesis")).strip()
         if DEFAULT_BOOK not in IN_ORDER_BOOKS:
-            logger.warning(f"Default book {DEFAULT_BOOK} is not in the list of available books. Defaulting to first book in the list.")
+            logger.warning(
+                f"Default book {DEFAULT_BOOK} is not in the list of available books. Defaulting to first book in the list."
+            )
             DEFAULT_BOOK = IN_ORDER_BOOKS[0]
     except Exception as e:
         logger.error(f"Error: {e}. 'DEFAULT_BOOK' cannot be set.")
@@ -236,8 +311,12 @@ def set_chapter_selection():
         # Verify the default version directory exists
         default_version_path = BIBLE_DATA_ROOT.joinpath(DEFAULT_VERSION)
         if not default_version_path.exists():
-            logger.error(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
-            raise ValueError(f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set.")
+            logger.error(
+                f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set."
+            )
+            raise ValueError(
+                f"Default version directory not found at {default_version_path}. 'CHAPTER_SELECTION' cannot be set."
+            )
 
         # Scan each book directory and count chapters
         for book_title in IN_ORDER_BOOKS:
@@ -285,11 +364,19 @@ def set_default_chapter():
         # Get default chapter from environment or use 1 as fallback
         DEFAULT_CHAPTER = int(str(os.getenv("DEFAULT_CHAPTER", "1")).strip())
         if DEFAULT_BOOK not in CHAPTER_SELECTION:
-            logger.error(f"'DEFAULT_BOOK' {DEFAULT_BOOK} is not in the list of available books. 'DEFAULT_CHAPTER' cannot be set.")
-            raise ValueError(f"'DEFAULT_BOOK' {DEFAULT_BOOK} is not in the list of available books. 'DEFAULT_CHAPTER' cannot be set.")
+            logger.error(
+                f"'DEFAULT_BOOK' {DEFAULT_BOOK} is not in the list of available books. 'DEFAULT_CHAPTER' cannot be set."
+            )
+            raise ValueError(
+                f"'DEFAULT_BOOK' {DEFAULT_BOOK} is not in the list of available books. 'DEFAULT_CHAPTER' cannot be set."
+            )
         if DEFAULT_CHAPTER not in range(1, CHAPTER_SELECTION[DEFAULT_BOOK] + 1):
-            logger.error(f"'DEFAULT_CHAPTER' {DEFAULT_CHAPTER} is not in the range of chapters for {DEFAULT_BOOK}. 'DEFAULT_CHAPTER' cannot be set.")
-            raise ValueError(f"'DEFAULT_CHAPTER' {DEFAULT_CHAPTER} is not in the range of chapters for {DEFAULT_BOOK}. 'DEFAULT_CHAPTER' cannot be set.")
+            logger.error(
+                f"'DEFAULT_CHAPTER' {DEFAULT_CHAPTER} is not in the range of chapters for {DEFAULT_BOOK}. 'DEFAULT_CHAPTER' cannot be set."
+            )
+            raise ValueError(
+                f"'DEFAULT_CHAPTER' {DEFAULT_CHAPTER} is not in the range of chapters for {DEFAULT_BOOK}. 'DEFAULT_CHAPTER' cannot be set."
+            )
     except Exception as e:
         logger.error(f"Error: {e}. 'DEFAULT_CHAPTER' cannot be set.")
         raise ValueError(f"Error: {e}. 'DEFAULT_CHAPTER' cannot be set.")
@@ -345,10 +432,16 @@ def set_all_verses():
                                     ALL_VERSES[version][book][chapter][verse_num] = f"{int(verse_num)}) {verse_text}"
                                 except Exception:
                                     # Non-numeric keys (e.g., header_1, header_2) are section headers
-                                    ALL_VERSES[version][book][chapter][verse_num] = f'<span class="header">{verse_text}</span>'
+                                    ALL_VERSES[version][book][chapter][verse_num] = (
+                                        f'<span class="header">{verse_text}</span>'
+                                    )
                     else:
-                        logger.error(f"File not found at {file_path}. 'ALL_VERSES' cannot be set for {book} {chapter} in the {version} version.")
-                        raise ValueError(f"File not found at {file_path}. 'ALL_VERSES' cannot be set for {book} {chapter} in the {version} version.")
+                        logger.error(
+                            f"File not found at {file_path}. 'ALL_VERSES' cannot be set for {book} {chapter} in the {version} version."
+                        )
+                        raise ValueError(
+                            f"File not found at {file_path}. 'ALL_VERSES' cannot be set for {book} {chapter} in the {version} version."
+                        )
     except ValueError:
         raise
     except Exception as e:

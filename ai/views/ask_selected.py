@@ -67,7 +67,9 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
     # Split in half since we are using two queries
     half_limit = MILVUS_SEARCH_LIMIT // 2
     query_results = await vector_database.search(collection_name=collection_name, query=query, limit=half_limit)
-    selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=half_limit)
+    selected_text_results = await vector_database.search(
+        collection_name=collection_name, query=selected_text, limit=half_limit
+    )
 
     # Combine the results
     unified_results = await unify_vdb_results(query_results + selected_text_results)

@@ -113,7 +113,12 @@ class TestAsyncRender(SimpleTestCase):
         """Test that async_render handles complex nested context data."""
         factory = RequestFactory()
         request = factory.get("/")
-        context = {"book": "Psalms", "chapters": [1, 2, 3, 4, 5], "metadata": {"author": "David", "books": {"torah": ["Genesis", "Exodus"], "history": ["Joshua", "Judges"]}}, "verses_count": 150}
+        context = {
+            "book": "Psalms",
+            "chapters": [1, 2, 3, 4, 5],
+            "metadata": {"author": "David", "books": {"torah": ["Genesis", "Exodus"], "history": ["Joshua", "Judges"]}},
+            "verses_count": 150,
+        }
 
         with patch("frontend.utils.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
@@ -133,7 +138,10 @@ class TestAsyncRender(SimpleTestCase):
             assert call_args[0][2] == context
             assert call_args[0][2]["book"] == "Psalms"
             assert call_args[0][2]["chapters"] == [1, 2, 3, 4, 5]
-            assert call_args[0][2]["metadata"] == {"author": "David", "books": {"torah": ["Genesis", "Exodus"], "history": ["Joshua", "Judges"]}}
+            assert call_args[0][2]["metadata"] == {
+                "author": "David",
+                "books": {"torah": ["Genesis", "Exodus"], "history": ["Joshua", "Judges"]},
+            }
             assert call_args[0][2]["metadata"]["books"]["torah"] == ["Genesis", "Exodus"]
             assert call_args[0][2]["metadata"]["books"]["history"] == ["Joshua", "Judges"]
             assert call_args[0][2]["verses_count"] == 150
@@ -366,7 +374,10 @@ class TestAsyncRedirect(SimpleTestCase):
             call_order.append("redirect")
             return HttpResponseRedirect(path)
 
-        with patch("frontend.utils.reverse", side_effect=mock_reverse_func), patch("frontend.utils.redirect", side_effect=mock_redirect_func):
+        with (
+            patch("frontend.utils.reverse", side_effect=mock_reverse_func),
+            patch("frontend.utils.redirect", side_effect=mock_redirect_func),
+        ):
             result = await utils.async_redirect("test")
             assert isinstance(result, HttpResponseRedirect)
 
@@ -377,7 +388,11 @@ class TestAsyncRedirect(SimpleTestCase):
         """Test that multiple sequential async_redirect calls work correctly."""
         with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
             mock_reverse.side_effect = ["/home/", "/about/", "/contact/"]
-            mock_redirect.side_effect = [HttpResponseRedirect("/home/"), HttpResponseRedirect("/about/"), HttpResponseRedirect("/contact/")]
+            mock_redirect.side_effect = [
+                HttpResponseRedirect("/home/"),
+                HttpResponseRedirect("/about/"),
+                HttpResponseRedirect("/contact/"),
+            ]
 
             result1 = await utils.async_redirect("home")
             result2 = await utils.async_redirect("about")

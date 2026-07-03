@@ -62,7 +62,9 @@ async def general_question(request, payload: GeneralQuestionInputSerializer = Fo
 
     # Search vector database for relevant context
     vector_database = request.state["milvus_db"]
-    vector_results = await vector_database.search(collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT)
+    vector_results = await vector_database.search(
+        collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT
+    )
     stringified_vector_results = await stringify_vdb_results(vector_results)
     logger.info(f"Vector results:\n{stringified_vector_results}")
 

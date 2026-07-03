@@ -757,9 +757,13 @@ def build_docker_compose(
         # Warn if user specified GPU type but selected CPU driver
         if gpu_type != "cpu":
             if embedding:
-                print(f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `EMBEDDING_DRIVER` environment variable.")
+                print(
+                    f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `EMBEDDING_DRIVER` environment variable."
+                )
             else:
-                print(f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `LLM_DRIVER` environment variable.")
+                print(
+                    f"WARNING: Using CPU driver with GPU type `{gpu_type}`. If this is not intended, please check your `LLM_DRIVER` environment variable."
+                )
 
         # Format runner template with CPU-specific configuration
         if runner == "ollama":
@@ -822,13 +826,17 @@ def build_docker_compose(
                 retries=retries,
             )
         else:
-            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
+            raise ValueError(
+                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
+            )
 
     # CUDA driver - NVIDIA GPU acceleration
     elif driver == "cuda":
         # Validate CUDA only works with NVIDIA GPUs
         if gpu_type != "nvidia":
-            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
+            raise ValueError(
+                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
+            )
 
         # Format runner templates with CUDA GPU support
         if runner == "ollama":
@@ -897,7 +905,9 @@ def build_docker_compose(
     elif driver == "rocm":
         # Validate ROCM only works with AMD GPUs
         if gpu_type != "amd":
-            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
+            raise ValueError(
+                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
+            )
 
         # Format runner templates with ROCM GPU support
         if runner == "ollama":
@@ -960,13 +970,17 @@ def build_docker_compose(
                 retries=retries,
             )
         else:
-            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
+            raise ValueError(
+                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
+            )
 
     # VULKAN driver - Cross-platform GPU acceleration
     elif driver == "vulkan":
         # Validate VULKAN doesn't support CPU
         if gpu_type == "cpu":
-            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
+            raise ValueError(
+                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
+            )
 
         # Only llama.cpp supports VULKAN currently
         if runner == "llama_cpp":
@@ -987,7 +1001,9 @@ def build_docker_compose(
                 retries=retries,
             )
         else:
-            raise ValueError(f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
+            raise ValueError(
+                f"Invalid driver `{driver}` with GPU type `{gpu_type}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}"
+            )
 
     else:
         raise ValueError(f"Invalid driver: `{driver}`. Please check the compatibility list:\n{COMPATIBILITY_LIST}")
@@ -1061,7 +1077,9 @@ if __name__ == "__main__":
         raise ValueError("VALKEY_PASSWORD must be set when SEARXNG_ENABLED is True and must not be the default value")
 
     if SEARXNG_ENABLED and SEARXNG_SAFE_SEARCH_LEVEL not in (0, 1, 2):
-        raise ValueError(f"SEARXNG_SAFE_SEARCH_LEVEL must be 0 (Off), 1 (Moderate), or 2 (Strict). Got: `{SEARXNG_SAFE_SEARCH_LEVEL}`")
+        raise ValueError(
+            f"SEARXNG_SAFE_SEARCH_LEVEL must be 0 (Off), 1 (Moderate), or 2 (Strict). Got: `{SEARXNG_SAFE_SEARCH_LEVEL}`"
+        )
 
     # Healthcheck configuration
     START_PERIOD = "3600s"

@@ -88,7 +88,9 @@ class Completions:
         messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
 
         # Request completion from LLM with model-specific parameters
-        response = await self.client.chat.completions.create(model=self.model_name, messages=messages, extra_body=self.model_arguments)
+        response = await self.client.chat.completions.create(
+            model=self.model_name, messages=messages, extra_body=self.model_arguments
+        )
 
         # Extract and return the generated text
         return response.choices[0].message.content

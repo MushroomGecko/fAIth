@@ -55,7 +55,9 @@ async def full_view(request, book, chapter, version):
                 # Return a redirect to the full view with the given book, chapter 1, and default version
                 return await async_redirect("full_view", args=[book, 1, DEFAULT_VERSION])
         except ValueError, TypeError:
-            logger.warning(f"Invalid chapter format: {chapter} in book: {book}. Expected integer. Redirecting to first chapter.")
+            logger.warning(
+                f"Invalid chapter format: {chapter} in book: {book}. Expected integer. Redirecting to first chapter."
+            )
             # Return a redirect to the full view with the given book, chapter 1, and default version
             return await async_redirect("full_view", args=[book, 1, DEFAULT_VERSION])
 
@@ -166,7 +168,9 @@ async def book_chapter_view(request, book, chapter):
                 # Return a redirect to the full view with the given book, chapter 1, and default version
                 return await async_redirect("full_view", args=[book, 1, DEFAULT_VERSION])
         except ValueError, TypeError:
-            logger.warning(f"Invalid chapter format: {chapter} in book: {book}. Expected integer. Redirecting to first chapter.")
+            logger.warning(
+                f"Invalid chapter format: {chapter} in book: {book}. Expected integer. Redirecting to first chapter."
+            )
             # Return a redirect to the full view with the given book, chapter 1, and default version
             return await async_redirect("full_view", args=[book, 1, DEFAULT_VERSION])
 

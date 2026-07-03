@@ -54,4 +54,6 @@ async def healthcheck(request):
         logger.error(f"Healthcheck failed: {str(e)}")
         # Return actual error details for debugging
         # 503 - Service Unavailable
-        return HttpResponse(json.dumps({"status": "error", "message": str(e)}), status=503, content_type="application/json")
+        return HttpResponse(
+            json.dumps({"status": "error", "message": str(e)}), status=503, content_type="application/json"
+        )

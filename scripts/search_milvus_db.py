@@ -35,7 +35,18 @@ async def main():
     logger.info(await vector_database_querier.list_collections_in_database())
 
     collection_name = "bsb"
-    queries = ["In the beginning", "Sodom and Gomorrah", "Garden of Eden", "Tower of Babel", "Adam and Eve", "What was the name of the first man?", "Noah's Arc", "Noah's Ark", "For God so loves the world", "Jesus said"]
+    queries = [
+        "In the beginning",
+        "Sodom and Gomorrah",
+        "Garden of Eden",
+        "Tower of Babel",
+        "Adam and Eve",
+        "What was the name of the first man?",
+        "Noah's Arc",
+        "Noah's Ark",
+        "For God so loves the world",
+        "Jesus said",
+    ]
     limit = 10
     for query in queries:
         # Get results
@@ -48,7 +59,9 @@ async def main():
         # Print results
         logger.info(f"{vector_database_querier.database_type} Search:")
         for i, result in enumerate(results):
-            logger.info(f"{i + 1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}")
+            logger.info(
+                f"{i + 1}. Score: {result['distance']:.4f}, Content: {result['entity']['text']}, Citation: {result['entity']['book']} {result['entity']['chapter']}:{result['entity']['verse']} {result['entity']['version']}"
+            )
     # Cleanly close async client to avoid warnings/errors
     await vector_database_querier.close()
 

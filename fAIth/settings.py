@@ -53,7 +53,17 @@ INSTALLED_APPS = [
     "frontend",
 ]
 
-MIDDLEWARE = ["django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware", "django.contrib.sessions.middleware.SessionMiddleware", "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware", "django.contrib.auth.middleware.AuthenticationMiddleware", "django.contrib.messages.middleware.MessageMiddleware", "django.middleware.clickjacking.XFrameOptionsMiddleware", "django_asgi_lifespan.middleware.LifespanStateMiddleware"]
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_asgi_lifespan.middleware.LifespanStateMiddleware",
+]
 
 ROOT_URLCONF = "fAIth.urls"
 
@@ -92,7 +102,16 @@ if not postgres_password or postgres_password == "CHANGE_ME_use_a_strong_passwor
 if postgres_host.startswith(("http://", "https://")):
     postgres_host = postgres_host.replace("http://", "").replace("https://", "")
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "HOST": postgres_host, "PORT": postgres_port, "USER": postgres_user, "PASSWORD": postgres_password, "NAME": postgres_database}}
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": postgres_host,
+        "PORT": postgres_port,
+        "USER": postgres_user,
+        "PASSWORD": postgres_password,
+        "NAME": postgres_database,
+    }
+}
 
 
 # Password validation

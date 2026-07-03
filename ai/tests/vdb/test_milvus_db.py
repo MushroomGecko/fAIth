@@ -169,7 +169,10 @@ class TestVectorDatabaseBuilderInit(SimpleTestCase):
             mock_getenv.side_effect = create_mock_getenv(**env_vars)
             with patch("ai.vdb.milvus_db.Embedding"):
                 with patch("ai.vdb.milvus_db.MilvusClient"):
-                    with pytest.raises(ValueError, match="MILVUS_PASSWORD environment variable is not set or was set to the default value"):
+                    with pytest.raises(
+                        ValueError,
+                        match="MILVUS_PASSWORD environment variable is not set or was set to the default value",
+                    ):
                         VectorDatabaseBuilder()
 
 

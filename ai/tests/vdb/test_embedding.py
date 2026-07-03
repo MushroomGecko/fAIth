@@ -157,7 +157,9 @@ class TestEmbeddingInit(SimpleTestCase):
             with patch("ai.vdb.embedding.OpenAI"):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai:
                     embedding = Embedding()
-                    mock_async_openai.assert_called_once_with(base_url="https://openrouter.ai/api/v1", api_key="sk-or-key")
+                    mock_async_openai.assert_called_once_with(
+                        base_url="https://openrouter.ai/api/v1", api_key="sk-or-key"
+                    )
                     assert embedding.async_client is not None
 
     def test_embedding_init_empty_model_falls_back_to_default(self):
@@ -246,7 +248,9 @@ class TestEmbedMethod(SimpleTestCase):
     def test_embed_document_type_without_normalization(self):
         """Test embedding documents without normalization."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI"):
@@ -273,7 +277,9 @@ class TestEmbedMethod(SimpleTestCase):
     def test_embed_query_type_without_normalization(self):
         """Test embedding queries without normalization."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_QUERY_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_QUERY_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI"):
@@ -294,7 +300,9 @@ class TestEmbedMethod(SimpleTestCase):
     def test_embed_with_normalization(self):
         """Test that embeddings are normalized correctly."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI"):
@@ -321,7 +329,9 @@ class TestEmbedMethod(SimpleTestCase):
     def test_embed_with_document_template(self):
         """Test that document template is applied."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="Document: {text}")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="Document: {text}"
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI"):
@@ -337,12 +347,16 @@ class TestEmbedMethod(SimpleTestCase):
                     embedding.embed(["sample text"], prompt_type="document", normalize=False)
 
                     # Verify that the template was applied
-                    mock_client.embeddings.create.assert_called_once_with(model="test-model", input=["Document: sample text"])
+                    mock_client.embeddings.create.assert_called_once_with(
+                        model="test-model", input=["Document: sample text"]
+                    )
 
     def test_embed_with_query_template(self):
         """Test that query template is applied."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_QUERY_PROMPT="Search: {text}")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_QUERY_PROMPT="Search: {text}"
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI"):
@@ -358,7 +372,9 @@ class TestEmbedMethod(SimpleTestCase):
                     embedding.embed(["search query"], prompt_type="query", normalize=False)
 
                     # Verify that the template was applied
-                    mock_client.embeddings.create.assert_called_once_with(model="test-model", input=["Search: search query"])
+                    mock_client.embeddings.create.assert_called_once_with(
+                        model="test-model", input=["Search: search query"]
+                    )
 
     def test_embed_invalid_prompt_type(self):
         """Test that invalid prompt type raises error."""
@@ -382,7 +398,9 @@ class TestAsyncEmbedMethod(SimpleTestCase):
     async def test_async_embed_document_type_without_normalization(self):
         """Test asynchronously embedding documents without normalization."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI"):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai_class:
@@ -409,7 +427,9 @@ class TestAsyncEmbedMethod(SimpleTestCase):
     async def test_async_embed_query_type_without_normalization(self):
         """Test asynchronously embedding queries without normalization."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_QUERY_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_QUERY_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI"):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai_class:
@@ -431,7 +451,9 @@ class TestAsyncEmbedMethod(SimpleTestCase):
     async def test_async_embed_with_template_formatting(self):
         """Test that template is applied in async embedding."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="Doc: {text}")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="Doc: {text}"
+            )
 
             with patch("ai.vdb.embedding.OpenAI"):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai_class:
@@ -447,13 +469,17 @@ class TestAsyncEmbedMethod(SimpleTestCase):
                     await embedding.async_embed(["sample"], prompt_type="document", normalize=False)
 
                     # Verify template was applied
-                    mock_async_client.embeddings.create.assert_called_once_with(model="test-model", input=["Doc: sample"])
+                    mock_async_client.embeddings.create.assert_called_once_with(
+                        model="test-model", input=["Doc: sample"]
+                    )
 
     @pytest.mark.asyncio
     async def test_async_embed_with_normalization(self):
         """Test that embeddings are normalized in async method."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI"):
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai_class:
@@ -498,7 +524,9 @@ class TestEmbeddingIntegration(SimpleTestCase):
     async def test_sync_and_async_embed_consistency(self):
         """Test that sync and async embed produce same results."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI") as mock_async_openai_class:
@@ -529,7 +557,9 @@ class TestEmbeddingIntegration(SimpleTestCase):
     def test_embed_normalization_zero_vector(self):
         """Test that zero vectors are handled correctly during normalization."""
         with patch("ai.vdb.embedding.os.getenv") as mock_getenv:
-            mock_getenv.side_effect = create_mock_getenv(EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT="")
+            mock_getenv.side_effect = create_mock_getenv(
+                EMBEDDING_MODEL_ID="test-model", EMBEDDING_MODEL_DOCUMENT_PROMPT=""
+            )
 
             with patch("ai.vdb.embedding.OpenAI") as mock_openai_class:
                 with patch("ai.vdb.embedding.AsyncOpenAI"):

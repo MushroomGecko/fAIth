@@ -35,7 +35,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             # Mock the database and LLM calls
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
@@ -49,7 +54,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return ""
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
@@ -79,7 +86,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -91,7 +103,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return ""
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "Rendered template"
 
@@ -118,7 +132,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -149,7 +168,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -157,7 +181,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return "Bible study prompt"
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
@@ -183,7 +209,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -191,7 +222,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return "Bible study prompt"
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html><body>Response</body></html>"
 
@@ -216,7 +249,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -224,7 +262,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return "Bible study prompt"
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
@@ -246,7 +286,13 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render, patch("ai.views.general_question.MILVUS_SEARCH_LIMIT", 5):
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+            patch("ai.views.general_question.MILVUS_SEARCH_LIMIT", 5),
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -254,7 +300,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return "Bible study prompt"
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 
@@ -277,7 +325,12 @@ class TestGeneralQuestionView(SimpleTestCase):
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
 
-        with patch("ai.views.general_question.async_read_file") as mock_read_file, patch("ai.views.general_question.stringify_vdb_results") as mock_stringify, patch("ai.views.general_question.clean_llm_output") as mock_clean, patch("ai.views.general_question.render_to_string") as mock_render:
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
             request.state["milvus_db"].search = AsyncMock(return_value=[])
             request.state["completions_obj"].completions = AsyncMock(return_value="The Son of God!")
 
@@ -285,7 +338,9 @@ class TestGeneralQuestionView(SimpleTestCase):
                 return "Bible study prompt"
 
             mock_read_file.side_effect = mock_read
-            mock_stringify.return_value = "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            mock_stringify.return_value = (
+                "If anyone confesses that Jesus is the Son of God, God abides in him, and he in God. (1 John 4:15)"
+            )
             mock_clean.return_value = "<p>The Son of God!</p>"
             mock_render.return_value = "<html>Response</html>"
 

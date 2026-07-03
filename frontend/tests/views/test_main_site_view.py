@@ -62,7 +62,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_render to return a response
             with patch("frontend.views.main_site.async_render", new_callable=AsyncMock) as mock_render:
                 mock_render.return_value = HttpResponse("Genesis 1 content")
@@ -131,7 +142,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_render to return a response
             with patch("frontend.views.main_site.async_render", new_callable=AsyncMock) as mock_render:
                 mock_render.return_value = HttpResponse("Revelation 22 content")
@@ -200,7 +222,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_render to return a response
             with patch("frontend.views.main_site.async_render", new_callable=AsyncMock) as mock_render:
                 mock_render.return_value = HttpResponse("2 Timothy 2 content")
@@ -271,7 +304,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_redirect to return a response
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -321,7 +365,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_redirect to return a response
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -371,7 +426,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_redirect to return a response
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -421,7 +487,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=bible_globals.ALL_VERSES, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ):
             # Mock async_redirect to return a response
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -471,7 +548,18 @@ class TestFullView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}-{request_version}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT, DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=bible_globals.VERSION_SELECTION, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, ALL_VERSES=FailingObject(), create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=FailingObject(),
+            create=True,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -524,7 +612,14 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -572,7 +667,14 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -620,7 +722,15 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION, create=True):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            create=True,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -669,7 +779,14 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -718,7 +835,14 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -767,7 +891,14 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS, CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -816,7 +947,14 @@ class TestBookChapterView(SimpleTestCase):
         request.path_info = f"/{request_book}-{request_chapter}/"
 
         # Patch the globals in views module with IN_ORDER_BOOKS that will cause an error
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=FailingObject(), CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=FailingObject(),
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -867,7 +1005,13 @@ class TestBookView(SimpleTestCase):
         request.path_info = f"/{request_book}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -914,7 +1058,13 @@ class TestBookView(SimpleTestCase):
         request.path_info = f"/{request_book}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -961,7 +1111,13 @@ class TestBookView(SimpleTestCase):
         request.path_info = f"/{request_book}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -1010,7 +1166,13 @@ class TestBookView(SimpleTestCase):
         request.path_info = f"/{request_book}/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -1058,7 +1220,13 @@ class TestBookView(SimpleTestCase):
         request.path_info = f"/{request_book}/"
 
         # Patch the globals in views module with IN_ORDER_BOOKS that will cause an error
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, IN_ORDER_BOOKS=FailingObject()):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            IN_ORDER_BOOKS=FailingObject(),
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -1108,7 +1276,12 @@ class TestDefaultView(SimpleTestCase):
         request.path_info = "/"
 
         # Patch the globals in views module to match what we set up
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")
@@ -1154,7 +1327,13 @@ class TestDefaultView(SimpleTestCase):
         request.path_info = "/"
 
         # Patch the globals in views module with VERSION_SELECTION that will cause an error
-        with patch.multiple("frontend.views.main_site", DEFAULT_VERSION=bible_globals.DEFAULT_VERSION, DEFAULT_BOOK=bible_globals.DEFAULT_BOOK, DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER, VERSION_SELECTION=FailingObject()):
+        with patch.multiple(
+            "frontend.views.main_site",
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=FailingObject(),
+        ):
             # Mock async_redirect to verify it's called
             with patch("frontend.views.main_site.async_redirect", new_callable=AsyncMock) as mock_redirect:
                 mock_redirect.return_value = HttpResponse("Redirected")

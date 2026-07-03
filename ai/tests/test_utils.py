@@ -98,7 +98,9 @@ class TestStringifyVdbResults(SimpleTestCase):
 
     async def test_stringify_vdb_results_single_result(self):
         """Test stringifying a single vector database result."""
-        vdb_results = [{"entity": {"text": "In the beginning", "book": "Genesis", "chapter": "1", "verse": "1", "version": "KJV"}}]
+        vdb_results = [
+            {"entity": {"text": "In the beginning", "book": "Genesis", "chapter": "1", "verse": "1", "version": "KJV"}}
+        ]
 
         result = await stringify_vdb_results(vdb_results)
 
@@ -106,7 +108,26 @@ class TestStringifyVdbResults(SimpleTestCase):
 
     async def test_stringify_vdb_results_multiple_results(self):
         """Test stringifying multiple vector database results."""
-        vdb_results = [{"entity": {"text": "In the beginning God created the heavens and the earth.", "book": "Genesis", "chapter": "1", "verse": "1", "version": "BSB"}}, {"entity": {"text": "The earth was formless and empty.", "book": "Genesis", "chapter": "1", "verse": "2", "version": "WEB"}}]
+        vdb_results = [
+            {
+                "entity": {
+                    "text": "In the beginning God created the heavens and the earth.",
+                    "book": "Genesis",
+                    "chapter": "1",
+                    "verse": "1",
+                    "version": "BSB",
+                }
+            },
+            {
+                "entity": {
+                    "text": "The earth was formless and empty.",
+                    "book": "Genesis",
+                    "chapter": "1",
+                    "verse": "2",
+                    "version": "WEB",
+                }
+            },
+        ]
 
         result = await stringify_vdb_results(vdb_results)
 
@@ -158,13 +179,26 @@ class TestStringifyVdbResults(SimpleTestCase):
 
     async def test_stringify_vdb_results_with_special_characters(self):
         """Test stringifying results with special characters."""
-        vdb_results = [{"entity": {"text": "In the beginning, God created the heavens and the earth. The earth was formless and empty. (Genesis 1:1-2)", "book": "Genesis", "chapter": "1", "verse": "1-2", "version": "WEB"}}]
+        vdb_results = [
+            {
+                "entity": {
+                    "text": "In the beginning, God created the heavens and the earth. The earth was formless and empty. (Genesis 1:1-2)",
+                    "book": "Genesis",
+                    "chapter": "1",
+                    "verse": "1-2",
+                    "version": "WEB",
+                }
+            }
+        ]
 
         result = await stringify_vdb_results(vdb_results)
 
         assert "In the beginning, God created the heavens and the earth. The earth was formless and empty." in result
         assert "Genesis 1:1-2" in result
-        assert result == "In the beginning, God created the heavens and the earth. The earth was formless and empty. (Genesis 1:1-2) (Genesis 1:1-2 WEB)"
+        assert (
+            result
+            == "In the beginning, God created the heavens and the earth. The earth was formless and empty. (Genesis 1:1-2) (Genesis 1:1-2 WEB)"
+        )
 
 
 @pytest.mark.asyncio
