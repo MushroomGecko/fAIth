@@ -1,0 +1,20 @@
+<div id="imageSearchModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Searching for images...</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="imageSearchForm" data-input-modal="imageSearchModal" hx-post="{% url 'api:image_search' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_text" id="selectedTextImageSearch" value="">
+                    <input type="hidden" name="verses_text" id="versesTextImageSearch" value="">
+                    <input type="hidden" name="book" value="{{ book }}">
+                    <input type="hidden" name="chapter" value="{{ chapter }}">
+                    <button type="submit" id="imageSearchSubmit" style="display: none;"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -45,16 +45,34 @@ disableTextHighlightInteractables();
 // Update the hidden input and button state on any selection change (mouse, touch, or keyboard).
 // When the selection clears, only reset if a modal is not open, otherwise clicking into the
 // modal's question input would wipe the stored selection before the form is submitted.
+// Selections that touch .verses-container reduce to only the touched verse(s), regardless of
+// drag direction or whether the selection also spans unrelated elements (e.g. the sidebar).
 document.addEventListener('selectionchange', () => {
-    const text = document.getSelection().toString();
+    const selection = document.getSelection();
+    let text = selection.toString();
+    let verses_text = '';
+    const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+    const container = document.querySelector('.verses-container');
+    if (range && container && range.intersectsNode(container))
+    {
+        const verses = Array.from(container.querySelectorAll('p'))
+            .filter(p => range.intersectsNode(p))
+            .map(p => p.textContent.trim())
+            .filter(verse => verse !== '');
+        verses_text = verses.join('\n');
+    }
     if (text !== '')
     {
         document.getElementById('selectedTextInput').value = text;
+        document.getElementById('selectedTextImageSearch').value = text;
+        document.getElementById('versesTextImageSearch').value = verses_text;
         enableTextHighlightInteractables();
     }
     else if (!document.querySelector('.modal.show'))
     {
         document.getElementById('selectedTextInput').value = '';
+        document.getElementById('selectedTextImageSearch').value = '';
+        document.getElementById('versesTextImageSearch').value = '';
         disableTextHighlightInteractables();
     }
 });

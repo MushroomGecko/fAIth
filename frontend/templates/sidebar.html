@@ -1,18 +1,34 @@
 <div class="d-flex flex-column flex-shrink-0 bg-light" style="width: 5rem;">
     <ul class="nav nav-pills nav-flush flex-column mb-auto text-center mt-4">
         <li class="nav-item">
+            <!-- General Question -->
             <a href="#" class="nav-link px-0 border-bottom" title="General Question" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#generalQuestionModal">
                 <i class="bi bi-question-lg"></i>
                 <p class="mb-0" style="font-size: 0.75rem;">General Question</p>
             </a>
+            <!-- Ask Selected -->
             <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Ask Selected" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#askSelectedModal">
                 <i class="bi bi-cursor-text"></i>
                 <p class="mb-0" style="font-size: 0.75rem;">Ask Selected</p>
             </a>
+            <!-- Summarize Chapter -->
             <a href="#" class="nav-link px-0 border-bottom" title="Summarize Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#summarizeChapterModal">
                 <i class="bi bi-feather"></i>
                 <p class="mb-0" style="font-size: 0.75rem;">Summarize Chapter</p>
             </a>
+            {% if control_variables.SEARXNG_ENABLED %}
+                <!-- SearXNG Image Search (Enabled)-->
+                <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Image Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#imageSearchModal">
+                    <i class="bi bi-card-image"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Image Search</p>
+                </a>
+            {% else %}
+                <!-- SearXNG Image Search (Disabled) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Image Search (Disabled)" data-bs-placement="right">
+                    <i class="bi bi-card-image"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Image Search</p>
+                </a>
+            {% endif %}
         </li>
     </ul>
 </div>

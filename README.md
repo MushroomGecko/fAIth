@@ -29,9 +29,9 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 3. Activate the venv with `.venv/bin/activate`
 4. Install required packages with `pip install -r requirements.txt`
 5. Copy `.env_template` to `.env`
-6. Change `DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, and `MILVUS_PASSWORD` in the new `.env` file to use more secure secrets. You can generate secure values with:
+6. Change `DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, `MILVUS_PASSWORD`, and `SEARXNG_SECRET` in the new `.env` file to use more secure secrets. You can generate secure values with:
    - `DJANGO_SECRET_KEY`: `python -c "import secrets; print(secrets.token_urlsafe(64))"`
-   - `POSTGRES_PASSWORD` and `MILVUS_PASSWORD`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+   - `POSTGRES_PASSWORD`, `MILVUS_PASSWORD`, and `SEARXNG_SECRET`: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 7. (Optional) Set `HF_TOKEN` if you wish to use models from HuggingFace that require authentication
 8. If you wish to host fAIth on your local network, add your local IP to the `DJANGO_ALLOWED_HOSTS` list
 9. Configure the remaining `.env` settings to fit your environment:
@@ -64,6 +64,10 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 - Uvicorn (ASGI Runner) - https://github.com/Kludex/uvicorn
 - PyMilvus (Mivlus API Library) - https://github.com/milvus-io/pymilvus
 - psycopg (Postgres API Library) - https://github.com/psycopg/psycopg
+- python-dotenv (Environment variable loader) - https://github.com/theskumar/python-dotenv
+- WhiteNoise (Static file serving) - https://github.com/evansd/whitenoise
+- Markdown (Markdown to HTML renderer) - https://github.com/Python-Markdown/markdown
+- HTTPX (Async HTTP client) - https://github.com/encode/httpx
 ### Docker Containers
 #### Databases
 - Milvus (Vector Database) - https://github.com/milvus-io/milvus
@@ -77,6 +81,9 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 #### Other
 - etcd (Milvus metadata storage) - https://github.com/etcd-io/etcd
 - SeaweedFS (S3-compatible database) - https://github.com/seaweedfs/seaweedfs
+- SearXNG (Metasearch engine) - https://github.com/searxng/searxng
+- Valkey (Cache / rate limiter) - https://github.com/valkey-io/valkey
+- AWS CLI (S3 bucket initializer) - https://github.com/aws/aws-cli
 
 ## Licensing
 fAIth is released under the GNU General Public License v3.0 (GPLv3). We believe that just as God's Word is a gift freely given to all, the tools used to interact with it should remain free for everyone to use, study, and share.

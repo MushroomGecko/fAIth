@@ -15,6 +15,7 @@ import logging
 import os
 from pathlib import Path
 
+from fAIth.function_globals import derive_boolean_from_string
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(name)s: %(message)s')
@@ -33,7 +34,7 @@ if not SECRET_KEY or SECRET_KEY == "CHANGE_ME_use_a_long_secret_key":
     raise ValueError("DJANGO_SECRET_KEY environment variable is not set or was set to the default value")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = str(os.getenv("DJANGO_DEBUG") or "").strip().lower() in ("1", "true", "yes")
+DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 
 ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1", "localhost"]').strip())
 

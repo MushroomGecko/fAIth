@@ -171,7 +171,7 @@ services:
 
   embedding:
     container_name: llama-cpp-embedding-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -185,18 +185,10 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: cdi
-              device_ids:
-                - nvidia.com/gpu=all
-              capabilities: [gpu]
 
   llm:
     container_name: llama-cpp-llm-faith
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/llama_cpp_cache:/root/.cache/huggingface
     environment:
@@ -210,14 +202,48 @@ services:
       interval: 30s
       timeout: 30s
       retries: 5
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: cdi
-              device_ids:
-                - nvidia.com/gpu=all
-              capabilities: [gpu]
+
+  search-engine-valkey:
+    container_name: search-engine-valkey-faith
+    image: docker.io/valkey/valkey:latest
+    # NOTE: command MUST use list form (not a shell string) because Compose's
+    # shell-word parser treats bare `>` and `&` (required by the ACL rule syntax
+    # below) as redirection/background operators and silently truncates the command.
+    command: [
+      valkey-server,
+      --port, "6379",
+      --save, "30", "1",
+      --requirepass, "CHANGE_ME_use_a_strong_password",
+      --user, "valkey", on, ">CHANGE_ME_use_a_strong_password", "~*", "&*", "+@all",
+    ]
+    restart: always
+    volumes:
+      - searxng-valkey-data:/data/
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-p", "6379", "-a", "CHANGE_ME_use_a_strong_password", "--no-auth-warning", "ping"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  search-engine-core:
+    container_name: search-engine-core-faith
+    image: docker.io/searxng/searxng:latest
+    restart: always
+    volumes:
+      - ./searxng_settings.yml:/etc/searxng/settings.yml:ro
+      - searxng-data:/var/cache/searxng/
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      search-engine-valkey:
+        condition: service_healthy
 
   webapp:
     build:
@@ -247,6 +273,12 @@ services:
         condition: service_healthy
       llm:
         condition: service_healthy
+      search-engine-core:
+        condition: service_healthy
 
     volumes:
       - .:/app
+
+volumes:
+  searxng-data:
+  searxng-valkey-data:

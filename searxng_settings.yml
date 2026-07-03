@@ -1,0 +1,30 @@
+use_default_settings: true
+
+server:
+  secret_key: "CHANGE_ME_use_a_strong_password"
+
+search:
+  safe_search: 2
+  formats:
+    - html
+    - json
+
+valkey:
+  url: valkey://valkey:CHANGE_ME_use_a_strong_password@search-engine-valkey-faith:6379/0
+
+# These are dev icon-pack engines (categories: [images, icons]), so SearXNG includes
+# them whenever the `images` category is searched. That surfaces irrelevant tech
+# logos (e.g. Android, Arch Linux) in otherwise unrelated image searches.
+engines:
+  - name: devicons
+    disabled: true
+  - name: flaticon
+    disabled: true
+  - name: material icons
+    disabled: true
+  - name: lucide
+    disabled: true
+  - name: selfhst icons
+    disabled: true
+  - name: uxwing
+    disabled: true
