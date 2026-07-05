@@ -21,20 +21,31 @@ class TestAskSelectedView(SimpleTestCase):
         """Helper to call async ask_selected function."""
         return asyncio.run(ask_selected(request, payload))
 
-    def test_ask_selected_success(self):
-        """Test successful ask_selected endpoint with valid payload."""
+    def _build_request(self):
+        """Build a request with the required state."""
         request = HttpRequest()
         request.method = "POST"
         request.state = {
             "milvus_db": AsyncMock(),
             "completions_obj": AsyncMock(),
         }
+        return request
 
-        # Create mock payload
+    def _build_payload(self):
+        """Build a mock payload matching AskSelectedInputSerializer fields."""
         payload = MagicMock()
         payload.query = "What does this mean?"
         payload.selected_text = "For God so loved the world"
+        payload.verses_text = "16) For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."
+        payload.book = "John"
+        payload.chapter = "3"
         payload.collection_name = "bsb"
+        return payload
+
+    def test_ask_selected_success(self):
+        """Test successful ask_selected endpoint with valid payload."""
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -80,17 +91,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_calls_llm_completions(self):
         """Test that ask_selected calls the LLM completions service."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -105,7 +107,10 @@ class TestAskSelectedView(SimpleTestCase):
                 if "system.md" in str(path):
                     return "You are a knowledgeable Bible study assistant."
                 elif "user.md" in str(path):
-                    return "Selected text: {selected_text}\nQuestion: {query}\nContext: {context}"
+                    return (
+                        "Selected text: {selected_text}\nQuestion: {query}\nContext: {context}\n"
+                        "Verses: {verses_text}\nBook: {book}\nChapter: {chapter}\nVersion: {collection_name}"
+                    )
                 return ""
 
             mock_read_file.side_effect = mock_read
@@ -124,21 +129,17 @@ class TestAskSelectedView(SimpleTestCase):
             assert call_args[0][0] == "You are a knowledgeable Bible study assistant."  # system prompt
             assert "For God so loved the world" in call_args[0][1]  # user prompt with selected_text
             assert "What does this mean?" in call_args[0][1]  # user prompt with query
+            # All payload fields should be interpolated into the user prompt
+            assert "16) For God so loved the world" in call_args[0][1]  # verses_text
+            assert "John" in call_args[0][1]  # book
+            assert "3" in call_args[0][1]  # chapter
+            assert "bsb" in call_args[0][1]  # collection_name
             assert call_args[0][2] == "What does this mean?"  # query param
 
     def test_ask_selected_handles_empty_vector_results(self):
         """Test that ask_selected handles empty vector database results."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -167,17 +168,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_loads_correct_prompt_files(self):
         """Test that ask_selected loads prompts from correct file paths."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -209,17 +201,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_renders_template(self):
         """Test that ask_selected renders the response template."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -250,17 +233,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_response_content_type(self):
         """Test that ask_selected returns HTML content type."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -288,17 +262,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_uses_milvus_search_limit(self):
         """Test that ask_selected uses the configured MILVUS_SEARCH_LIMIT."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -331,17 +296,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_extracts_payload_fields(self):
         """Test that ask_selected correctly extracts fields from payload."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
@@ -375,17 +331,8 @@ class TestAskSelectedView(SimpleTestCase):
 
     def test_ask_selected_combines_vector_results(self):
         """Test that ask_selected combines results from both searches."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "What does this mean?"
-        payload.selected_text = "For God so loved the world"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.ask_selected.async_read_file") as mock_read_file,
