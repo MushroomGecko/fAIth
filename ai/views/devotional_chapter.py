@@ -7,8 +7,8 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from ninja import Form, Router
 
+from ai.serializers.devotional_chapter import DevotionalChapterInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-from ai.serializers.summarize_chapter import SummarizeChapterInputSerializer
 from ai.utils import async_read_file, clean_llm_output
 from fAIth.api_tags import APITags
 from fAIth.bible_globals import ALL_VERSES
@@ -16,7 +16,7 @@ from fAIth.bible_globals import ALL_VERSES
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Create router for summarize chapter API
+# Create router for devotional chapter API
 router = Router()
 
 # Configuration constants
@@ -24,15 +24,15 @@ MILVUS_SEARCH_LIMIT = int(str(os.getenv("MILVUS_SEARCH_LIMIT", 10)).strip())
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
-@router.post("/summarize_chapter", tags=[APITags.AI], url_name="summarize_chapter")
-async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = Form(...)):
+@router.post("/devotional_chapter", tags=[APITags.AI], url_name="devotional_chapter")
+async def devotional_chapter(request, payload: DevotionalChapterInputSerializer = Form(...)):
     """
-    API endpoint for summarizing a chapter using RAG (Retrieval-Augmented Generation).
+    API endpoint for generating a devotional.
 
-    Combines vector database search with LLM completions to provide context-aware summaries.
+    Combines vector database search with LLM completions to provide context-aware devotionals.
     The workflow: validate input -> search vector DB -> load prompts -> call LLM -> render HTML response.
 
-    Process a chapter and return an LLM-generated summary.
+    Process a book and chapter and return an LLM-generated devotional.
 
     Workflow:
         1. Validate request payload (book, chapter and collection_name)
@@ -47,8 +47,8 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
             - state["milvus_db"]: Pre-initialized vector database connection
             - state["completions_obj"]: Pre-initialized LLM completions object
         payload: Validated request payload containing:
-            - book (str): Book to summarize
-            - chapter (str): Chapter to summarize
+            - book (str): Book to generate a devotional for
+            - chapter (str): Chapter to generate a devotional for
             - collection_name (str): Milvus vector collection to search
 
     Returns:
@@ -56,7 +56,7 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
             - 200 OK: HTML template with response_content
             - 400 Bad Request: Validation errors or missing required fields
     """
-    file_directory = "summarize_chapter"
+    file_directory = "devotional_chapter"
 
     # Extract validated data from payload
     book = payload.book

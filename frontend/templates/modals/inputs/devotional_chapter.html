@@ -1,0 +1,15 @@
+<div id="devotionalChapterModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <form id="devotionalChapterForm" data-input-modal="devotionalChapterModal" hx-post="{% url 'api:devotional_chapter' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                    {% csrf_token %}
+                    <input type="hidden" name="book" value="{{ book }}">
+                    <input type="hidden" name="chapter" value="{{ chapter }}">
+                    <input type="hidden" name="collection_name" value="{{ version }}">
+                    <button type="submit" id="devotionalChapterSubmit" style="display: none;"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
