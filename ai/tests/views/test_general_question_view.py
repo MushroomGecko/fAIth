@@ -301,3 +301,191 @@ class TestGeneralQuestionView(SimpleTestCase):
             # Verify correct fields were extracted and used
             assert request.state["milvus_db"].search.call_args[1]["query"] == "Who is Jesus Christ?"
             assert request.state["milvus_db"].search.call_args[1]["collection_name"] == "bsb"
+
+    def _assert_500_error(self, response, message_substring):
+        """Assert a 500 HTML error response containing the given message."""
+        assert response.status_code == 500
+        assert "text/html" in response["content-type"]
+        assert message_substring.encode() in response.content
+
+    def test_general_question_error_searching_vector_database(self):
+        """Test that a vector database search failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
+            request.state["milvus_db"].search = AsyncMock(side_effect=RuntimeError("Milvus unreachable"))
+
+            async def mock_read(path):
+                return "Bible study prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error searching vector database")
+            mock_stringify.assert_not_called()
+            mock_render.assert_not_called()
+
+    def test_general_question_error_formatting_user_prompt(self):
+        """Test that a failure loading/formatting prompts returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
+            request.state["milvus_db"].search = AsyncMock(return_value=[])
+            mock_stringify.return_value = "context"
+            # async_read_file raises before any prompt formatting can happen
+            mock_read_file.side_effect = FileNotFoundError("missing system.md")
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error formatting user prompt")
+            mock_render.assert_not_called()
+
+    def test_general_question_error_stripping_whitespace(self):
+        """Test that a failure stripping prompts returns a 500 error.
+
+        system_prompt is a non-string so .strip() raises AttributeError after the
+        formatting block succeeds.
+        """
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
+            request.state["milvus_db"].search = AsyncMock(return_value=[])
+            mock_stringify.return_value = "context"
+
+            async def mock_read(path):
+                if "system.md" in str(path):
+                    return 123  # non-string: .strip() will raise
+                elif "user.md" in str(path):
+                    return "Question: {query}\nContext: {context}"
+                return ""
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error stripping whitespace")
+            mock_render.assert_not_called()
+
+    def test_general_question_error_generating_llm_response(self):
+        """Test that an LLM completions failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
+            request.state["milvus_db"].search = AsyncMock(return_value=[])
+            mock_stringify.return_value = "context"
+            request.state["completions_obj"].completions = AsyncMock(side_effect=RuntimeError("LLM unavailable"))
+
+            async def mock_read(path):
+                return "Bible study prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error generating LLM response")
+            mock_clean.assert_not_called()
+            mock_render.assert_not_called()
+
+    def test_general_question_error_cleaning_llm_output(self):
+        """Test that a failure cleaning LLM output returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+        ):
+            request.state["milvus_db"].search = AsyncMock(return_value=[])
+            mock_stringify.return_value = "context"
+            request.state["completions_obj"].completions = AsyncMock(return_value="raw markdown")
+            mock_clean.side_effect = RuntimeError("cleaner failed")
+
+            async def mock_read(path):
+                return "Bible study prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error cleaning LLM output")
+            mock_render.assert_not_called()
+
+    def test_general_question_error_rendering_template(self):
+        """Test that a template rendering failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+            patch("ai.views.general_question.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["milvus_db"].search = AsyncMock(return_value=[])
+            mock_stringify.return_value = "context"
+            request.state["completions_obj"].completions = AsyncMock(return_value="raw markdown")
+            mock_clean.return_value = "<p>Response</p>"
+            mock_render.side_effect = RuntimeError("template missing")
+
+            async def mock_read(path):
+                return "Bible study prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error rendering template")
+            mock_serializer.assert_not_called()
+
+    def test_general_question_error_validating_output(self):
+        """Test that a serializer validation failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.general_question.async_read_file") as mock_read_file,
+            patch("ai.views.general_question.stringify_vdb_results") as mock_stringify,
+            patch("ai.views.general_question.clean_llm_output") as mock_clean,
+            patch("ai.views.general_question.render_to_string") as mock_render,
+            patch("ai.views.general_question.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["milvus_db"].search = AsyncMock(return_value=[])
+            mock_stringify.return_value = "context"
+            request.state["completions_obj"].completions = AsyncMock(return_value="raw markdown")
+            mock_clean.return_value = "<p>Response</p>"
+            mock_render.return_value = "<html>Response</html>"
+            mock_serializer.side_effect = ValueError("invalid response_content")
+
+            async def mock_read(path):
+                return "Bible study prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_general_question(request, payload)
+
+            self._assert_500_error(response, "Error validating output")
