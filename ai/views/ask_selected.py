@@ -58,8 +58,11 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
     file_directory = "ask_selected"
 
     # Extract validated data from payload
-    collection_name = payload.collection_name
     selected_text = payload.selected_text
+    verses_text = payload.verses_text
+    book = payload.book
+    chapter = payload.chapter
+    collection_name = payload.collection_name
     query = payload.query
 
     # Search vector database for relevant context
@@ -81,7 +84,15 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
     # Load system and user prompts from files and format with context
     system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
     user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-    user_prompt = user_prompt.format(query=query, selected_text=selected_text, context=stringified_unified_results)
+    user_prompt = user_prompt.format(
+        query=query,
+        selected_text=selected_text,
+        verses_text=verses_text,
+        book=book,
+        chapter=chapter,
+        collection_name=collection_name,
+        context=stringified_unified_results,
+    )
     # Strip leading/trailing whitespace to ensure clean prompt formatting
     system_prompt = system_prompt.strip()
     user_prompt = user_prompt.strip()
