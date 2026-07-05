@@ -71,7 +71,7 @@ class TestSummarizeChapterView(SimpleTestCase):
                 if "system.md" in str(path):
                     return "You are a Bible summarization assistant."
                 elif "user.md" in str(path):
-                    return "Summarize {book} Chapter {chapter}:\n{verses}"
+                    return "Summarize {book} Chapter {chapter} from {collection_name}:\n{verses}"
                 return ""
 
             mock_read_file.side_effect = mock_read
@@ -105,7 +105,7 @@ class TestSummarizeChapterView(SimpleTestCase):
                 if "system.md" in str(path):
                     return "You are a Bible summarization assistant."
                 elif "user.md" in str(path):
-                    return "Summarize {book} Chapter {chapter}:\n{verses}"
+                    return "Summarize {book} Chapter {chapter} from {collection_name}:\n{verses}"
                 return ""
 
             mock_read_file.side_effect = mock_read
@@ -121,6 +121,7 @@ class TestSummarizeChapterView(SimpleTestCase):
             assert call_args[0][0] == "You are a Bible summarization assistant."  # system prompt
             assert "Genesis" in call_args[0][1]  # user prompt with book
             assert "1" in call_args[0][1]  # user prompt with chapter
+            assert "bsb" in call_args[0][1]  # user prompt with collection_name
 
     def test_summarize_chapter_loads_correct_prompt_files(self):
         """Test that summarize_chapter loads prompts from correct file paths."""
@@ -210,7 +211,7 @@ class TestSummarizeChapterView(SimpleTestCase):
 
             async def mock_read(path):
                 if "user.md" in str(path):
-                    return "Summarize {book} Chapter {chapter}:\n{verses}"
+                    return "Summarize {book} Chapter {chapter} from {collection_name}:\n{verses}"
                 return "System prompt"
 
             mock_read_file.side_effect = mock_read
@@ -248,7 +249,7 @@ class TestSummarizeChapterView(SimpleTestCase):
 
             async def mock_read(path):
                 if "user.md" in str(path):
-                    return "Summarize {book} Chapter {chapter}:\n{verses}"
+                    return "Summarize {book} Chapter {chapter} from {collection_name}:\n{verses}"
                 return "System prompt"
 
             mock_read_file.side_effect = mock_read
@@ -360,7 +361,7 @@ class TestSummarizeChapterView(SimpleTestCase):
 
                     async def mock_read(path):
                         if "user.md" in str(path):
-                            return "Summarize {book} Chapter {chapter}:\n{verses}"
+                            return "Summarize {book} Chapter {chapter} from {collection_name}:\n{verses}"
                         return "System prompt"
 
                     mock_read_file.side_effect = mock_read
@@ -374,3 +375,9 @@ class TestSummarizeChapterView(SimpleTestCase):
                     call_args = request.state["completions_obj"].completions.call_args
                     user_prompt = call_args[0][1]
                     assert unique_verse in user_prompt
+                    # Each format placeholder is interpolated into the user prompt template,
+                    # so its value must appear verbatim — guards against dropping any of them
+                    # from the format call.
+                    assert collection in user_prompt  # collection_name
+                    assert "Genesis" in user_prompt  # book
+                    assert "1" in user_prompt  # chapter
