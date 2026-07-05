@@ -64,42 +64,71 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
     collection_name = payload.collection_name
 
     # Get the verses for the book and chapter
-    list_of_verses = ALL_VERSES[collection_name][book][chapter]
-
-    # Stringify the verses
-    stringified_verses = "\n".join(list_of_verses.values())
+    try:
+        list_of_verses = ALL_VERSES[collection_name][book][chapter]
+        stringified_verses = "\n".join(list_of_verses.values())
+    except KeyError as e:
+        logger.error(f"Error locating verses for {book} {chapter} in {collection_name}: {e}")
+        return HttpResponse(f"Error locating verses for {book} {chapter}: {e}", status=500, content_type="text/html")
+    except Exception as e:
+        logger.error(f"Error retrieving verses: {e}")
+        return HttpResponse(f"Error retrieving verses: {e}", status=500, content_type="text/html")
 
     # Load system and user prompts from files and format with context
-    system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
-    user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-    user_prompt = user_prompt.format(
-        chapter=chapter, book=book, collection_name=collection_name, verses=stringified_verses
-    )
+    try:
+        system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
+        user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
+        user_prompt = user_prompt.format(
+            chapter=chapter, book=book, collection_name=collection_name, verses=stringified_verses
+        )
+    except Exception as e:
+        logger.error(f"Error formatting user prompt: {e}")
+        return HttpResponse(f"Error formatting user prompt: {e}", status=500, content_type="text/html")
 
     # Strip leading/trailing whitespace to ensure clean prompt formatting
-    system_prompt = system_prompt.strip()
-    user_prompt = user_prompt.strip()
+    try:
+        system_prompt = system_prompt.strip()
+        user_prompt = user_prompt.strip()
+    except Exception as e:
+        logger.error(f"Error stripping whitespace: {e}")
+        return HttpResponse(f"Error stripping whitespace: {e}", status=500, content_type="text/html")
     logger.info(f"System prompt:\n{system_prompt}")
     logger.info(f"User prompt:\n{user_prompt}")
 
     # Call LLM with prompts to generate response
-    completions_obj = request.state["completions_obj"]
-    result = await completions_obj.completions(system_prompt, user_prompt)
-    logger.info(f"LLM result:\n{result}")
+    try:
+        completions_obj = request.state["completions_obj"]
+        result = await completions_obj.completions(system_prompt, user_prompt)
+        logger.info(f"LLM result:\n{result}")
+    except Exception as e:
+        logger.error(f"Error generating LLM response: {e}")
+        return HttpResponse(f"Error generating LLM response: {e}", status=500, content_type="text/html")
 
     # Convert markdown to HTML for display
-    cleaned_result = await clean_llm_output(result)
-    logger.info(f"Cleaned result:\n{cleaned_result}")
+    try:
+        cleaned_result = await clean_llm_output(result)
+        logger.info(f"Cleaned result:\n{cleaned_result}")
+    except Exception as e:
+        logger.error(f"Error cleaning LLM output: {e}")
+        return HttpResponse(f"Error cleaning LLM output: {e}", status=500, content_type="text/html")
 
     # Render the response in an HTML template
-    template_name = "partials/text.html"
-    context = {
-        "response_content": mark_safe(cleaned_result),
-    }
-    rendered_template = render_to_string(template_name, context)
+    try:
+        template_name = "partials/text.html"
+        context = {
+            "response_content": mark_safe(cleaned_result),
+        }
+        rendered_template = render_to_string(template_name, context)
+    except Exception as e:
+        logger.error(f"Error rendering template: {e}")
+        return HttpResponse(f"Error rendering template: {e}", status=500, content_type="text/html")
 
     # Simply validate the output
-    _ = ServerTextResponseSerializer(response_content=rendered_template)
+    try:
+        _ = ServerTextResponseSerializer(response_content=rendered_template)
+    except Exception as e:
+        logger.error(f"Error validating output: {e}")
+        return HttpResponse(f"Error validating output: {e}", status=500, content_type="text/html")
 
     # Return rendered HTML to client
     # 200 - OK

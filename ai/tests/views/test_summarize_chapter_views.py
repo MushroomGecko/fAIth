@@ -4,10 +4,12 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from django.http import HttpRequest
 from django.test import SimpleTestCase
+from ninja.testing import TestAsyncClient
 
-from ai.views.summarize_chapter import summarize_chapter
+from ai.views.summarize_chapter import router, summarize_chapter
 
 DEFAULT_ALL_VERSES = {
     "bsb": {
@@ -381,3 +383,201 @@ class TestSummarizeChapterView(SimpleTestCase):
                     assert collection in user_prompt  # collection_name
                     assert "Genesis" in user_prompt  # book
                     assert "1" in user_prompt  # chapter
+
+    def _assert_500_error(self, response, message_substring):
+        """Assert a 500 HTML error response containing the given message."""
+        assert response.status_code == 500
+        assert "text/html" in response["content-type"]
+        assert message_substring.encode() in response.content
+
+    def test_summarize_chapter_error_locating_verses(self):
+        """Test that a missing book/chapter/collection in ALL_VERSES returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload(book="Missing", chapter="999")
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
+
+            async def mock_read(path):
+                return "Bible prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error locating verses")
+            request.state["completions_obj"].completions.assert_not_called()
+            mock_render.assert_not_called()
+
+    def test_summarize_chapter_error_formatting_user_prompt(self):
+        """Test that a failure loading/formatting prompts returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
+            # async_read_file raises before any prompt formatting can happen
+            mock_read_file.side_effect = FileNotFoundError("missing system.md")
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error formatting user prompt")
+            mock_render.assert_not_called()
+
+    def test_summarize_chapter_error_stripping_whitespace(self):
+        """Test that a failure stripping prompts returns a 500 error.
+
+        system_prompt is a non-string so .strip() raises AttributeError after the
+        formatting block succeeds.
+        """
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
+
+            async def mock_read(path):
+                if "system.md" in str(path):
+                    return 123  # non-string: .strip() will raise
+                elif "user.md" in str(path):
+                    return "Summarize {book} Chapter {chapter} from {collection_name}:\n{verses}"
+                return ""
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error stripping whitespace")
+            mock_render.assert_not_called()
+
+    def test_summarize_chapter_error_generating_llm_response(self):
+        """Test that an LLM completions failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+        ):
+            request.state["completions_obj"].completions = AsyncMock(side_effect=RuntimeError("LLM unavailable"))
+
+            async def mock_read(path):
+                return "Bible prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error generating LLM response")
+            mock_clean.assert_not_called()
+            mock_render.assert_not_called()
+
+    def test_summarize_chapter_error_cleaning_llm_output(self):
+        """Test that a failure cleaning LLM output returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="raw markdown")
+            mock_clean.side_effect = RuntimeError("cleaner failed")
+
+            async def mock_read(path):
+                return "Bible prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error cleaning LLM output")
+            mock_render.assert_not_called()
+
+    def test_summarize_chapter_error_rendering_template(self):
+        """Test that a template rendering failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+            patch("ai.views.summarize_chapter.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="raw markdown")
+            mock_clean.return_value = "<p>Summary</p>"
+            mock_render.side_effect = RuntimeError("template missing")
+
+            async def mock_read(path):
+                return "Bible prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error rendering template")
+            mock_serializer.assert_not_called()
+
+    def test_summarize_chapter_error_validating_output(self):
+        """Test that a serializer validation failure returns a 500 error."""
+        request = self._build_request()
+        payload = self._build_payload()
+
+        with (
+            patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
+            patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
+            patch("ai.views.summarize_chapter.render_to_string") as mock_render,
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
+            patch("ai.views.summarize_chapter.ServerTextResponseSerializer") as mock_serializer,
+        ):
+            request.state["completions_obj"].completions = AsyncMock(return_value="raw markdown")
+            mock_clean.return_value = "<p>Summary</p>"
+            mock_render.return_value = "<html>Response</html>"
+            mock_serializer.side_effect = ValueError("invalid response_content")
+
+            async def mock_read(path):
+                return "Bible prompt"
+
+            mock_read_file.side_effect = mock_read
+
+            response = self._call_summarize_chapter(request, payload)
+
+            self._assert_500_error(response, "Error validating output")
+
+    @pytest.mark.asyncio
+    async def test_summarize_chapter_rejects_invalid_payload_with_422(self):
+        """A request failing input serializer validation is rejected by ninja with 422.
+
+        This exercises the full Form(...) binding pipeline through the router, proving
+        that an invalid payload never reaches the view body (so request.state is never
+        accessed and no downstream mocks are required).
+        """
+        client = TestAsyncClient(router)
+        response = await client.post(
+            "/summarize_chapter",
+            data={
+                "book": "",  # empty -> fails validate_book
+                "chapter": "1",
+                "collection_name": "bsb",
+            },
+        )
+
+        assert response.status_code == 422

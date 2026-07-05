@@ -61,41 +61,70 @@ async def general_question(request, payload: GeneralQuestionInputSerializer = Fo
     collection_name = payload.collection_name
 
     # Search vector database for relevant context
-    vector_database = request.state["milvus_db"]
-    vector_results = await vector_database.search(
-        collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT
-    )
-    stringified_vector_results = await stringify_vdb_results(vector_results)
+    try:
+        vector_database = request.state["milvus_db"]
+        vector_results = await vector_database.search(
+            collection_name=collection_name, query=query, limit=MILVUS_SEARCH_LIMIT
+        )
+        stringified_vector_results = await stringify_vdb_results(vector_results)
+    except Exception as e:
+        logger.error(f"Error searching vector database: {e}")
+        return HttpResponse(f"Error searching vector database: {e}", status=500, content_type="text/html")
     logger.info(f"Vector results:\n{stringified_vector_results}")
 
     # Load system and user prompts from files and format with context
-    system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
-    user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
-    user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
+    try:
+        system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
+        user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
+        user_prompt = user_prompt.format(query=query, context=stringified_vector_results)
+    except Exception as e:
+        logger.error(f"Error formatting user prompt: {e}")
+        return HttpResponse(f"Error formatting user prompt: {e}", status=500, content_type="text/html")
+
     # Strip leading/trailing whitespace to ensure clean prompt formatting
-    system_prompt = system_prompt.strip()
-    user_prompt = user_prompt.strip()
+    try:
+        system_prompt = system_prompt.strip()
+        user_prompt = user_prompt.strip()
+    except Exception as e:
+        logger.error(f"Error stripping whitespace: {e}")
+        return HttpResponse(f"Error stripping whitespace: {e}", status=500, content_type="text/html")
     logger.info(f"System prompt:\n{system_prompt}")
     logger.info(f"User prompt:\n{user_prompt}")
 
     # Call LLM with prompts to generate response
-    completions_obj = request.state["completions_obj"]
-    result = await completions_obj.completions(system_prompt, user_prompt, query)
-    logger.info(f"LLM result:\n{result}")
+    try:
+        completions_obj = request.state["completions_obj"]
+        result = await completions_obj.completions(system_prompt, user_prompt, query)
+        logger.info(f"LLM result:\n{result}")
+    except Exception as e:
+        logger.error(f"Error generating LLM response: {e}")
+        return HttpResponse(f"Error generating LLM response: {e}", status=500, content_type="text/html")
 
     # Convert markdown to HTML for display
-    cleaned_result = await clean_llm_output(result)
-    logger.info(f"Cleaned result:\n{cleaned_result}")
+    try:
+        cleaned_result = await clean_llm_output(result)
+        logger.info(f"Cleaned result:\n{cleaned_result}")
+    except Exception as e:
+        logger.error(f"Error cleaning LLM output: {e}")
+        return HttpResponse(f"Error cleaning LLM output: {e}", status=500, content_type="text/html")
 
     # Render the response in an HTML template
-    template_name = "partials/text.html"
-    context = {
-        "response_content": mark_safe(cleaned_result),
-    }
-    rendered_template = render_to_string(template_name, context)
+    try:
+        template_name = "partials/text.html"
+        context = {
+            "response_content": mark_safe(cleaned_result),
+        }
+        rendered_template = render_to_string(template_name, context)
+    except Exception as e:
+        logger.error(f"Error rendering template: {e}")
+        return HttpResponse(f"Error rendering template: {e}", status=500, content_type="text/html")
 
     # Simply validate the output
-    _ = ServerTextResponseSerializer(response_content=rendered_template)
+    try:
+        _ = ServerTextResponseSerializer(response_content=rendered_template)
+    except Exception as e:
+        logger.error(f"Error validating output: {e}")
+        return HttpResponse(f"Error validating output: {e}", status=500, content_type="text/html")
 
     # Return rendered HTML to client
     # 200 - OK
