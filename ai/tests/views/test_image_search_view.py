@@ -37,6 +37,7 @@ class TestImageSearchView(SimpleTestCase):
         payload.verses_text = "16) For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."
         payload.book = "John"
         payload.chapter = "3"
+        payload.collection_name = "bsb"
         return payload
 
     def test_image_search_success(self):
@@ -87,7 +88,10 @@ class TestImageSearchView(SimpleTestCase):
                 if "system.md" in str(path):
                     return "You are a helpful image search assistant."
                 elif "user.md" in str(path):
-                    return "Selected: {selected_text}\nVerses: {verses_text}\nBook: {book}\nChapter: {chapter}"
+                    return (
+                        "Selected: {selected_text}\nVerses: {verses_text}\n"
+                        "Book: {book}\nChapter: {chapter}\nVersion: {collection_name}"
+                    )
                 return ""
 
             mock_read_file.side_effect = mock_read
@@ -107,6 +111,7 @@ class TestImageSearchView(SimpleTestCase):
             )
             assert "John" in call_args[0][1]
             assert "3" in call_args[0][1]
+            assert "bsb" in call_args[0][1]
             assert call_args[0][2] == "For God so loved the world"
 
     def test_image_search_loads_correct_prompt_files(self):
@@ -273,7 +278,10 @@ class TestImageSearchView(SimpleTestCase):
                 if "system.md" in str(path):
                     return "\n  System prompt with whitespace  \n"
                 elif "user.md" in str(path):
-                    return "\n  Selected: {selected_text}\nVerses: {verses_text}\nBook: {book}\nChapter: {chapter}  \n"
+                    return (
+                        "\n  Selected: {selected_text}\nVerses: {verses_text}\n"
+                        "Book: {book}\nChapter: {chapter}\nVersion: {collection_name}  \n"
+                    )
                 return ""
 
             mock_read_file.side_effect = mock_read

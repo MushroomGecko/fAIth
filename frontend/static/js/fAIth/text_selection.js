@@ -61,18 +61,18 @@ document.addEventListener('selectionchange', () => {
             .filter(verse => verse !== '');
         verses_text = verses.join('\n');
     }
+    const selectedTextInputs = document.querySelectorAll('input[name="selected_text"]');
+    const versesTextInputs = document.querySelectorAll('input[name="verses_text"]');
     if (text !== '')
     {
-        document.getElementById('selectedTextInput').value = text;
-        document.getElementById('selectedTextImageSearch').value = text;
-        document.getElementById('versesTextImageSearch').value = verses_text;
+        selectedTextInputs.forEach(input => { input.value = text; });
+        versesTextInputs.forEach(input => { input.value = verses_text; });
         enableTextHighlightInteractables();
     }
     else if (!document.querySelector('.modal.show'))
     {
-        document.getElementById('selectedTextInput').value = '';
-        document.getElementById('selectedTextImageSearch').value = '';
-        document.getElementById('versesTextImageSearch').value = '';
+        selectedTextInputs.forEach(input => { input.value = ''; });
+        versesTextInputs.forEach(input => { input.value = ''; });
         disableTextHighlightInteractables();
     }
 });

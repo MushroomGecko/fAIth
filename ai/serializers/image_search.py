@@ -2,6 +2,8 @@ import logging
 
 from pydantic import BaseModel, field_validator
 
+from ai.utils import remove_newlines_whitespace
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -17,12 +19,14 @@ class ImageSearchInputSerializer(BaseModel):
         verses_text (str): The verses text from the user to search an image for.
         book (str): The book from the user to search an image for.
         chapter (str): The chapter from the user to search an image for.
+        collection_name (str): The collection name from the user to search an image for.
     """
 
     selected_text: str
     verses_text: str
     book: str
     chapter: str
+    collection_name: str
 
     @field_validator("selected_text")
     @classmethod
@@ -39,7 +43,7 @@ class ImageSearchInputSerializer(BaseModel):
         Raises:
             ValueError: If the selected_text is empty after stripping whitespace.
         """
-        value = value.strip()
+        value = remove_newlines_whitespace(value)
         if not value:
             logger.error("selected text cannot be empty")
             raise ValueError("selected text cannot be empty")

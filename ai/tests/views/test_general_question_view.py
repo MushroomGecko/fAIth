@@ -21,19 +21,27 @@ class TestGeneralQuestionView(SimpleTestCase):
         """Helper to call async general_question function."""
         return asyncio.run(general_question(request, payload))
 
-    def test_general_question_success(self):
-        """Test successful general_question endpoint with valid payload."""
+    def _build_request(self):
+        """Build a request with the required state."""
         request = HttpRequest()
         request.method = "POST"
         request.state = {
             "milvus_db": AsyncMock(),
             "completions_obj": AsyncMock(),
         }
+        return request
 
-        # Create mock payload
+    def _build_payload(self):
+        """Build a mock payload matching GeneralQuestionInputSerializer fields."""
         payload = MagicMock()
         payload.query = "Who is Jesus Christ?"
         payload.collection_name = "bsb"
+        return payload
+
+    def test_general_question_success(self):
+        """Test successful general_question endpoint with valid payload."""
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -75,16 +83,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_calls_llm_completions(self):
         """Test that general_question calls the LLM completions service."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -121,16 +121,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_handles_empty_vector_results(self):
         """Test that general_question handles empty vector database results."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -157,16 +149,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_loads_correct_prompt_files(self):
         """Test that general_question loads prompts from correct file paths."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -198,16 +182,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_renders_template(self):
         """Test that general_question renders the response template."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -238,16 +214,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_response_content_type(self):
         """Test that general_question returns HTML content type."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -275,16 +243,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_uses_milvus_search_limit(self):
         """Test that general_question uses the configured MILVUS_SEARCH_LIMIT."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,
@@ -314,16 +274,8 @@ class TestGeneralQuestionView(SimpleTestCase):
 
     def test_general_question_extracts_payload_fields(self):
         """Test that general_question correctly extracts fields from payload."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "milvus_db": AsyncMock(),
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.query = "Who is Jesus Christ?"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.general_question.async_read_file") as mock_read_file,

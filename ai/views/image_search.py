@@ -33,7 +33,10 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
             - state["completions_obj"]: Pre-initialized LLM completions object
         payload: Validated request payload containing:
             - selected_text (str): The selected text from the user to search an image for.
-
+            - verses_text (str): The verses text from the user to search an image for.
+            - book (str): The book from the user to search an image for.
+            - chapter (str): The chapter from the user to search an image for.
+            - collection_name (str): The collection name from the user to search an image for.
     Returns:
         HttpResponse: Rendered HTML template containing the LLM response.
             - 200 OK: HTML template with response_content
@@ -46,13 +49,18 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     verses_text = payload.verses_text
     book = payload.book
     chapter = payload.chapter
+    collection_name = payload.collection_name
 
     # Load system and user prompts from files and format with context
     try:
         system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
         user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
         user_prompt = user_prompt.format(
-            selected_text=selected_text, verses_text=verses_text, book=book, chapter=chapter
+            selected_text=selected_text,
+            verses_text=verses_text,
+            book=book,
+            chapter=chapter,
+            collection_name=collection_name,
         )
     except Exception as e:
         logger.error(f"Error formatting user prompt: {e}")

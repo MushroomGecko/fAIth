@@ -8,8 +8,11 @@
             <div class="modal-body">
                 <form id="askSelectedForm" data-input-modal="askSelectedModal" hx-post="{% url 'api:ask_selected' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
                     {% csrf_token %}
+                    <input type="hidden" name="selected_text" value="">
+                    <input type="hidden" name="verses_text" value="">
+                    <input type="hidden" name="book" value="{{ book }}">
+                    <input type="hidden" name="chapter" value="{{ chapter }}">
                     <input type="hidden" name="collection_name" value="{{ version }}">
-                    <input type="hidden" name="selected_text" id="selectedTextInput" value="">
                     <div class="mb-3">
                         <label for="query" class="form-label">Question</label>
                         <input id="query" name="query" type="text" class="form-control" required>

@@ -9,6 +9,20 @@ from django.test import SimpleTestCase
 
 from ai.views.summarize_chapter import summarize_chapter
 
+DEFAULT_ALL_VERSES = {
+    "bsb": {
+        "Genesis": {
+            1: {
+                "1": "In the beginning God created the heavens and the earth.",
+                "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
+                "3": 'And God said, "Let there be light," and there was light.',
+                "4": "And God saw that the light was good, and He separated the light from the darkness.",
+                "5": 'God called the light "day," and the darkness He called "night." And there was evening, and there was morning—the first day.',
+            }
+        }
+    }
+}
+
 
 class TestSummarizeChapterView(SimpleTestCase):
     """Tests for the summarize_chapter API endpoint."""
@@ -21,39 +35,33 @@ class TestSummarizeChapterView(SimpleTestCase):
         """Helper to call async summarize_chapter function."""
         return asyncio.run(summarize_chapter(request, payload))
 
-    def test_summarize_chapter_success(self):
-        """Test successful summarize_chapter endpoint with valid payload."""
+    def _build_request(self):
+        """Build a request with the required state."""
         request = HttpRequest()
         request.method = "POST"
         request.state = {
             "completions_obj": AsyncMock(),
         }
+        return request
 
+    def _build_payload(self, book="Genesis", chapter="1", collection_name="bsb"):
+        """Build a mock payload matching SummarizeChapterInputSerializer fields."""
         payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        payload.book = book
+        payload.chapter = chapter
+        payload.collection_name = collection_name
+        return payload
+
+    def test_summarize_chapter_success(self):
+        """Test successful summarize_chapter endpoint with valid payload."""
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
             patch("ai.views.summarize_chapter.render_to_string") as mock_render,
-            patch(
-                "ai.views.summarize_chapter.ALL_VERSES",
-                {
-                    "bsb": {
-                        "Genesis": {
-                            1: {
-                                "1": "In the beginning God created the heavens and the earth.",
-                                "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-                                "3": 'And God said, "Let there be light," and there was light.',
-                                "4": "And God saw that the light was good, and He separated the light from the darkness.",
-                                "5": 'God called the light "day," and the darkness He called "night." And there was evening, and there was morning—the first day.',
-                            }
-                        }
-                    }
-                },
-            ),
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
         ):
             request.state["completions_obj"].completions = AsyncMock(
                 return_value="In the beginning, God created the heavens and the earth."
@@ -82,37 +90,14 @@ class TestSummarizeChapterView(SimpleTestCase):
 
     def test_summarize_chapter_calls_llm_completions(self):
         """Test that summarize_chapter calls the LLM completions service."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
             patch("ai.views.summarize_chapter.render_to_string") as mock_render,
-            patch(
-                "ai.views.summarize_chapter.ALL_VERSES",
-                {
-                    "bsb": {
-                        "Genesis": {
-                            1: {
-                                "1": "In the beginning God created the heavens and the earth.",
-                                "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-                                "3": 'And God said, "Let there be light," and there was light.',
-                                "4": "And God saw that the light was good, and He separated the light from the darkness.",
-                                "5": 'God called the light "day," and the darkness He called "night." And there was evening, and there was morning—the first day.',
-                            }
-                        }
-                    }
-                },
-            ),
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
         ):
             request.state["completions_obj"].completions = AsyncMock(return_value="Creation summary")
 
@@ -139,34 +124,14 @@ class TestSummarizeChapterView(SimpleTestCase):
 
     def test_summarize_chapter_loads_correct_prompt_files(self):
         """Test that summarize_chapter loads prompts from correct file paths."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
             patch("ai.views.summarize_chapter.render_to_string") as mock_render,
-            patch(
-                "ai.views.summarize_chapter.ALL_VERSES",
-                {
-                    "bsb": {
-                        "Genesis": {
-                            1: {
-                                "1": "In the beginning God created the heavens and the earth.",
-                                "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-                            }
-                        }
-                    }
-                },
-            ),
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
         ):
             request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
@@ -188,34 +153,14 @@ class TestSummarizeChapterView(SimpleTestCase):
 
     def test_summarize_chapter_renders_template(self):
         """Test that summarize_chapter renders the response template."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
             patch("ai.views.summarize_chapter.clean_llm_output") as mock_clean,
             patch("ai.views.summarize_chapter.render_to_string") as mock_render,
-            patch(
-                "ai.views.summarize_chapter.ALL_VERSES",
-                {
-                    "bsb": {
-                        "Genesis": {
-                            1: {
-                                "1": "In the beginning God created the heavens and the earth.",
-                                "2": "Now the earth was formless and void, and darkness was over the surface of the deep. And the Spirit of God was hovering over the surface of the waters.",
-                            }
-                        }
-                    }
-                },
-            ),
+            patch("ai.views.summarize_chapter.ALL_VERSES", DEFAULT_ALL_VERSES),
         ):
             request.state["completions_obj"].completions = AsyncMock(return_value="Summary")
 
@@ -240,16 +185,8 @@ class TestSummarizeChapterView(SimpleTestCase):
         ALL_VERSES is keyed by int chapter numbers. If the string-to-int conversion were removed,
         the lookup would raise a KeyError and completions would never be called.
         """
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "5"  # string — view must convert to int 5 to hit the key below
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload(chapter="5")  # string — view must convert to int 5 to hit the key below
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
@@ -292,16 +229,8 @@ class TestSummarizeChapterView(SimpleTestCase):
 
     def test_summarize_chapter_stringifies_verses(self):
         """Test that summarize_chapter properly stringifies verses with newlines."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         verses_dict = {
             "1": "In the beginning God created the heavens and the earth.",
@@ -342,16 +271,8 @@ class TestSummarizeChapterView(SimpleTestCase):
 
     def test_summarize_chapter_cleans_llm_output(self):
         """Test that summarize_chapter cleans LLM output."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
@@ -381,16 +302,8 @@ class TestSummarizeChapterView(SimpleTestCase):
 
     def test_summarize_chapter_marks_response_as_safe(self):
         """Test that summarize_chapter marks HTML response as safe."""
-        request = HttpRequest()
-        request.method = "POST"
-        request.state = {
-            "completions_obj": AsyncMock(),
-        }
-
-        payload = MagicMock()
-        payload.book = "Genesis"
-        payload.chapter = "1"
-        payload.collection_name = "bsb"
+        request = self._build_request()
+        payload = self._build_payload()
 
         with (
             patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
@@ -434,14 +347,8 @@ class TestSummarizeChapterView(SimpleTestCase):
 
         for collection, unique_verse in collections.items():
             with self.subTest(collection=collection):
-                request = HttpRequest()
-                request.method = "POST"
-                request.state = {"completions_obj": AsyncMock()}
-
-                payload = MagicMock()
-                payload.book = "Genesis"
-                payload.chapter = "1"
-                payload.collection_name = collection
+                request = self._build_request()
+                payload = self._build_payload(collection_name=collection)
 
                 with (
                     patch("ai.views.summarize_chapter.async_read_file") as mock_read_file,
