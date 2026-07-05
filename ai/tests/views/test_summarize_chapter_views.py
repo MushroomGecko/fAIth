@@ -4,10 +4,12 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from django.http import HttpRequest
 from django.test import SimpleTestCase
+from ninja.testing import TestAsyncClient
 
-from ai.views.summarize_chapter import summarize_chapter
+from ai.views.summarize_chapter import router, summarize_chapter
 
 DEFAULT_ALL_VERSES = {
     "bsb": {
@@ -559,3 +561,23 @@ class TestSummarizeChapterView(SimpleTestCase):
             response = self._call_summarize_chapter(request, payload)
 
             self._assert_500_error(response, "Error validating output")
+
+    @pytest.mark.asyncio
+    async def test_summarize_chapter_rejects_invalid_payload_with_422(self):
+        """A request failing input serializer validation is rejected by ninja with 422.
+
+        This exercises the full Form(...) binding pipeline through the router, proving
+        that an invalid payload never reaches the view body (so request.state is never
+        accessed and no downstream mocks are required).
+        """
+        client = TestAsyncClient(router)
+        response = await client.post(
+            "/summarize_chapter",
+            data={
+                "book": "",  # empty -> fails validate_book
+                "chapter": "1",
+                "collection_name": "bsb",
+            },
+        )
+
+        assert response.status_code == 422

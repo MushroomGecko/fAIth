@@ -4,10 +4,12 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from django.http import HttpRequest
 from django.test import SimpleTestCase
+from ninja.testing import TestAsyncClient
 
-from ai.views.ask_selected import ask_selected
+from ai.views.ask_selected import ask_selected, router
 
 
 class TestAskSelectedView(SimpleTestCase):
@@ -576,3 +578,26 @@ class TestAskSelectedView(SimpleTestCase):
             response = self._call_ask_selected(request, payload)
 
             self._assert_500_error(response, "Error validating output")
+
+    @pytest.mark.asyncio
+    async def test_ask_selected_rejects_invalid_payload_with_422(self):
+        """A request failing input serializer validation is rejected by ninja with 422.
+
+        This exercises the full Form(...) binding pipeline through the router, proving
+        that an invalid payload never reaches the view body (so request.state is never
+        accessed and no downstream mocks are required).
+        """
+        client = TestAsyncClient(router)
+        response = await client.post(
+            "/ask_selected",
+            data={
+                "selected_text": "For God so loved the world",
+                "verses_text": "16) For God so loved the world, that he gave his only begotten Son.",
+                "book": "John",
+                "chapter": "3",
+                "collection_name": "bsb",
+                "query": "",  # empty -> fails validate_query
+            },
+        )
+
+        assert response.status_code == 422
