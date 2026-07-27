@@ -43,4 +43,4 @@ Write 2-3 paragraphs connecting this truth to the reader's daily life:
 Offer one honest, searching question for the reader to reflect on this week.
 
 #### Prayer
-Write a short, personal prayer (3-5 sentences) the reader can pray in response to this chapter, written in first person ("Lord, ...", "Lord Jesus, ..." "Heavenly Father, ...", "Holy Spirit, ...").
+Write a short, personal prayer (3-5 sentences) the reader can pray in response to this chapter, written in first person ("Lord, ...", "Lord Jesus, ..." "Heavenly Father, ...", "Holy Spirit, ..."). End the prayer by praying in Jesus' holy name (for example, "In Jesus' holy name, amen.").
