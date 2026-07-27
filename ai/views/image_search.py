@@ -99,7 +99,7 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
 
     # Render the response in an HTML template
     try:
-        template_name = "partials/text.html"
+        template_name = "partials/server_response_partial.html"
         context = {
             "response_content": mark_safe("\n".join(html_urls)),
         }

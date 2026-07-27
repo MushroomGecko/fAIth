@@ -7,79 +7,60 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from ninja import Form, Router
 
+from ai.serializers.map_search import MapSearchInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-from ai.serializers.summarize_chapter import SummarizeChapterInputSerializer
-from ai.utils import async_read_file, clean_llm_output
+from ai.utils import async_read_file, search_for_images
 from fAIth.api_tags import APITags
-from fAIth.bible_globals import ALL_VERSES
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Create router for summarize chapter API
+# Create router for ask selected API
 router = Router()
 
 # Configuration constants
-MILVUS_SEARCH_LIMIT = int(str(os.getenv("MILVUS_SEARCH_LIMIT", 10)).strip())
 RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
+SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT", 10)).strip())
 
 
-@router.post("/summarize_chapter", tags=[APITags.AI], url_name="summarize_chapter")
-async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = Form(...)):
+@router.post("/map_search", tags=[APITags.AI], url_name="map_search")
+async def map_search(request, payload: MapSearchInputSerializer = Form(...)):
     """
-    API endpoint for summarizing a chapter using RAG (Retrieval-Augmented Generation).
-
-    Combines vector database search with LLM completions to provide context-aware summaries.
-    The workflow: validate input -> search vector DB -> load prompts -> call LLM -> render HTML response.
-
-    Process a chapter and return an LLM-generated summary.
-
-    Workflow:
-        1. Validate request payload (book, chapter and collection_name)
-        2. Search vector database for relevant context
-        3. Load and format system and user prompts
-        4. Call LLM with prompts to generate response
-        5. Convert markdown to HTML and render template
-        6. Return HTML response to client
+    API endpoint for searching for maps based on selected text.
 
     Parameters:
         request: The HTTP request object containing:
-            - state["milvus_db"]: Pre-initialized vector database connection
             - state["completions_obj"]: Pre-initialized LLM completions object
         payload: Validated request payload containing:
-            - book (str): Book to summarize
-            - chapter (str): Chapter to summarize
-            - collection_name (str): Milvus vector collection to search
-
+            - selected_text (str): The selected text from the user to search a map for.
+            - verses_text (str): The verses text from the user to search a map for.
+            - book (str): The book from the user to search a map for.
+            - chapter (str): The chapter from the user to search a map for.
+            - collection_name (str): The collection name from the user to search a map for.
     Returns:
         HttpResponse: Rendered HTML template containing the LLM response.
             - 200 OK: HTML template with response_content
             - 400 Bad Request: Validation errors or missing required fields
     """
-    file_directory = "summarize_chapter"
+    file_directory = "map_search"
 
     # Extract validated data from payload
+    selected_text = payload.selected_text
+    verses_text = payload.verses_text
     book = payload.book
-    chapter = int(payload.chapter)
+    chapter = payload.chapter
     collection_name = payload.collection_name
-
-    # Get the verses for the book and chapter
-    try:
-        list_of_verses = ALL_VERSES[collection_name][book][chapter]
-        stringified_verses = "\n".join(list_of_verses.values())
-    except KeyError as e:
-        logger.error(f"Error locating verses for {book} {chapter} in {collection_name}: {e}")
-        return HttpResponse(f"Error locating verses for {book} {chapter}: {e}", status=500, content_type="text/html")
-    except Exception as e:
-        logger.error(f"Error retrieving verses: {e}")
-        return HttpResponse(f"Error retrieving verses: {e}", status=500, content_type="text/html")
 
     # Load system and user prompts from files and format with context
     try:
         system_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "system.md"))
         user_prompt = await async_read_file(RAW_PROMPTS_DIRECTORY.joinpath(file_directory, "user.md"))
         user_prompt = user_prompt.format(
-            chapter=chapter, book=book, collection_name=collection_name, verses=stringified_verses
+            selected_text=selected_text,
+            verses_text=verses_text,
+            book=book,
+            chapter=chapter,
+            collection_name=collection_name,
         )
     except Exception as e:
         logger.error(f"Error formatting user prompt: {e}")
@@ -95,28 +76,32 @@ async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = 
     logger.info(f"System prompt:\n{system_prompt}")
     logger.info(f"User prompt:\n{user_prompt}")
 
-    # Call LLM with prompts to generate response
+    # Use LLM to generate a search query
     try:
         completions_obj = request.state["completions_obj"]
-        result = await completions_obj.completions(system_prompt, user_prompt)
-        logger.info(f"LLM result:\n{result}")
+        search_query = await completions_obj.completions(system_prompt, user_prompt, selected_text)
+        logger.info(f"LLM search query:\n{search_query}")
     except Exception as e:
-        logger.error(f"Error generating LLM response: {e}")
-        return HttpResponse(f"Error generating LLM response: {e}", status=500, content_type="text/html")
+        logger.error(f"Error generating search query: {e}")
+        return HttpResponse(f"Error generating search query: {e}", status=500, content_type="text/html")
 
-    # Convert markdown to HTML for display
+    # Search for maps based on selected text
     try:
-        cleaned_result = await clean_llm_output(result)
-        logger.info(f"Cleaned result:\n{cleaned_result}")
+        map_urls = await search_for_images(search_query, SEARXNG_IMAGE_LIMIT)
     except Exception as e:
-        logger.error(f"Error cleaning LLM output: {e}")
-        return HttpResponse(f"Error cleaning LLM output: {e}", status=500, content_type="text/html")
+        logger.error(f"Error searching for maps: {e}")
+        return HttpResponse(f"Error searching for maps: {e}", status=500, content_type="text/html")
+    html_urls = [
+        f"<img src='{url}' style='width: 100%; height: auto; display: block; margin-bottom: 0.5rem;' />\n"
+        for url in map_urls
+    ]
+    logger.info(f"HTML URLs: {html_urls}")
 
     # Render the response in an HTML template
     try:
         template_name = "partials/server_response_partial.html"
         context = {
-            "response_content": mark_safe(cleaned_result),
+            "response_content": mark_safe("\n".join(html_urls)),
         }
         rendered_template = render_to_string(template_name, context)
     except Exception as e:

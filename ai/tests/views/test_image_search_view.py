@@ -252,7 +252,7 @@ class TestImageSearchView(SimpleTestCase):
             # Verify the response_content passed to the template contains all image URLs
             mock_render.assert_called_once()
             call_args = mock_render.call_args
-            assert call_args[0][0] == "partials/text.html"
+            assert call_args[0][0] == "partials/server_response_partial.html"
             context = call_args[0][1]
             response_content = context["response_content"]
             assert response_content is not None
