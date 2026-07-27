@@ -133,7 +133,7 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
 
     # Render the response in an HTML template
     try:
-        template_name = "partials/text.html"
+        template_name = "partials/server_response_partial.html"
         context = {
             "response_content": mark_safe(cleaned_result),
         }

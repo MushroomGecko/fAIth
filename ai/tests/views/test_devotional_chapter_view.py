@@ -181,7 +181,7 @@ class TestDevotionalChapterView(SimpleTestCase):
             # Verify template rendering
             mock_render.assert_called_once()
             call_args = mock_render.call_args
-            assert call_args[0][0] == "partials/text.html"
+            assert call_args[0][0] == "partials/server_response_partial.html"
             assert call_args[0][1]["response_content"] is not None
 
     def test_devotional_chapter_converts_chapter_to_int(self):
