@@ -11,6 +11,7 @@ from ai.serializers.search import SearchInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
 from ai.utils import clean_llm_output, ripgrep_bible
 from fAIth.api_tags import APITags
+from fAIth.bible_globals import IN_ORDER_BOOKS_INDEXED
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -62,12 +63,33 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
         logger.error(f"Error searching vector database: {e}")
         return HttpResponse(f"Error searching vector database: {e}", status=500, content_type="text/html")
     logger.info(f"Vector results:\n{vector_results}")
-    vector_results_parsed = "\n".join(
-        [
-            f"- {result['text']} ({result['book']} {result['chapter']}:{result['verse']})\n"
-            for result in vector_results
-        ]
-    )
+    
+    # Sort the vector results
+    try:
+        vector_results.sort(
+            key=lambda result: (
+                IN_ORDER_BOOKS_INDEXED.get(
+                    result["book"], len(IN_ORDER_BOOKS_INDEXED)
+                ),
+                result["chapter"],
+                result["verse"],
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error sorting vector results: {e}")
+        return HttpResponse(f"Error sorting vector results: {e}", status=500, content_type="text/html")
+    
+    # Parse the vector results
+    try:
+        vector_results_parsed = "\n".join(
+            [
+                f"- {result['text']} ({result['book']} {result['chapter']}:{result['verse']})\n"
+                for result in vector_results
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Error parsing vector results: {e}")
+        return HttpResponse(f"Error parsing vector results: {e}", status=500, content_type="text/html")
 
     # Search the Bible for relevant context
     try:
@@ -76,12 +98,35 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
         logger.error(f"Error searching Bible: {e}")
         return HttpResponse(f"Error searching Bible: {e}", status=500, content_type="text/html")
     logger.info(f"Direct results:\n{direct_results}")
-    direct_results_parsed = "\n".join(
-        [
-            f"- {result['text']} ({result['book']} {result['chapter']}:{result['verse']})\n"
-            for result in direct_results
-        ]
-    )
+
+    # Sort the direct results
+    try:
+        direct_results.sort(
+            key=lambda result: (
+                IN_ORDER_BOOKS_INDEXED.get(
+                    result["book"], len(IN_ORDER_BOOKS_INDEXED)
+                ),
+                result["chapter"],
+                result["verse"],
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error sorting direct results: {e}")
+        return HttpResponse(f"Error sorting direct results: {e}", status=500, content_type="text/html")
+    
+    # Parse the direct results
+    try:
+        direct_results_parsed = "\n".join(
+            [
+                f"- {result['text']} ({result['book']} {result['chapter']}:{result['verse']})\n"
+                for result in direct_results
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Error parsing direct results: {e}")
+        return HttpResponse(f"Error parsing direct results: {e}", status=500, content_type="text/html")
+    
+    # Combine the results
     final_response = f"##Search results for '{query}'\n\n### AI Search Results\n{vector_results_parsed}\n\n### Direct Search Results\n{direct_results_parsed}"
 
     # Convert markdown to HTML for display
