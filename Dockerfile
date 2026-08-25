@@ -28,7 +28,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.14-slim
 
 # Create non-root user
-RUN useradd -m -r faith_user && mkdir /app && chown -R faith_user /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ripgrep \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -r faith_user \
+    && mkdir /app \
+    && chown -R faith_user /app
 
 # Copy the Python dependencies from the builder stage
 COPY --from=builder /usr/local/lib/python3.14/site-packages/ /usr/local/lib/python3.14/site-packages/

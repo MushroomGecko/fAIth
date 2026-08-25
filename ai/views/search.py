@@ -9,7 +9,7 @@ from ninja import Form, Router
 
 from ai.serializers.search import SearchInputSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-from ai.utils import ripgrep_bible
+from ai.utils import clean_llm_output, ripgrep_bible
 from fAIth.api_tags import APITags
 
 # Set up logging
@@ -62,6 +62,12 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
         logger.error(f"Error searching vector database: {e}")
         return HttpResponse(f"Error searching vector database: {e}", status=500, content_type="text/html")
     logger.info(f"Vector results:\n{vector_results}")
+    vector_results_parsed = "\n".join(
+        [
+            f"- {result['text']} ({result['book']} {result['chapter']}:{result['verse']})\n"
+            for result in vector_results
+        ]
+    )
 
     # Search the Bible for relevant context
     try:
@@ -70,12 +76,27 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
         logger.error(f"Error searching Bible: {e}")
         return HttpResponse(f"Error searching Bible: {e}", status=500, content_type="text/html")
     logger.info(f"Direct results:\n{direct_results}")
+    direct_results_parsed = "\n".join(
+        [
+            f"- {result['text']} ({result['book']} {result['chapter']}:{result['verse']})\n"
+            for result in direct_results
+        ]
+    )
+    final_response = f"##Search results for '{query}'\n\n### AI Search Results\n{vector_results_parsed}\n\n### Direct Search Results\n{direct_results_parsed}"
+
+    # Convert markdown to HTML for display
+    try:
+        cleaned_result = await clean_llm_output(final_response)
+        logger.info(f"Cleaned result:\n{cleaned_result}")
+    except Exception as e:
+        logger.error(f"Error cleaning LLM output: {e}")
+        return HttpResponse(f"Error cleaning LLM output: {e}", status=500, content_type="text/html")
 
     # Render the response in an HTML template
     try:
         template_name = "partials/server_response_partial.html"
         context = {
-            "response_content": mark_safe(vector_results + direct_results),
+            "response_content": mark_safe(cleaned_result),
         }
         rendered_template = render_to_string(template_name, context)
     except Exception as e:
