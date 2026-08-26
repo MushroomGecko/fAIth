@@ -68,9 +68,7 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
     try:
         vector_results.sort(
             key=lambda result: (
-                IN_ORDER_BOOKS_INDEXED.get(
-                    result["book"], len(IN_ORDER_BOOKS_INDEXED)
-                ),
+                IN_ORDER_BOOKS_INDEXED.get(result["book"], len(IN_ORDER_BOOKS_INDEXED)),
                 result["chapter"],
                 result["verse"],
             )
@@ -103,9 +101,7 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
     try:
         direct_results.sort(
             key=lambda result: (
-                IN_ORDER_BOOKS_INDEXED.get(
-                    result["book"], len(IN_ORDER_BOOKS_INDEXED)
-                ),
+                IN_ORDER_BOOKS_INDEXED.get(result["book"], len(IN_ORDER_BOOKS_INDEXED)),
                 result["chapter"],
                 result["verse"],
             )

@@ -82,9 +82,7 @@ class TestSearchView(SimpleTestCase):
         with patch("ai.views.search.MILVUS_SEARCH_LIMIT", 7):
             self._call_search(request, payload)
 
-        request.state["milvus_db"].search.assert_awaited_once_with(
-            collection_name="bsb", query="love", limit=7
-        )
+        request.state["milvus_db"].search.assert_awaited_once_with(collection_name="bsb", query="love", limit=7)
 
     def test_search_sorts_and_formats_both_result_sets(self):
         """Results are ordered by canonical book order, chapter, and verse."""
