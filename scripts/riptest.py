@@ -21,7 +21,10 @@ async def ripgrep_bible(query: str, collection_name: str) -> list[dict[str, Any]
         list[dict[str, Any]]: Ripgrep's matching output, or an empty list if no matches/error.
     """
     try:
+        # Restrict the search to the selected Bible translation directory.
         search_path = BIBLE_DATA_ROOT / collection_name
+
+        # Run ripgrep asynchronously so the search does not block the event loop.
         process = await asyncio.create_subprocess_exec(
             "rg",
             "--no-heading",
@@ -35,6 +38,8 @@ async def ripgrep_bible(query: str, collection_name: str) -> list[dict[str, Any]
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
+
+        # Wait for ripgrep to finish and collect both output streams.
         stdout, stderr = await process.communicate()
 
         # ripgrep returns 1 when no matches are found and 2 for an error.
@@ -42,20 +47,25 @@ async def ripgrep_bible(query: str, collection_name: str) -> list[dict[str, Any]
             logger.error("ripgrep failed: %s", stderr.decode().strip())
             return []
 
+        # Each line in ripgrep's JSON output represents an event or a match.
         response = stdout.decode().splitlines()
         results = []
         for line in response:
             record = json.loads(line)
+
+            # Ignore summaries and other non-match events from ripgrep.
             if record.get("type") != "match":
                 continue
+
             data = record["data"]
             path = Path(data["path"]["text"])
             content = data["lines"]["text"].strip().rstrip(",")
+
             # Convert: '"15": "Verse text"' into a one-item dictionary
             verse_data = json.loads("{" + content + "}")
             verse, text = next(iter(verse_data.items()))
 
-            # An error usually means that the verse is a heading, so we skip it.
+            # Skip non-verse JSON entries, such as chapter headings.
             try:
                 results.append(
                     {
