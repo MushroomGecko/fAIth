@@ -63,7 +63,7 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
         logger.error(f"Error searching vector database: {e}")
         return HttpResponse(f"Error searching vector database: {e}", status=500, content_type="text/html")
     logger.info(f"Vector results:\n{vector_results}")
-    
+
     # Sort the vector results
     try:
         vector_results.sort(
@@ -78,7 +78,7 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
     except Exception as e:
         logger.error(f"Error sorting vector results: {e}")
         return HttpResponse(f"Error sorting vector results: {e}", status=500, content_type="text/html")
-    
+
     # Parse the vector results
     try:
         vector_results_parsed = "\n".join(
@@ -113,7 +113,7 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
     except Exception as e:
         logger.error(f"Error sorting direct results: {e}")
         return HttpResponse(f"Error sorting direct results: {e}", status=500, content_type="text/html")
-    
+
     # Parse the direct results
     try:
         direct_results_parsed = "\n".join(
@@ -125,7 +125,7 @@ async def search(request, payload: SearchInputSerializer = Form(...)):
     except Exception as e:
         logger.error(f"Error parsing direct results: {e}")
         return HttpResponse(f"Error parsing direct results: {e}", status=500, content_type="text/html")
-    
+
     # Combine the results
     final_response = f"##Search results for '{query}'\n\n### AI Search Results\n{vector_results_parsed}\n\n### Direct Search Results\n{direct_results_parsed}"
 
