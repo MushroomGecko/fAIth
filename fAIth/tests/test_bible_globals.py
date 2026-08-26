@@ -20,6 +20,7 @@ def reset_bible_globals():
     bible_globals.DEFAULT_CHAPTER = ""
     bible_globals.VERSION_SELECTION = []
     bible_globals.IN_ORDER_BOOKS = []
+    bible_globals.IN_ORDER_BOOKS_INDEXED = {}
     bible_globals.CHAPTER_SELECTION = {}
     bible_globals.ALL_VERSES = {}
 
@@ -312,6 +313,20 @@ class TestSetInOrderBooks(SimpleTestCase):
         bible_globals.set_in_order_books()
         # Should fail because there are no books
         assert bible_globals.IN_ORDER_BOOKS != empty_books
+
+    def test_set_in_order_books_populates_indexed_mapping(self):
+        """Test that each book maps to its zero-based canonical position."""
+        reset_bible_globals()
+
+        bible_globals.set_in_order_books()
+
+        assert len(bible_globals.IN_ORDER_BOOKS_INDEXED) == 66
+        assert bible_globals.IN_ORDER_BOOKS_INDEXED["Genesis"] == 0
+        assert bible_globals.IN_ORDER_BOOKS_INDEXED["Exodus"] == 1
+        assert bible_globals.IN_ORDER_BOOKS_INDEXED["Matthew"] == 39
+        assert bible_globals.IN_ORDER_BOOKS_INDEXED["John"] == 42
+        assert bible_globals.IN_ORDER_BOOKS_INDEXED["Revelation"] == 65
+        assert list(bible_globals.IN_ORDER_BOOKS_INDEXED) == bible_globals.IN_ORDER_BOOKS
 
 
 class TestSetDefaultBook(SimpleTestCase):

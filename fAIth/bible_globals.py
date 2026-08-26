@@ -49,6 +49,7 @@ VERSION_SELECTION = []
 # All 66 Bible books in canonical order (OT: 39, NT: 27). Set by set_in_order_books().
 # Format: list of str (e.g., ["Genesis", "Exodus", ..., "Revelation"])
 IN_ORDER_BOOKS = []
+IN_ORDER_BOOKS_INDEXED = {}
 
 # Maps book names to their chapter counts by scanning DEFAULT_VERSION directory. Set by set_chapter_selection().
 # Format: dict[str, int] (e.g., {"Genesis": 50, "Exodus": 40, "Matthew": 28})
@@ -173,7 +174,7 @@ def set_in_order_books():
     Raises:
         None: This function always succeeds.
     """
-    global IN_ORDER_BOOKS
+    global IN_ORDER_BOOKS, IN_ORDER_BOOKS_INDEXED
     logger.info("Setting Bible books in order.")
     IN_ORDER_BOOKS = [
         "Genesis",
@@ -243,6 +244,7 @@ def set_in_order_books():
         "Jude",
         "Revelation",
     ]
+    IN_ORDER_BOOKS_INDEXED = {book: index for index, book in enumerate(IN_ORDER_BOOKS)}
     logger.info("Bible books successfully set in order.")
 
 

@@ -5,6 +5,7 @@ from ai.views.devotional_chapter import router as devotional_chapter_router
 from ai.views.general_question import router as general_question_router
 from ai.views.image_search import router as image_search_router
 from ai.views.map_search import router as map_search_router
+from ai.views.search import router as search_router
 from ai.views.summarize_chapter import router as summarize_chapter_router
 from fAIth.api_tags import APITags
 
@@ -15,4 +16,5 @@ ai_api.add_router("", devotional_chapter_router)
 ai_api.add_router("", general_question_router)
 ai_api.add_router("", image_search_router)
 ai_api.add_router("", map_search_router)
+ai_api.add_router("", search_router)
 ai_api.add_router("", summarize_chapter_router)
