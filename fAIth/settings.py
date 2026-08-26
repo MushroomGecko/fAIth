@@ -14,6 +14,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import wn
 
 from fAIth.function_globals import derive_boolean_from_string
 
@@ -37,6 +38,30 @@ if not SECRET_KEY or SECRET_KEY == "CHANGE_ME_use_a_long_secret_key":
 DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 
 ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1", "localhost"]').strip())
+
+
+# Wordnet configuration
+# Github: https://github.com/goodmami/wn
+# Documentation: https://wn.readthedocs.io/en/latest/
+
+WORDNET_DOWNLOAD_VERSION = os.getenv("WORDNET_DOWNLOAD_VERSION", "").strip()
+WN_DATA_DIR = os.getenv("WN_DATA_DIR", "").strip()
+WORDNET_USABLE = False
+
+if WN_DATA_DIR:
+    try:
+        wn.config.data_directory = WN_DATA_DIR
+    except Exception as e:
+        logger.error(f"Error setting Wordnet data directory: {e}")
+        raise
+
+if WORDNET_DOWNLOAD_VERSION:
+    try:
+        wn.download(WORDNET_DOWNLOAD_VERSION)
+        WORDNET_USABLE = True
+    except Exception as e:
+        logger.error(f"Error downloading or finding Wordnet data: {e}")
+        raise
 
 
 # Application definition

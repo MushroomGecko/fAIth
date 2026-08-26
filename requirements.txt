@@ -16,6 +16,9 @@ markdown==3.10.2
 # Vector Database / Embedding
 pymilvus==3.0.0
 
+# Other dependencies
+wn==1.1.1
+
 # Testing
 # ruff==0.15.2
 # pytest==9.1.1
