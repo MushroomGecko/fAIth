@@ -48,6 +48,10 @@ WORDNET_DOWNLOAD_VERSION = os.getenv("WORDNET_DOWNLOAD_VERSION", "").strip()
 WN_DATA_DIR = os.getenv("WN_DATA_DIR", "").strip()
 WORDNET_USABLE = False
 
+# definition_query runs WordNet lookups in a worker thread via asyncio.to_thread.
+# SQLite connections are thread-bound unless this is enabled before connect().
+wn.config.allow_multithreading = True
+
 if WN_DATA_DIR:
     try:
         wn.config.data_directory = WN_DATA_DIR

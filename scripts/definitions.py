@@ -1,8 +1,12 @@
 """Print a detailed WordNet report for a word."""
 
+import asyncio
 import os
 
+import logging
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 if "WN_DATA_DIR" in os.environ:
@@ -10,62 +14,132 @@ if "WN_DATA_DIR" in os.environ:
 
 import wn
 
+wn.config.allow_multithreading = True
+WORDNET_USABLE = True
+WORDNET_DOWNLOAD_VERSION = "oewn:2025+"
+WORD = "God"
+wordnet_obj = wn.Wordnet(WORDNET_DOWNLOAD_VERSION)
+logger.info(f"Wordnet object initialized")
 
-LEXICON = "oewn:2025+"
-WORD = "Jesus"
+async def definition_query(word: str, wordnet_obj: wn.Wordnet) -> str:
+    """
+    Search WordNet for synsets defining a word.
+
+    Parameters:
+        word (str): The word to search for.
+
+    Returns:
+        str: Formatted definitions and related synset words.
+    """
+
+    # Initialize the Wordnet object if it is usable.
+    def format_all_definitions(word: str) -> str:
+        """
+        Look up and format all WordNet definitions for a word.
+
+        Parameters:
+            word (str): The word to search for.
+
+        Returns:
+            str: Formatted definitions and related synset words.
+        """
 
 
-def synset_report(synset: wn.Synset) -> None:
-    """Print definitions, examples, and relationships for one synset."""
-    print(f"\n[{synset.id}] {synset.pos} - {synset.lexfile()}")
-    print(f"Definition: {synset.definition()}")
 
-    examples = synset.examples()
-    print(f"Examples: {examples or '(none recorded)'}")
-    print(f"Lemmas: {', '.join(synset.lemmas()) or '(none)'}")
+        def format_output(word: str, synset: wn.Synset) -> str:
+            """
+            Format the definition and relationships for a WordNet synset.
 
-    relations = {
-        "Hypernyms": synset.hypernyms(),
-        "Hyponyms": synset.hyponyms(),
-        "Meronyms": synset.meronyms(),
-        "Holonyms": synset.holonyms(),
-    }
-    for name, related_synsets in relations.items():
-        if related_synsets:
-            print(f"{name}:")
-            for related in related_synsets:
-                print(f"  - {related.id}: {related.definition()}")
+            Parameters:
+                word (str): The word associated with the synset.
+                synset (wn.Synset): The WordNet synset to format.
+
+            Returns:
+                str: Formatted synset information.
+            """
+
+            def format_examples(examples: list[str]) -> str:
+                """
+                Format a list of WordNet example sentences.
+
+                Parameters:
+                    examples (list[str]): Example sentences for a synset.
+
+                Returns:
+                    str: Formatted example sentences, or "(none)".
+                """
+                if not examples:
+                    return "(none)"
+
+                result_string = ""
+                for example in examples:
+                    result_string += f" - {example}\n"
+                return "\n" + result_string.rstrip()
+
+            def format_synset_words(synsets: list[wn.Synset]) -> str:
+                """
+                Format the lemma words for related WordNet synsets.
+
+                Parameters:
+                    synsets (list[wn.Synset]): Related synsets to format.
+
+                Returns:
+                    str: Comma-separated lemma words, or "(none)".
+                """
+                if not synsets:
+                    return "(none)"
+
+                result_string = ""
+                for synset in synsets:
+                    if not synset.lemmas():
+                        result_string += "(unnamed)"
+                    else:
+                        result_string += ", ".join(synset.lemmas()) + " "
+
+                return result_string.strip()
+
+            return (
+                f"Word: {word}\n"
+                f"Part of speech: {synset.pos} ({synset.lexfile()})\n"
+                f"Definition: {synset.definition()}\n"
+                f"Examples: {format_examples(synset.examples())}\n"
+                f"Lemmas: {', '.join(synset.lemmas()) or '(none)'}\n"
+                f"Hypernyms: {format_synset_words(synset.hypernyms())}\n"
+                f"Hyponyms: {format_synset_words(synset.hyponyms())}\n"
+                f"Meronyms: {format_synset_words(synset.meronyms())}\n"
+                f"Holonyms: {format_synset_words(synset.holonyms())}\n\n"
+            )
+
+        result_string = ""
+        word_entries = wordnet_obj.words(word)
+        if word_entries:
+            for word_entry in word_entries:
+                synsets = word_entry.synsets()
+                if synsets:
+                    for synset in synsets:
+                        result_string += format_output(word, synset)
+                else:
+                    logger.warning(f"No synsets found for word: {word}")
+                    return ""
         else:
-            print(f"{name}: (none)")
+            logger.warning(f"No synsets found for word: {word}")
+            return ""
+        return result_string
+
+    try:
+        return await asyncio.to_thread(
+            format_all_definitions,
+            word,
+        )
+    except Exception as error:
+        logger.error(f"Error searching WordNet: {error}")
+        return ""
 
 
-def main() -> None:
+async def main() -> None:
     """Download the configured lexicon and print a detailed word report."""
-    wn.download(LEXICON)
-    wordnet = wn.Wordnet(LEXICON)
-    word_entries = wordnet.words(WORD)
-    synsets = wordnet.synsets(WORD)
-
-    print(f"Word: {WORD}")
-    print(f"Lexicon: {LEXICON}")
-    print(f"Word entries found: {len(word_entries)}")
-    print(f"Synsets found: {len(synsets)}")
-
-    if not word_entries:
-        print("\nNo matching word entries were found.")
-        return
-
-    print("\nWord-entry details:")
-    for entry in word_entries:
-        print(f"- Lemma: {entry.lemma()}")
-        print(f"  Part of speech: {entry.pos}")
-        print(f"  Forms: {', '.join(entry.forms()) or '(none)'}")
-        print(f"  Synset IDs: {', '.join(s.id for s in entry.synsets())}")
-
-    print("\nSynset details:")
-    for synset in synsets:
-        synset_report(synset)
-
+    print("\nDefinition-query output:")
+    print(await definition_query(WORD, wordnet_obj))
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
