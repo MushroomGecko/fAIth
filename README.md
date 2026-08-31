@@ -51,39 +51,81 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 
 ## Credits
 ### Applications
-- Python - https://www.python.org/
-- Docker - https://www.docker.com/
+- Docker
+   - Accelerated Container Application Development. Docker. (2026, August 18). https://www.docker.com/ 
+- Python
+   - Welcome to Python.org. Python.org. (n.d.). https://www.python.org/ 
 ### Bibles
-- World English Bible (WEB) - https://worldenglish.bible/
-- Berean Standard Bible (BSB) - https://berean.bible/
-### Python Libraries
-- Django - https://github.com/django/django
-- Django Ninja (REST Framework) - https://github.com/vitalik/django-ninja
-- Django ASGI Handler with Lifespan protocol support - https://github.com/illagrenan/django-asgi-lifespan
-- OpenAI API Library (Python) - https://github.com/openai/openai-python
-- Uvicorn (ASGI Runner) - https://github.com/Kludex/uvicorn
-- PyMilvus (Mivlus API Library) - https://github.com/milvus-io/pymilvus
-- psycopg (Postgres API Library) - https://github.com/psycopg/psycopg
-- python-dotenv (Environment variable loader) - https://github.com/theskumar/python-dotenv
-- WhiteNoise (Static file serving) - https://github.com/evansd/whitenoise
-- Markdown (Markdown to HTML renderer) - https://github.com/Python-Markdown/markdown
-- HTTPX (Async HTTP client) - https://github.com/encode/httpx
+- Berean Standard Bible (BSB)
+   - About the berean standard bible. Berean Standard Bible. (n.d.). https://berean.bible/ 
+- World English Bible (WEB)
+   - World English bible. World English Bible. (n.d.). https://worldenglish.bible/ 
+### Dictionaries
+- Open English WordNet (Up-to-date Fork of Princeton WordNet)
+   - McCrae, J. P., Rademaker, A., Bond, F., Rudnicka, E., & Fellbaum, C. (2019). English WordNet 2019 — An Open-Source WordNet for English. https://aclanthology.org/2019.gwc-1.31
+   - Open english wordnet. Open English Wordnet. (n.d.). https://en-word.net/ 
+   - https://github.com/globalwordnet/english-wordnet
+- Princeton WordNet (Base Dictionary)
+   - George A. Miller (1995). WordNet: A Lexical Database for English. Communications of the ACM Vol. 38, No. 11: 39-41.
+   - Christiane Fellbaum (1998, ed.) WordNet: An Electronic Lexical Database. Cambridge, MA: MIT Press.
+   - Princeton University "About WordNet." WordNet. Princeton University. 2010.
+   - Princeton University. (n.d.). WordNet. https://wordnet.princeton.edu/ 
 ### Docker Containers
-#### Databases
-- Milvus (Vector Database) - https://github.com/milvus-io/milvus
-- Postgres (User database) - https://github.com/postgres/postgres
 #### AI Model Runners
-- vLLM - https://github.com/vllm-project/vllm
-- llama.cpp - https://github.com/ggml-org/llama.cpp
-- Ollama - https://github.com/ollama/ollama
-- Docker Model Runner - https://github.com/docker/model-runner
-- SGLang - https://github.com/sgl-project/sglang
+- Docker Model Runner
+   - Docker. (2025). model-runner. GitHub. Retrieved August 30, 2026, from https://github.com/docker/model-runner
+- llama.cpp
+   - ggml. (2023). llama.cpp. GitHub. Retrieved August 30, 2026, from https://github.com/ggml-org/llama.cpp
+- Ollama
+   - Ollama. (2023). ollama. GitHub. Retrieved August 30, 2026, from https://github.com/ollama/ollama
+- SGLang
+   - sgl-project. (2024). sglang. GitHub. Retrieved August 30, 2026, from https://github.com/sgl-project/sglang
+- vLLM
+   - vLLM. (2023). vllm. GitHub. Retrieved August 30, 2026, from https://github.com/vllm-project/vllm
+#### Databases
+- Milvus (Vector Database)
+   - Project, T. M. (2019). milvus. GitHub. Retrieved August 30, 2026, from https://github.com/milvus-io/milvus
+- Postgres (User database)
+   - PostgreSQL. (2010). postgres. GitHub. Retrieved August 30, 2026, from https://github.com/postgres/postgres
 #### Other
-- etcd (Milvus metadata storage) - https://github.com/etcd-io/etcd
-- SeaweedFS (S3-compatible database) - https://github.com/seaweedfs/seaweedfs
-- SearXNG (Metasearch engine) - https://github.com/searxng/searxng
-- Valkey (Cache / rate limiter) - https://github.com/valkey-io/valkey
-- AWS CLI (S3 bucket initializer) - https://github.com/aws/aws-cli
+- AWS CLI (S3 bucket initializer)
+   - https://github.com/aws/aws-cli
+- etcd (Milvus metadata storage)
+   - etcd-io. (2013). etcd. GitHub. Retrieved August 30, 2026, from https://github.com/etcd-io/etcd
+- Ripgrep (File search tool)
+   - Gallant, A. (2016). ripgrep. GitHub. Retrieved August 30, 2026, from https://github.com/BurntSushi/ripgrep
+- SearXNG (Metasearch engine)
+   - SearXNG.org. (2021). searxng. GitHub. Retrieved August 30, 2026, from https://github.com/searxng/searxng
+- SeaweedFS (S3-compatible database)
+   - SeaweedFS. (2014). seaweedfs. GitHub. Retrieved August 30, 2026, from https://github.com/seaweedfs/seaweedfs
+- Valkey (Cache / rate limiter)
+   - Valkey. (2024). valkey. GitHub. Retrieved August 30, 2026, from https://github.com/valkey-io/valkey
+### Python Libraries
+- Django
+   - Django. (2012). django. GitHub. Retrieved August 30, 2026, from https://github.com/django/django
+- Django ASGI Lifespan (Django ASGI Handler with Lifespan protocol support)
+   - Dohnal, V. (2022). django-asgi-lifespan. GitHub. Retrieved August 30, 2026, from https://github.com/illagrenan/django-asgi-lifespan
+- Django Ninja (REST Framework)
+   - Kucheryaviy, V. (2020). django-ninja. GitHub. Retrieved August 30, 2026, from https://github.com/vitalik/django-ninja
+- HTTPX (Async HTTP client)
+   - Encode. (2019). httpx. GitHub. Retrieved August 30, 2026, from https://github.com/encode/httpx
+- psycopg (Postgres API Library)
+   - Team, T. P. (2020). psycopg. GitHub. Retrieved August 30, 2026, from https://github.com/psycopg/psycopg
+- PyMilvus (Mivlus API Library)
+   - Project, T. M. (2019). pymilvus. GitHub. Retrieved August 30, 2026, from https://github.com/milvus-io/pymilvus
+- Python Markdown (Markdown to HTML renderer)
+   - Python-Markdown. (2010). markdown. GitHub. Retrieved August 30, 2026, from https://github.com/Python-Markdown/markdown
+- Python OpenAI API Library
+   - OpenAI. (2020). openai-python. GitHub. Retrieved August 30, 2026, from https://github.com/openai/openai-python
+- python-dotenv (Environment Variable Loader)
+   - Kumar, S. (2014). python-dotenv. GitHub. Retrieved August 30, 2026, from https://github.com/theskumar/python-dotenv
+- Python WordNet (Python Interface for Open English WordNet)
+   - Goodman, M. W., & Bond, F. (2021). Intrinsically Interlingual: The Wn Python Library for Wordnets [Conference paper]. 100–107. https://aclanthology.org/2021.gwc-1.12/
+   - Goodman, M. W. & Bond, F. (n.d.). Wn. GitHub. Retrieved August 30, 2026, from https://github.com/goodmami/wn/
+- Uvicorn (ASGI Runner) - https://github.com/Kludex/uvicorn
+   - Trylesinski, M., & Christie, T. Uvicorn [Computer software]. https://github.com/Kludex/uvicorn
+- WhiteNoise (Static file serving)
+   - Evans, D. (2013). whitenoise. GitHub. Retrieved August 30, 2026, from https://github.com/evansd/whitenoise
 
 ## Licensing
 fAIth is released under the GNU General Public License v3.0 (GPLv3). We believe that just as God's Word is a gift freely given to all, the tools used to interact with it should remain free for everyone to use, study, and share.
