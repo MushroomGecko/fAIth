@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 
+from fAIth.settings import WORDNET_ENABLED
 from fAIth.bible_globals import (
     ALL_VERSES,
     BIBLE_DATA_ROOT,
@@ -23,6 +24,7 @@ SEARXNG_ENABLED = derive_boolean_from_string(os.getenv("SEARXNG_ENABLED", "False
 
 CONTROL_VARIABLES = {
     "SEARXNG_ENABLED": SEARXNG_ENABLED,
+    "WORDNET_ENABLED": WORDNET_ENABLED,
 }
 
 

@@ -8,7 +8,7 @@ import httpx
 import markdown
 import wn
 from fAIth.bible_globals import BIBLE_DATA_ROOT
-from fAIth.settings import WORDNET_USABLE, WORDNET_DOWNLOAD_VERSION
+from fAIth.settings import WORDNET_ENABLED, WORDNET_DOWNLOAD_VERSION
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ async def definition_query(word: str, request: HttpRequest) -> str:
     # Get the Wordnet object from the request state.
     wordnet_obj = request.state["wordnet_obj"]
     if not wordnet_obj:
-        logger.warning("Wordnet object not initialized: WORDNET_USABLE is False")
+        logger.warning("Wordnet object not initialized: WORDNET_ENABLED is False")
         return ""
 
     def format_all_definitions(word: str, wordnet_obj: wn.Wordnet) -> str:

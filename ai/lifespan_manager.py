@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 import wn
 from django_asgi_lifespan.types import LifespanManager
-from fAIth.settings import WORDNET_USABLE, WORDNET_DOWNLOAD_VERSION
+from fAIth.settings import WORDNET_ENABLED, WORDNET_DOWNLOAD_VERSION
 
 from ai.llm.completions import Completions
 from ai.vdb.milvus_db import VectorDatabaseQuerier
@@ -93,11 +93,11 @@ async def wordnet_lifespan_manager() -> LifespanManager:
         Exception: Any exception during Wordnet initialization will propagate to the caller.
     """
     logger.info("Initializing Wordnet object lifecycle manager")
-    if WORDNET_USABLE:
+    if WORDNET_ENABLED:
         wordnet_obj = wn.Wordnet(WORDNET_DOWNLOAD_VERSION)
         logger.info(f"Wordnet object initialized")
     else:
-        logger.warning("Wordnet object not initialized: WORDNET_USABLE is False")
+        logger.warning("Wordnet object not initialized: WORDNET_ENABLED is False")
         wordnet_obj = None
     state = {"wordnet_obj": wordnet_obj}
     

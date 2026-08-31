@@ -15,7 +15,7 @@ if "WN_DATA_DIR" in os.environ:
 import wn
 
 wn.config.allow_multithreading = True
-WORDNET_USABLE = True
+WORDNET_ENABLED = True
 WORDNET_DOWNLOAD_VERSION = "oewn:2025+"
 WORD = "God"
 wordnet_obj = wn.Wordnet(WORDNET_DOWNLOAD_VERSION)

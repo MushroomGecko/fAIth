@@ -16,10 +16,19 @@
         </li>
         <li class="nav-item">
             <!-- Define Selected -->
-            <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Definition Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#definitionSearchModal">
-                <i class="bi bi-book"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Definition Search</p>
-            </a>
+            {% if control_variables.WORDNET_ENABLED %}
+                <!-- Definition Search (Enabled)-->
+                <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Definition Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#definitionSearchModal">
+                    <i class="bi bi-book"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Definition Search</p>
+                </a>
+            {% else %}
+                <!-- Definition Search (Disabled) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Definition Search (Disabled)" data-bs-placement="right">
+                    <i class="bi bi-book"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Definition Search</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Search -->

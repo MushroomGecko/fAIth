@@ -46,7 +46,7 @@ ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1
 
 WORDNET_DOWNLOAD_VERSION = os.getenv("WORDNET_DOWNLOAD_VERSION", "").strip()
 WN_DATA_DIR = os.getenv("WN_DATA_DIR", "").strip()
-WORDNET_USABLE = False
+WORDNET_ENABLED = False
 
 # definition_query runs WordNet lookups in a worker thread via asyncio.to_thread.
 # SQLite connections are thread-bound unless this is enabled before connect().
@@ -62,7 +62,7 @@ if WN_DATA_DIR:
 if WORDNET_DOWNLOAD_VERSION:
     try:
         wn.download(WORDNET_DOWNLOAD_VERSION)
-        WORDNET_USABLE = True
+        WORDNET_ENABLED = True
     except Exception as e:
         logger.error(f"Error downloading or finding Wordnet data: {e}")
         raise
