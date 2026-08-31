@@ -47,7 +47,7 @@ class DefinitionSearchInputSerializer(BaseModel):
         if not value:
             logger.error("selected text cannot be empty")
             raise ValueError("selected text cannot be empty")
-        
+
         # Get the first word from the selected text
         return value.split(" ")[0].strip()
 

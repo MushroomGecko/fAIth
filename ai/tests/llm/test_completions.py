@@ -243,9 +243,7 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                await completions.completions(
-                    system_prompt="System", user_prompt="Answer this: Who is Jesus Christ?"
-                )
+                await completions.completions(system_prompt="System", user_prompt="Answer this: Who is Jesus Christ?")
 
                 # Verify correct model was used
                 call_args = mock_client.chat.completions.create.call_args
@@ -268,9 +266,7 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                await completions.completions(
-                    system_prompt="System", user_prompt="Answer this: Who is Jesus Christ?"
-                )
+                await completions.completions(system_prompt="System", user_prompt="Answer this: Who is Jesus Christ?")
 
                 # Verify correct model was used
                 call_args = mock_client.chat.completions.create.call_args
@@ -293,9 +289,7 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: test"
-                )
+                result = await completions.completions(system_prompt="System", user_prompt="Prompt: test")
 
                 # Verify extra_body is passed as empty dict when no arguments are set
                 call_args = mock_client.chat.completions.create.call_args
@@ -325,9 +319,7 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: test"
-                )
+                result = await completions.completions(system_prompt="System", user_prompt="Prompt: test")
 
                 # Verify extra_body is passed as empty dict when no arguments are set
                 call_args = mock_client.chat.completions.create.call_args
@@ -357,9 +349,7 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: test"
-                )
+                result = await completions.completions(system_prompt="System", user_prompt="Prompt: test")
 
                 # Verify extra_body is passed with model arguments
                 call_args = mock_client.chat.completions.create.call_args
@@ -390,9 +380,7 @@ class TestCompletionsMethod(SimpleTestCase):
                 mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
                 completions = Completions()
-                result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: test"
-                )
+                result = await completions.completions(system_prompt="System", user_prompt="Prompt: test")
 
                 # Verify extra_body is passed with model arguments
                 call_args = mock_client.chat.completions.create.call_args

@@ -71,8 +71,12 @@ async def definition_search(request: HttpRequest, payload: DefinitionSearchInput
         vector_database = request.state["milvus_db"]
         # Split in half since we are using two queries
         half_limit = MILVUS_SEARCH_LIMIT // 2
-        verses_results = await vector_database.search(collection_name=collection_name, query=verses_text, limit=half_limit)
-        selected_text_results = await vector_database.search(collection_name=collection_name, query=selected_text, limit=half_limit)
+        verses_results = await vector_database.search(
+            collection_name=collection_name, query=verses_text, limit=half_limit
+        )
+        selected_text_results = await vector_database.search(
+            collection_name=collection_name, query=selected_text, limit=half_limit
+        )
     except Exception as e:
         logger.error(f"Error searching vector database: {e}")
         return HttpResponse(f"Error searching vector database: {e}", status=500, content_type="text/html")

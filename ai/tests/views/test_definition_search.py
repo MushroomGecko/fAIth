@@ -139,7 +139,10 @@ class TestDefinitionSearchView(SimpleTestCase):
             for value in ("love", payload.verses_text, "John", "3", "bsb", "Biblical context", "lexical definition"):
                 assert value in user_prompt
             mock_read_file.assert_awaited()
-            assert {str(call.args[0]).split("/")[-1] for call in mock_read_file.call_args_list} == {"system.md", "user.md"}
+            assert {str(call.args[0]).split("/")[-1] for call in mock_read_file.call_args_list} == {
+                "system.md",
+                "user.md",
+            }
 
     def test_definition_search_strips_definition_result_and_prompts(self):
         """Whitespace is removed before lexical output and prompts are used."""

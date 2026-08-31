@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 
-from fAIth.settings import WORDNET_ENABLED
 from fAIth.bible_globals import (
     ALL_VERSES,
     BIBLE_DATA_ROOT,
@@ -14,6 +13,7 @@ from fAIth.bible_globals import (
     VERSION_SELECTION,
 )
 from fAIth.function_globals import derive_boolean_from_string
+from fAIth.settings import WORDNET_ENABLED
 from frontend.utils import async_redirect, async_render
 
 # Set up logging

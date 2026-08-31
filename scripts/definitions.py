@@ -1,9 +1,10 @@
 """Print a detailed WordNet report for a word."""
 
 import asyncio
+import logging
 import os
 
-import logging
+import wn
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -12,14 +13,14 @@ load_dotenv()
 if "WN_DATA_DIR" in os.environ:
     os.environ["WN_DATA_DIR"] = os.path.expanduser(os.environ["WN_DATA_DIR"])
 
-import wn
 
 wn.config.allow_multithreading = True
 WORDNET_ENABLED = True
 WORDNET_DOWNLOAD_VERSION = "oewn:2025+"
 WORD = "God"
 wordnet_obj = wn.Wordnet(WORDNET_DOWNLOAD_VERSION)
-logger.info(f"Wordnet object initialized")
+logger.info("Wordnet object initialized")
+
 
 async def definition_query(word: str, wordnet_obj: wn.Wordnet) -> str:
     """
@@ -43,8 +44,6 @@ async def definition_query(word: str, wordnet_obj: wn.Wordnet) -> str:
         Returns:
             str: Formatted definitions and related synset words.
         """
-
-
 
         def format_output(word: str, synset: wn.Synset) -> str:
             """
@@ -140,6 +139,7 @@ async def main() -> None:
     """Download the configured lexicon and print a detailed word report."""
     print("\nDefinition-query output:")
     print(await definition_query(WORD, wordnet_obj))
+
 
 if __name__ == "__main__":
     asyncio.run(main())

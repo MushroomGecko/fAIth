@@ -3,12 +3,14 @@ import json
 import logging
 from pathlib import Path
 from typing import Any
-from django.http import HttpRequest
+
 import httpx
 import markdown
 import wn
+from django.http import HttpRequest
+
 from fAIth.bible_globals import BIBLE_DATA_ROOT
-from fAIth.settings import WORDNET_ENABLED, WORDNET_DOWNLOAD_VERSION
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -124,6 +126,7 @@ async def ripgrep_bible(query: str, collection_name: str) -> list[dict[str, Any]
         logger.error(f"Error searching Bible: {e}")
         return []
 
+
 async def definition_query(word: str, request: HttpRequest) -> str:
     """
     Search WordNet for synsets defining a word.
@@ -134,7 +137,7 @@ async def definition_query(word: str, request: HttpRequest) -> str:
     Returns:
         str: Formatted definitions and related synset words.
     """
-    
+
     # Get the Wordnet object from the request state.
     wordnet_obj = request.state["wordnet_obj"]
     if not wordnet_obj:
