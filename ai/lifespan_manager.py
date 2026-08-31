@@ -1,10 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
 
+import wn
 from django_asgi_lifespan.types import LifespanManager
 
 from ai.llm.completions import Completions
 from ai.vdb.milvus_db import VectorDatabaseQuerier
+from fAIth.settings import WORDNET_DOWNLOAD_VERSION, WORDNET_ENABLED
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -72,3 +74,37 @@ async def completions_lifespan_manager() -> LifespanManager:
         except Exception as e:
             logger.error(f"Error closing Completions object: {e}")
             pass
+
+
+@asynccontextmanager
+async def wordnet_lifespan_manager() -> LifespanManager:
+    """
+    Manage the lifecycle of the Wordnet object.
+
+    Initializes the Wordnet object on startup and ensures proper cleanup on shutdown.
+    This is used with Django's lifespan event system to manage app-wide resources.
+
+    We use a lifespan global variable to store the Wordnet instance in order to avoid re-initializing it on each request
+    and to ensure each instance uses the same lexicon.
+
+    Yields:
+        dict: State dictionary with key "wordnet_obj" containing the Wordnet instance.
+
+    Raises:
+        Exception: Any exception during Wordnet initialization will propagate to the caller.
+    """
+    logger.info("Initializing Wordnet object lifecycle manager")
+    if WORDNET_ENABLED:
+        wordnet_obj = wn.Wordnet(WORDNET_DOWNLOAD_VERSION)
+        logger.info("Wordnet object initialized")
+    else:
+        logger.warning("Wordnet object not initialized: WORDNET_ENABLED is False")
+        wordnet_obj = None
+    state = {"wordnet_obj": wordnet_obj}
+
+    try:
+        yield state
+    finally:
+        # wn.Wordnet does not expose any kind of closing method. Its resources are managed
+        # internally and are released when the object is garbage-collected.
+        logger.info("Wordnet object lifecycle complete")

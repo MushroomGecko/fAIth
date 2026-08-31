@@ -79,7 +79,7 @@ async def image_search(request, payload: ImageSearchInputSerializer = Form(...))
     # Use LLM to generate a search query
     try:
         completions_obj = request.state["completions_obj"]
-        search_query = await completions_obj.completions(system_prompt, user_prompt, selected_text)
+        search_query = await completions_obj.completions(system_prompt, user_prompt)
         logger.info(f"LLM search query:\n{search_query}")
     except Exception as e:
         logger.error(f"Error generating search query: {e}")

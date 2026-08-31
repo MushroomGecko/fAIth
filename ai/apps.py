@@ -6,6 +6,7 @@ from django_asgi_lifespan.register import register_lifespan_manager
 from ai.lifespan_manager import (
     completions_lifespan_manager,
     milvus_db_lifespan_manager,
+    wordnet_lifespan_manager,
 )
 
 logger = logging.getLogger(__name__)
@@ -20,3 +21,4 @@ class AiConfig(AppConfig):
         logger.info("Registering lifecycle manager functions")
         register_lifespan_manager(context_manager=milvus_db_lifespan_manager)
         register_lifespan_manager(context_manager=completions_lifespan_manager)
+        register_lifespan_manager(context_manager=wordnet_lifespan_manager)

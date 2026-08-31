@@ -116,10 +116,9 @@ class TestGeneralQuestionView(SimpleTestCase):
             # Verify LLM completions was called with proper prompts
             request.state["completions_obj"].completions.assert_called_once()
             call_args = request.state["completions_obj"].completions.call_args
-            # First arg is system_prompt, second is user_prompt, third is query
+            # First arg is system_prompt, second is the rendered user_prompt
             assert call_args[0][0] == "You are a knowledgeable Bible study assistant."  # system prompt
             assert "Who is Jesus Christ?" in call_args[0][1]  # user prompt with query
-            assert call_args[0][2] == "Who is Jesus Christ?"  # query param
 
     def test_general_question_handles_empty_vector_results(self):
         """Test that general_question handles empty vector database results."""
