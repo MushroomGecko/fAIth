@@ -29,7 +29,8 @@ query = "Name the 12 apostles of Jesus Christ."
 
 async def test_unified_runner_async():
     llm = Completions()
-    logger.info(await llm.completions(system_prompt, user_prompt, query))
+    user_prompt = user_prompt.format(query=query)
+    logger.info(await llm.completions(system_prompt, user_prompt))
 
 
 if __name__ == "__main__":

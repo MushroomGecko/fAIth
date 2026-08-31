@@ -103,7 +103,7 @@ class TestMapSearchView(SimpleTestCase):
             # Verify LLM completions was called once with proper prompts
             request.state["completions_obj"].completions.assert_called_once()
             call_args = request.state["completions_obj"].completions.call_args
-            # First arg is system_prompt, second is user_prompt, third is selected_text
+            # First arg is system_prompt, second is the rendered user_prompt
             assert call_args[0][0] == "You are a helpful map search assistant."
             # All payload fields should be interpolated into the user prompt
             assert "For God so loved the world" in call_args[0][1]
@@ -114,7 +114,6 @@ class TestMapSearchView(SimpleTestCase):
             assert "John" in call_args[0][1]
             assert "3" in call_args[0][1]
             assert "bsb" in call_args[0][1]
-            assert call_args[0][2] == "For God so loved the world"
 
     def test_map_search_loads_correct_prompt_files(self):
         """Test that map_search loads prompts from correct file paths."""

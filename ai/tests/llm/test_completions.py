@@ -144,7 +144,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 result = await completions.completions(
-                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="You are helpful", user_prompt="Answer this: Who is Jesus Christ?"
                 )
 
                 assert result == "The Son of God!"
@@ -167,7 +167,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 result = await completions.completions(
-                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="You are helpful", user_prompt="Answer this: Who is Jesus Christ?"
                 )
 
                 assert result == "The Son of God!"
@@ -186,7 +186,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 await completions.completions(
-                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="You are helpful", user_prompt="Answer this: Who is Jesus Christ?"
                 )
 
                 # Verify the messages were formatted correctly
@@ -217,7 +217,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 await completions.completions(
-                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="You are helpful", user_prompt="Answer this: Who is Jesus Christ?"
                 )
 
                 # Verify the messages were formatted correctly
@@ -244,7 +244,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 await completions.completions(
-                    system_prompt="System", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="System", user_prompt="Answer this: Who is Jesus Christ?"
                 )
 
                 # Verify correct model was used
@@ -269,7 +269,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 await completions.completions(
-                    system_prompt="System", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="System", user_prompt="Answer this: Who is Jesus Christ?"
                 )
 
                 # Verify correct model was used
@@ -294,7 +294,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                    system_prompt="System", user_prompt="Prompt: test"
                 )
 
                 # Verify extra_body is passed as empty dict when no arguments are set
@@ -326,7 +326,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                    system_prompt="System", user_prompt="Prompt: test"
                 )
 
                 # Verify extra_body is passed as empty dict when no arguments are set
@@ -358,7 +358,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                    system_prompt="System", user_prompt="Prompt: test"
                 )
 
                 # Verify extra_body is passed with model arguments
@@ -391,7 +391,7 @@ class TestCompletionsMethod(SimpleTestCase):
 
                 completions = Completions()
                 result = await completions.completions(
-                    system_prompt="System", user_prompt="Prompt: {query}", query="test"
+                    system_prompt="System", user_prompt="Prompt: test"
                 )
 
                 # Verify extra_body is passed with model arguments
@@ -526,7 +526,7 @@ class TestCompletionsIntegration(SimpleTestCase):
 
                 # Use completions
                 result = await completions.completions(
-                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="You are helpful", user_prompt="Answer this: Who is Jesus Christ?"
                 )
                 assert result == "The Son of God!"
 
@@ -556,7 +556,7 @@ class TestCompletionsIntegration(SimpleTestCase):
 
                 # Use completions
                 result = await completions.completions(
-                    system_prompt="You are helpful", user_prompt="Answer this: {query}", query="Who is Jesus Christ?"
+                    system_prompt="You are helpful", user_prompt="Answer this: Who is Jesus Christ?"
                 )
                 assert result == "The Son of God!"
 
@@ -581,9 +581,9 @@ class TestCompletionsIntegration(SimpleTestCase):
 
                 completions = Completions()
 
-                result1 = await completions.completions("sys", "user {query}", "q1")
-                result2 = await completions.completions("sys", "user {query}", "q2")
-                result3 = await completions.completions("sys", "user {query}", "q3")
+                result1 = await completions.completions("sys", "user q1")
+                result2 = await completions.completions("sys", "user q2")
+                result3 = await completions.completions("sys", "user q3")
 
                 assert result1 == "Answer 1"
                 assert result2 == "Answer 2"
@@ -611,9 +611,9 @@ class TestCompletionsIntegration(SimpleTestCase):
 
                 completions = Completions()
 
-                result1 = await completions.completions("sys", "user {query}", "q1")
-                result2 = await completions.completions("sys", "user {query}", "q2")
-                result3 = await completions.completions("sys", "user {query}", "q3")
+                result1 = await completions.completions("sys", "user q1")
+                result2 = await completions.completions("sys", "user q2")
+                result3 = await completions.completions("sys", "user q3")
 
                 assert result1 == "Answer 1"
                 assert result2 == "Answer 2"

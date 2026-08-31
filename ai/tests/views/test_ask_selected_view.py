@@ -127,7 +127,7 @@ class TestAskSelectedView(SimpleTestCase):
             # Verify LLM completions was called with proper prompts
             request.state["completions_obj"].completions.assert_called_once()
             call_args = request.state["completions_obj"].completions.call_args
-            # First arg is system_prompt, second is user_prompt, third is query
+            # First arg is system_prompt, second is the rendered user_prompt
             assert call_args[0][0] == "You are a knowledgeable Bible study assistant."  # system prompt
             assert "For God so loved the world" in call_args[0][1]  # user prompt with selected_text
             assert "What does this mean?" in call_args[0][1]  # user prompt with query
@@ -136,7 +136,6 @@ class TestAskSelectedView(SimpleTestCase):
             assert "John" in call_args[0][1]  # book
             assert "3" in call_args[0][1]  # chapter
             assert "bsb" in call_args[0][1]  # collection_name
-            assert call_args[0][2] == "What does this mean?"  # query param
 
     def test_ask_selected_handles_empty_vector_results(self):
         """Test that ask_selected handles empty vector database results."""

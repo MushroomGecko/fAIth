@@ -117,7 +117,7 @@ async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...))
     # Call LLM with prompts to generate response
     try:
         completions_obj = request.state["completions_obj"]
-        result = await completions_obj.completions(system_prompt, user_prompt, query)
+        result = await completions_obj.completions(system_prompt, user_prompt)
         logger.info(f"LLM result:\n{result}")
     except Exception as e:
         logger.error(f"Error generating LLM response: {e}")
