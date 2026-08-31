@@ -52,24 +52,24 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 ## Credits
 ### Applications
 - Docker
-   - https://www.docker.com/
+   - Accelerated Container Application Development. Docker. (2026, August 18). https://www.docker.com/ 
 - Python
-   - https://www.python.org/
+   - Welcome to Python.org. Python.org. (n.d.). https://www.python.org/ 
 ### Bibles
 - Berean Standard Bible (BSB)
-   - https://berean.bible/
+   - About the berean standard bible. Berean Standard Bible. (n.d.). https://berean.bible/ 
 - World English Bible (WEB)
-   - https://worldenglish.bible/
+   - World English bible. World English Bible. (n.d.). https://worldenglish.bible/ 
 ### Dictionaries
 - Open English WordNet (Up-to-date Fork of Princeton WordNet)
    - McCrae, J. P., Rademaker, A., Bond, F., Rudnicka, E., & Fellbaum, C. (2019). English WordNet 2019 — An Open-Source WordNet for English. https://aclanthology.org/2019.gwc-1.31
-   - https://en-word.net/
+   - Open english wordnet. Open English Wordnet. (n.d.). https://en-word.net/ 
    - https://github.com/globalwordnet/english-wordnet
 - Princeton WordNet (Base Dictionary)
    - George A. Miller (1995). WordNet: A Lexical Database for English. Communications of the ACM Vol. 38, No. 11: 39-41.
    - Christiane Fellbaum (1998, ed.) WordNet: An Electronic Lexical Database. Cambridge, MA: MIT Press.
    - Princeton University "About WordNet." WordNet. Princeton University. 2010.
-   - https://wordnet.princeton.edu/
+   - Princeton University. (n.d.). WordNet. https://wordnet.princeton.edu/ 
 ### Docker Containers
 #### AI Model Runners
 - Docker Model Runner
