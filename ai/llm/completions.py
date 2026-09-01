@@ -59,7 +59,7 @@ class Completions:
         # Initialize async OpenAI-compatible client
         self.client = AsyncOpenAI(base_url=base_url, api_key=api_key)
 
-    async def completions(self, system_prompt: str, user_prompt: str) -> str:
+    async def completions(self, system_prompt: str, user_prompt: str, schema: dict = None) -> str:
         """
         Generate an LLM completion asynchronously from rendered prompts.
 
@@ -79,10 +79,32 @@ class Completions:
         # Build message list: system instruction followed by user prompt
         messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
 
+        response_format = None
+        if schema is not None:
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "strict": True,
+                    "schema": schema
+                }
+            }
+            logger.info(f"Using response format: {response_format}")
+
         # Request completion from LLM with model-specific parameters
-        response = await self.client.chat.completions.create(
-            model=self.model_name, messages=messages, extra_body=self.model_arguments
-        )
+        if response_format is not None:
+            response = await self.client.chat.completions.create(
+                model=self.model_name, 
+                messages=messages, 
+                extra_body=self.model_arguments,
+                response_format=response_format
+            )
+        else:
+            response = await self.client.chat.completions.create(
+                model=self.model_name, 
+                messages=messages, 
+                extra_body=self.model_arguments
+            )
 
         # Extract and return the generated text
         return response.choices[0].message.content
