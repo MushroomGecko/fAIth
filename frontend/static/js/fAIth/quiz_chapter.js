@@ -15,7 +15,11 @@ document.addEventListener("click", function (event) {
 
     quizItems.forEach(function (quizItem) {
         const selectedOption = quizItem.querySelector("input[type='radio']:checked");
+        const explanation = quizItem.querySelector(".quiz-explanation");
         quizItem.classList.remove("text-success", "text-danger");
+        if (explanation) {
+            explanation.hidden = true;
+        }
 
         if (!selectedOption) {
             unansweredQuestions += 1;
@@ -25,6 +29,9 @@ document.addEventListener("click", function (event) {
             quizItem.classList.add("text-success");
         } else {
             quizItem.classList.add("text-danger");
+            if (explanation) {
+                explanation.hidden = false;
+            }
         }
     });
 

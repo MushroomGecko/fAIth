@@ -19,6 +19,11 @@ def _quiz_response():
         "quiz": [
             {
                 "question": f"Question {index}",
+                "explanation": f"Explanation {index}",
+                "book": "Genesis",
+                "chapter": "1",
+                "verse_number": 1,
+                "verse_text": "In the beginning God created the heavens and the earth.",
                 "options": {"a": "One", "b": "Two", "c": "Three", "d": "Four"},
                 "answer": "a",
             }
@@ -84,6 +89,10 @@ class TestQuizChapterView(SimpleTestCase):
         assert "In the beginning" in args[1]
         assert args[2]["properties"]["quiz"]["minItems"] == 10
         assert args[2]["properties"]["quiz"]["maxItems"] == 10
+        required = args[2]["properties"]["quiz"]["items"]["required"]
+        assert "explanation" in required
+        assert "verse_number" in required
+        assert args[2]["properties"]["quiz"]["items"]["properties"]["verse_number"] == {"type": "integer"}
 
     def test_quiz_chapter_converts_chapter_to_int_for_verse_lookup(self):
         request = self._build_request(json.dumps(_quiz_response()))
@@ -93,6 +102,39 @@ class TestQuizChapterView(SimpleTestCase):
             self._call_view(request, payload)
 
         request.state["completions_obj"].completions.assert_called_once()
+
+    def test_quiz_chapter_attaches_book_chapter_and_verse_text(self):
+        quiz = _quiz_response()
+        for item in quiz["quiz"]:
+            item.pop("book")
+            item.pop("chapter")
+            item.pop("verse_text")
+        request = self._build_request(json.dumps(quiz))
+        payload = self._build_payload()
+        render = MagicMock(return_value="<html>Quiz</html>")
+
+        with self._patch_dependencies(render_to_string=render):
+            response = self._call_view(request, payload)
+
+        assert response.status_code == 200
+        rendered_quiz = render.call_args.args[1]["quiz_content"]
+        assert all(item["book"] == "Genesis" for item in rendered_quiz["quiz"])
+        assert all(item["chapter"] == "1" for item in rendered_quiz["quiz"])
+        assert all(
+            item["verse_text"] == "In the beginning God created the heavens and the earth."
+            for item in rendered_quiz["quiz"]
+        )
+
+    def test_quiz_chapter_returns_error_when_verse_text_cannot_be_attached(self):
+        quiz = _quiz_response()
+        quiz["quiz"][0]["verse_number"] = 2
+        request = self._build_request(json.dumps(quiz))
+        payload = self._build_payload()
+
+        with self._patch_dependencies():
+            response = self._call_view(request, payload)
+
+        self._assert_error(response, "Error attaching book name, chapter, or verse text")
 
     def _assert_error(self, response, message):
         assert response.status_code == 500
@@ -139,7 +181,10 @@ class TestQuizChapterView(SimpleTestCase):
         self._assert_error(response, "Error generating LLM response")
 
     def test_quiz_chapter_returns_error_for_invalid_json(self):
-        for result, message in [("not json", "Error unmarshalling LLM output"), ("[]", "Error validating quiz content")]:
+        for result, message in [
+            ("not json", "Error unmarshalling LLM output"),
+            ("[]", "Error attaching book name, chapter, or verse text"),
+        ]:
             with self.subTest(result=result):
                 request = self._build_request(result)
                 payload = self._build_payload()

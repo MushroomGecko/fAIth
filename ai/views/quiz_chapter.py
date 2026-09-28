@@ -1,7 +1,8 @@
+import json
 import logging
 import os
 from pathlib import Path
-import json
+
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from ninja import Form, Router
@@ -9,7 +10,7 @@ from ninja import Form, Router
 from ai.serializers.quiz_chapter import QuizChapterInputSerializer
 from ai.serializers.server_quiz_response import ServerQuizResponseSerializer
 from ai.serializers.server_text_response import ServerTextResponseSerializer
-from ai.utils import async_read_file, clean_llm_output
+from ai.utils import async_read_file
 from fAIth.api_tags import APITags
 from fAIth.bible_globals import ALL_VERSES
 
@@ -86,6 +87,8 @@ async def quiz_chapter(request, payload: QuizChapterInputSerializer = Form(...))
                     "type": "object",
                     "properties": {
                         "question": {"type": "string"},
+                        "explanation": {"type": "string"},
+                        "verse_number": {"type": "integer"},
                         "options": {
                             "type": "object",
                             "properties": {
@@ -102,7 +105,7 @@ async def quiz_chapter(request, payload: QuizChapterInputSerializer = Form(...))
                             "enum": ["a", "b", "c", "d"],
                         },
                     },
-                    "required": ["question", "options", "answer"],
+                    "required": ["question", "explanation", "verse_number", "options", "answer"],
                     "additionalProperties": False,
                 }
             },
@@ -148,6 +151,16 @@ async def quiz_chapter(request, payload: QuizChapterInputSerializer = Form(...))
     except Exception as e:
         logger.error(f"Error unmarshalling LLM output: {e}")
         return HttpResponse(f"Error unmarshalling LLM output: {e}", status=500, content_type="text/html")
+
+    # Attach the book name, chapter, and verse text to each quiz item
+    try:
+        for item in quiz["quiz"]:
+            item["book"] = book
+            item["chapter"] = str(chapter)
+            item["verse_text"] = list_of_verses[str(item["verse_number"])].strip()
+    except Exception as e:
+        logger.error(f"Error attaching book name, chapter, or verse text to quiz: {e}")
+        return HttpResponse(f"Error attaching book name, chapter, or verse text to quiz: {e}", status=500, content_type="text/html")
 
     # Validate the quiz content
     try:

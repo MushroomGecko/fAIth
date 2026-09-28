@@ -17,7 +17,7 @@ class ServerQuizResponseSerializer(BaseModel):
     """
 
     quiz_content: dict
-    
+
     @field_validator("quiz_content")
     @classmethod
     def validate_quiz_content(cls, value: dict) -> dict:
@@ -65,6 +65,66 @@ class ServerQuizResponseSerializer(BaseModel):
             if item["question"].strip() == "":
                 logger.error("Questions cannot be empty")
                 raise ValueError("Questions cannot be empty")
+
+            if "explanation" not in item:
+                logger.error("Each quiz item must contain an 'explanation' key")
+                raise ValueError("Each quiz item must contain an 'explanation' key")
+
+            if not isinstance(item["explanation"], str):
+                logger.error("Each explanation must be a string")
+                raise ValueError("Each explanation must be a string")
+
+            if item["explanation"].strip() == "":
+                logger.error("Explanations cannot be empty")
+                raise ValueError("Explanations cannot be empty")
+
+            if "book" not in item:
+                logger.error("Each quiz item must contain a 'book' key")
+                raise ValueError("Each quiz item must contain a 'book' key")
+
+            if not isinstance(item["book"], str):
+                logger.error("Each book must be a string")
+                raise ValueError("Each book must be a string")
+
+            if item["book"].strip() == "":
+                logger.error("Books cannot be empty")
+                raise ValueError("Books cannot be empty")
+
+            if "chapter" not in item:
+                logger.error("Each quiz item must contain a 'chapter' key")
+                raise ValueError("Each quiz item must contain a 'chapter' key")
+
+            if not isinstance(item["chapter"], str):
+                logger.error("Each chapter must be a string")
+                raise ValueError("Each chapter must be a string")
+
+            if item["chapter"].strip() == "":
+                logger.error("Chapters cannot be empty")
+                raise ValueError("Chapters cannot be empty")
+
+            if "verse_number" not in item:
+                logger.error("Each quiz item must contain a 'verse_number' key")
+                raise ValueError("Each quiz item must contain a 'verse_number' key")
+
+            if not isinstance(item["verse_number"], int):
+                logger.error("Each verse number must be an integer")
+                raise ValueError("Each verse number must be an integer")
+
+            if item["verse_number"] <= 0:
+                logger.error("Each verse number must be greater than 0")
+                raise ValueError("Each verse number must be greater than 0")
+
+            if "verse_text" not in item:
+                logger.error("Each quiz item must contain a 'verse_text' key")
+                raise ValueError("Each quiz item must contain a 'verse_text' key")
+
+            if not isinstance(item["verse_text"], str):
+                logger.error("Each verse text must be a string")
+                raise ValueError("Each verse text must be a string")
+
+            if item["verse_text"].strip() == "":
+                logger.error("Verse text cannot be empty")
+                raise ValueError("Verse text cannot be empty")
 
             if "options" not in item:
                 logger.error("Each quiz item must contain an 'options' key")

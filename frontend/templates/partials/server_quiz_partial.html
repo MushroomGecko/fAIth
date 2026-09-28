@@ -17,6 +17,14 @@
                     </span>
                 </label>
             {% endfor %}
+            <div class="quiz-explanation mt-3" hidden>
+                <p class="text-muted">
+                    {{ item.explanation }}
+                </p>
+                <p class="text-muted">
+                    {{ item.verse_text }} ({{ item.book }} {{ item.chapter }}:{{ item.verse_number }})
+                </p>
+            </div>
         </div>
     {% endfor %}
     <div class="text-center">
