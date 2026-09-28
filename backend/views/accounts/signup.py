@@ -1,7 +1,9 @@
+import logging
+
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect, render
 from ninja import Router
-import logging
+
 from fAIth.api_tags import APITags
 
 # Set up logging
