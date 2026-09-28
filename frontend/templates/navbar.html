@@ -10,13 +10,13 @@
             {% block content %}
                 {% if user.is_authenticated %}
                     Welcome, {{ user.username }}!
-                    <form action="{% url 'logout' %}" method="post">
+                    <form action="{% url 'api:logout' %}" method="post">
                         {% csrf_token %}
                         <button type="submit">Log Out</button>
                     </form>
                 {% else %}
                     <p>You are not logged in</p>
-                    <a href="{% url 'login' %}">Log In</a>
+                    <a href="{% url 'api:login' %}">Log In</a>
                     <a href="{% url 'api:signup' %}">Sign Up</a>
                 {% endif %}
             {% endblock %}

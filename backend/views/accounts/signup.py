@@ -28,7 +28,7 @@ async def signup(request):
     is_valid = await sync_to_async(form.is_valid, thread_sensitive=True)()
     if is_valid:
         await sync_to_async(form.save, thread_sensitive=True)()
-        return redirect("login")
+        return redirect("api:login")
 
     return await sync_to_async(render, thread_sensitive=True)(
         request, "registration/signup.html", {"form": form}, status=400
