@@ -71,9 +71,7 @@ class TestQuizChapterView(SimpleTestCase):
         assert response["content-type"].startswith("text/html")
         assert response.content == b"<html>Quiz</html>"
         request.state["completions_obj"].completions.assert_called_once()
-        render.assert_called_once_with(
-            "partials/server_quiz_partial.html", {"quiz_content": _quiz_response()}
-        )
+        render.assert_called_once_with("partials/server_quiz_partial.html", {"quiz_content": _quiz_response()})
 
     def test_quiz_chapter_passes_formatted_prompts_and_schema_to_llm(self):
         request = self._build_request(json.dumps(_quiz_response()))
@@ -217,9 +215,7 @@ class TestQuizChapterView(SimpleTestCase):
         payload = self._build_payload()
         output_serializer = MagicMock(side_effect=ValueError("invalid HTML"))
 
-        with self._patch_dependencies(), patch(
-            "ai.views.quiz_chapter.ServerTextResponseSerializer", output_serializer
-        ):
+        with self._patch_dependencies(), patch("ai.views.quiz_chapter.ServerTextResponseSerializer", output_serializer):
             response = self._call_view(request, payload)
 
         self._assert_error(response, "Error validating output")

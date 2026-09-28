@@ -107,7 +107,7 @@ async def quiz_chapter(request, payload: QuizChapterInputSerializer = Form(...))
                     },
                     "required": ["question", "explanation", "verse_number", "options", "answer"],
                     "additionalProperties": False,
-                }
+                },
             },
         },
         "required": ["quiz"],
@@ -160,7 +160,9 @@ async def quiz_chapter(request, payload: QuizChapterInputSerializer = Form(...))
             item["verse_text"] = list_of_verses[str(item["verse_number"])].strip()
     except Exception as e:
         logger.error(f"Error attaching book name, chapter, or verse text to quiz: {e}")
-        return HttpResponse(f"Error attaching book name, chapter, or verse text to quiz: {e}", status=500, content_type="text/html")
+        return HttpResponse(
+            f"Error attaching book name, chapter, or verse text to quiz: {e}", status=500, content_type="text/html"
+        )
 
     # Validate the quiz content
     try:

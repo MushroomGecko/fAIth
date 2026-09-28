@@ -83,27 +83,21 @@ class Completions:
         if schema is not None:
             response_format = {
                 "type": "json_schema",
-                "json_schema": {
-                    "name": "response",
-                    "strict": True,
-                    "schema": schema
-                }
+                "json_schema": {"name": "response", "strict": True, "schema": schema},
             }
             logger.info(f"Using response format: {response_format}")
 
         # Request completion from LLM with model-specific parameters
         if response_format is not None:
             response = await self.client.chat.completions.create(
-                model=self.model_name, 
-                messages=messages, 
+                model=self.model_name,
+                messages=messages,
                 extra_body=self.model_arguments,
-                response_format=response_format
+                response_format=response_format,
             )
         else:
             response = await self.client.chat.completions.create(
-                model=self.model_name, 
-                messages=messages, 
-                extra_body=self.model_arguments
+                model=self.model_name, messages=messages, extra_body=self.model_arguments
             )
 
         # Extract and return the generated text
