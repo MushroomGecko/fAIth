@@ -40,6 +40,10 @@ DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 
 ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1", "localhost"]').strip())
 
+# Send users to the main site after a successful login or logout.
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
 
 # Wordnet configuration
 # Github: https://github.com/goodmami/wn

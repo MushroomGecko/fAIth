@@ -17,11 +17,12 @@ api = NinjaAPI(urls_namespace="api")
 
 # Register aggregated app routers with the API
 api.add_router("", healcheck_api)
-api.add_router("", backend_api)
+api.add_router("accounts/", backend_api)
 api.add_router("v1/", ai_api)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("accounts/", include("django.contrib.auth.urls")),
     path("", include("frontend.urls")),
     path("", api.urls),
 ]
