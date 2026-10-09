@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Set Up Verification | fAIth{% endblock %}
+{% block description %}Set up two-factor verification for fAIth{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+    <header class="navbar navbar-light bg-light">
+        <div class="container-fluid justify-content-center">
+            <a class="navbar-brand m-0" href="/">fAIth - AI Powered Study Bible</a>
+        </div>
+    </header>
+
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h1 class="h3 text-center mb-4">Set Up Verification</h1>
+
+                        {% if codes %}
+                            <p>Save these recovery codes somewhere safe. Each one works once if you lose your authenticator device. They will not be shown again.</p>
+                            <ul class="list-unstyled font-monospace">
+                                {% for code in codes %}
+                                    <li>{{ code }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        <p>Scan this QR code with an authenticator app, then enter the 6-digit code it shows.</p>
+                        <div class="text-center mb-2">{{ svg|safe }}</div>
+                        <p class="text-center small mb-1">Or paste the code into your authenticator app if you can't scan QR codes:</p>
+                        <p class="text-center font-monospace user-select-all mb-4">{{ secret }}</p>
+
+                        {% if error %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'api:signup' %}">
+                            <input type="hidden" name="step" value="authenticate">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label" for="otp_token">Verification code</label>
+                                <input class="form-control" type="text" name="otp_token" id="otp_token"
+                                       autocomplete="one-time-code" required>
+                            </div>
+                            <button class="btn btn-primary w-100" type="submit">Confirm</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

@@ -1,50 +1,49 @@
 from asgiref.sync import sync_to_async
-from django import forms
 from django.contrib.auth import aauthenticate, alogin
 from django.shortcuts import redirect, render
+from django_otp.forms import OTPAuthenticationForm
 from ninja import Router
 
+from backend.utils.authentication import authenticator_device_id
 from fAIth.api_tags import APITags
 
 router = Router()
 
+LOGIN_TEMPLATE = "registration/login.html"
 
-class LoginForm(forms.Form):
-    username = forms.CharField()
-    password = forms.CharField(widget=forms.PasswordInput)
+
+async def _render_login(request, form, status=200):
+    """Render the login form."""
+    return await sync_to_async(render, thread_sensitive=True)(request, LOGIN_TEMPLATE, {"form": form}, status=status)
 
 
 @router.get("/login", tags=[APITags.BACKEND], url_name="login")
 async def login_page(request):
     """Render the login form."""
-    form = await sync_to_async(LoginForm, thread_sensitive=True)()
-    return await sync_to_async(render, thread_sensitive=True)(request, "registration/login.html", {"form": form})
+    form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request)
+    return await _render_login(request, form)
 
 
 @router.post("/login", tags=[APITags.BACKEND])
 async def login(request):
-    """Authenticate a user and redirect to the main site on success."""
-    form = await sync_to_async(LoginForm, thread_sensitive=True)(request.POST)
+    """Log in with username, password, and an authenticator app code in one request."""
+    # The device depends on the user, so check the password first to find out who is logging in.
+    user = await aauthenticate(
+        request,
+        username=request.POST.get("username", ""),
+        password=request.POST.get("password", ""),
+    )
+
+    # The server always sets the device to the user's authenticator app. The browser can't choose
+    # a recovery-code device, and recovery codes are never checked at login.
+    data = request.POST.copy()
+    data["otp_device"] = (await authenticator_device_id(user) or "") if user else ""
+
+    form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, data)
     is_valid = await sync_to_async(form.is_valid, thread_sensitive=True)()
-
-    user = None
     if is_valid:
-        user = await aauthenticate(
-            request,
-            username=form.cleaned_data["username"],
-            password=form.cleaned_data["password"],
-        )
-
-    if user is not None:
-        await alogin(request, user)
+        # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
+        await alogin(request, form.get_user())
         return redirect("/")
 
-    if is_valid:
-        form.add_error(
-            None,
-            "Please enter a correct username and password. Note that both fields may be case-sensitive.",
-        )
-
-    return await sync_to_async(render, thread_sensitive=True)(
-        request, "registration/login.html", {"form": form}, status=400
-    )
+    return await _render_login(request, form, status=400)

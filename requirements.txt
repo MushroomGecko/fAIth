@@ -9,6 +9,10 @@ psycopg[binary]==3.3.4
 django-asgi-lifespan==0.5.2
 uvicorn==0.49.0
 
+# Authentication and Security
+django-otp==1.7.4
+segno==1.6.6
+
 # LLM
 openai==2.44.0
 markdown==3.10.2

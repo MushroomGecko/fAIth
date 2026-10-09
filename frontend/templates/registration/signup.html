@@ -18,7 +18,7 @@
                     <div class="card-body">
                         <h1 class="h3 text-center mb-4">Sign Up</h1>
 
-                        <form method="post">
+                        <form method="post" action="{% url 'api:signup' %}">
                             {% csrf_token %}
                             {{ form.non_field_errors }}
 
