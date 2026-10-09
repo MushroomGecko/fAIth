@@ -6,6 +6,8 @@ from django.shortcuts import redirect, render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.utils.authentication import hash_recovery_code
+
 # How many single-use recovery codes to create for each new account.
 RECOVERY_CODE_COUNT = 10
 
@@ -19,6 +21,20 @@ INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and
 
 # The authenticator setup page template. render_authenticate() is the only place that renders it.
 AUTHENTICATE_TEMPLATE = "registration/authenticate.html"
+
+
+def hash_recovery_codes(codes, device):
+    """
+    Hash a batch of recovery codes for one device. This is CPU-bound, so call it through sync_to_async.
+
+    Parameters:
+        codes (list[str]): The plain-text recovery codes.
+        device (StaticDevice): The recovery-code device the codes belong to.
+
+    Returns:
+        list[str]: The truncated hashes, in the same order as the codes.
+    """
+    return [hash_recovery_code(code, device) for code in codes]
 
 
 async def create_user_and_devices(form):
@@ -38,8 +54,12 @@ async def create_user_and_devices(form):
     static = await StaticDevice.objects.acreate(user=user, name="Recovery code", confirmed=False)
     # Generate the recovery codes once. They're returned here so they can be shown to the user one time.
     codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
+    # Hashing 10 codes at 100,000 iterations each is slow, so run it in a worker thread instead of blocking the event loop.
+    hashed_codes = await sync_to_async(hash_recovery_codes, thread_sensitive=False)(codes, static)
     # Save all the codes in one query instead of one query per code.
-    await StaticToken.objects.abulk_create([StaticToken(device=static, token=code) for code in codes])
+    await StaticToken.objects.abulk_create(
+        [StaticToken(device=static, token=hashed_code) for hashed_code in hashed_codes]
+    )
     return totp, codes
 
 
