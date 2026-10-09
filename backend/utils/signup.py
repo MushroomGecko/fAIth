@@ -207,7 +207,10 @@ async def render_authenticate(request, device, codes, status=200, error=None):
     # The QR code and secret come from the device, so they're rebuilt on every render.
     details = enrollment_details(device)
     context = {**details, "codes": codes, "error": error}
-    return await sync_to_async(render, thread_sensitive=True)(request, AUTHENTICATE_TEMPLATE, context, status=status)
+    response = await sync_to_async(render, thread_sensitive=True)(request, AUTHENTICATE_TEMPLATE, context, status=status)
+    # This page shows the TOTP secret and recovery codes. Forbid browsers and proxies from storing a copy.
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 async def confirm_enrollment(request):
