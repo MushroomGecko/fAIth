@@ -40,6 +40,17 @@ DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 
 ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1", "localhost"]').strip())
 
+# HTTPS settings. Turn these on only once the site is served over HTTPS, because they break plain-HTTP access.
+# DJANGO_HTTPS = True assumes a TLS-terminating proxy in front of the app that sets X-Forwarded-Proto.
+DJANGO_HTTPS = derive_boolean_from_string(os.getenv("DJANGO_HTTPS", "False"))
+SESSION_COOKIE_SECURE = DJANGO_HTTPS
+CSRF_COOKIE_SECURE = DJANGO_HTTPS
+SECURE_SSL_REDIRECT = DJANGO_HTTPS
+# Start with a short HSTS window, then raise it once HTTPS is confirmed to work.
+SECURE_HSTS_SECONDS = 3600 if DJANGO_HTTPS else 0
+if DJANGO_HTTPS:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # Send users to the main site after a successful login or logout.
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
