@@ -24,6 +24,22 @@ async def authenticator_device_id(user):
     return device.persistent_id if device else None
 
 
+async def has_otp_devices(user):
+    """
+    Return whether the user has any TOTP device, confirmed or still pending.
+
+    Accounts that skipped the authenticator step have no TOTP device at all, so they log in with
+    the password alone. An account with a pending device is not skipped and still needs a code.
+
+    Parameters:
+        user (User): The user to check.
+
+    Returns:
+        bool: True if the user has at least one TOTP device, otherwise False.
+    """
+    return await TOTPDevice.objects.filter(user=user).aexists()
+
+
 def hash_recovery_code(code, device):
     """
     Hash one recovery code with PBKDF2 and truncate it to fit StaticToken.token.

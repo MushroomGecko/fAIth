@@ -17,6 +17,9 @@ PENDING_CODES_SESSION_KEY = "pending_recovery_codes"
 
 # Hidden form value that tells POST /signup the user is confirming the authenticator step.
 ENROLLMENT_STEP = "authenticate"
+
+# Hidden form value that tells POST /signup the user is skipping the authenticator step.
+SKIP_STEP = "skip"
 INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and try again."
 
 # The authenticator setup page template. render_authenticate() is the only place that renders it.
@@ -236,3 +239,28 @@ async def confirm_enrollment(request):
         return redirect("api:login")
 
     return await render_authenticate(request, device, codes, status=400, error=INVALID_CODE_MESSAGE)
+
+
+async def skip_enrollment(request):
+    """
+    Skip the authenticator step. The account keeps its password and has no OTP devices.
+
+    The unconfirmed TOTP and recovery-code devices are deleted, so the account has no TOTP
+    device and can log in with the password alone. Skipping is not an error, so it never blocks login.
+
+    Parameters:
+        request (HttpRequest): The current request.
+
+    Returns:
+        HttpResponse: A redirect to login, or back to the start if there is no pending enrollment.
+    """
+    device, _ = await load_pending_enrollment(request.session)
+    if device is None:
+        return redirect("api:signup")
+
+    # Only unconfirmed devices are removed. Confirmed devices are never touched by a skip.
+    await TOTPDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
+    await StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
+    # Forget the pending enrollment, so the recovery codes don't stay in the session.
+    await clear_pending_device(request.session)
+    return redirect("api:login")

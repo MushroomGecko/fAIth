@@ -7,10 +7,12 @@ from ninja import Router
 
 from backend.utils.signup import (
     ENROLLMENT_STEP,
+    SKIP_STEP,
     confirm_enrollment,
     create_user_and_devices,
     load_pending_enrollment,
     render_authenticate,
+    skip_enrollment,
     store_pending_device,
 )
 from fAIth.api_tags import APITags
@@ -47,17 +49,20 @@ async def signup_page(request):
 @router.post("/signup", tags=[APITags.BACKEND])
 async def signup(request):
     """
-    Create an account and show the authenticator setup step, or confirm that step when the form says so.
+    Create an account and show the authenticator setup step, or confirm or skip that step when the form says so.
 
     Parameters:
         request (HttpRequest): The current request, with the form data in POST.
 
     Returns:
-        HttpResponse: The authenticator setup page, a redirect after confirmation, or the signup page with errors.
+        HttpResponse: The authenticator setup page, a redirect after confirmation or skip, or the signup page with errors.
     """
-    # The authenticator step posts a hidden "step" value, so it's handled as confirmation, not signup.
-    if request.POST.get("step") == ENROLLMENT_STEP:
+    # The authenticator step posts a hidden "step" value, so it's handled as confirmation or skip, not signup.
+    step = request.POST.get("step")
+    if step == ENROLLMENT_STEP:
         return await confirm_enrollment(request)
+    if step == SKIP_STEP:
+        return await skip_enrollment(request)
 
     # Build the signup form from the submitted data. Django's form.is_valid() runs the field checks and the password validators from AUTH_PASSWORD_VALIDATORS, so it's run in a thread.
     form = await sync_to_async(UserCreationForm, thread_sensitive=True)(request.POST)

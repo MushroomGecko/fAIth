@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 from django_otp.forms import OTPAuthenticationForm
 from ninja import Router
 
-from backend.utils.authentication import authenticator_device_id
+from backend.utils.authentication import authenticator_device_id, has_otp_devices
 from backend.utils.login import render_login
 from fAIth.api_tags import APITags
 
@@ -45,6 +45,12 @@ async def login(request):
         username=request.POST.get("username", ""),
         password=request.POST.get("password", ""),
     )
+
+    # An account that skipped the authenticator step has no TOTP device, so the password is the whole login.
+    # Accounts with a pending device still fall through to the code check below, so they can't skip it this way.
+    if user is not None and not await has_otp_devices(user):
+        await alogin(request, user)
+        return redirect("/")
 
     # The server always sets the device to the user's authenticator app. The browser can't choose
     # a recovery-code device, and recovery codes are never checked at login.
