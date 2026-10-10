@@ -8,9 +8,9 @@ from ninja import Router
 from backend.utils.signup import (
     ENROLLMENT_STEP,
     SKIP_STEP,
+    abandon_pending_enrollment,
     confirm_enrollment,
     create_user_and_devices,
-    load_pending_enrollment,
     render_authenticate,
     skip_enrollment,
     store_pending_device,
@@ -29,18 +29,16 @@ SIGNUP_TEMPLATE = "registration/signup.html"
 @router.get("/signup", tags=[APITags.BACKEND], url_name="signup")
 async def signup_page(request):
     """
-    Show the account creation form, or the authenticator setup step if an account is waiting on it.
+    Show a fresh account creation form. Any unfinished authenticator step from earlier is abandoned.
 
     Parameters:
         request (HttpRequest): The current request.
 
     Returns:
-        HttpResponse: The rendered signup page or authenticator setup page.
+        HttpResponse: The rendered signup page.
     """
-    # If the user refreshes during enrollment, show the setup step again instead of a new form.
-    device, codes = await load_pending_enrollment(request.session)
-    if device is not None:
-        return await render_authenticate(request, device, codes)
+    # Leaving the authenticator step without confirming it means no TOTP, so a new signup starts from scratch.
+    await abandon_pending_enrollment(request.session)
 
     form = await sync_to_async(UserCreationForm, thread_sensitive=True)()
     return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form})

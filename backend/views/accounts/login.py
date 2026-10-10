@@ -4,8 +4,7 @@ from django.shortcuts import redirect
 from django_otp.forms import OTPAuthenticationForm
 from ninja import Router
 
-from backend.utils.authentication import authenticator_device_id, has_otp_devices
-from backend.utils.login import render_login
+from backend.utils.login import authenticator_device_id, delete_unconfirmed_totp, render_login
 from fAIth.api_tags import APITags
 
 # Create router for login endpoints
@@ -46,9 +45,9 @@ async def login(request):
         password=request.POST.get("password", ""),
     )
 
-    # An account that skipped the authenticator step has no TOTP device, so the password is the whole login.
-    # Accounts with a pending device still fall through to the code check below, so they can't skip it this way.
-    if user is not None and not await has_otp_devices(user):
+    # An account with no confirmed authenticator app is a non-TOTP account, so the password is the whole login.
+    # Unconfirmed devices from an unfinished signup are ignored.
+    if user is not None and not await authenticator_device_id(user):
         if request.POST.get("otp_token", "").strip():
             # The password is right, but this account has no authenticator, so any code is an error.
             form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, request.POST)
@@ -57,6 +56,8 @@ async def login(request):
             form.errors.clear()
             form.add_error(None, "TOTP not set up or wrong code entered.")
             return await render_login(request, form, status=400)
+        # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
+        await delete_unconfirmed_totp(user)
         await alogin(request, user)
         return redirect("/")
 

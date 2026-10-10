@@ -245,10 +245,10 @@ async def confirm_enrollment(request):
 
 async def skip_enrollment(request):
     """
-    Skip the authenticator step. The account keeps its password and has no OTP devices.
+    Skip the authenticator step. The account keeps its password and recovery codes, but has no TOTP.
 
-    The unconfirmed TOTP and recovery-code devices are deleted, so the account has no TOTP
-    device and can log in with the password alone. Skipping is not an error, so it never blocks login.
+    The unconfirmed TOTP device is deleted, so the account can log in with the password alone.
+    The recovery codes are kept. Skipping is not an error, so it never blocks login.
 
     Parameters:
         request (HttpRequest): The current request.
@@ -260,9 +260,21 @@ async def skip_enrollment(request):
     if device is None:
         return redirect("api:signup")
 
-    # Only unconfirmed devices are removed. Confirmed devices are never touched by a skip.
+    # Only the unconfirmed TOTP device is removed. The recovery codes stay on the account.
     await TOTPDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
-    await StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
     # Forget the pending enrollment, so the recovery codes don't stay in the session.
     await clear_pending_device(request.session)
     return redirect("api:login")
+
+
+async def abandon_pending_enrollment(session):
+    """
+    Drop an unfinished authenticator step. The unconfirmed TOTP device is deleted, and the account has no TOTP.
+
+    Parameters:
+        session (SessionBase): The request's session.
+    """
+    device, _ = await load_pending_enrollment(session)
+    if device is not None:
+        await TOTPDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
+    await clear_pending_device(session)

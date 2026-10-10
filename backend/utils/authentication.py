@@ -2,42 +2,9 @@ import hashlib
 
 from asgiref.sync import sync_to_async
 from django_otp.plugins.otp_static.models import StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
 # How many PBKDF2 iterations to run on each recovery code.
 RECOVERY_CODE_HASH_ITERATIONS = 100000
-
-
-async def authenticator_device_id(user):
-    """
-    Return the persistent ID of the user's confirmed authenticator app device.
-
-    Parameters:
-        user (User): The user whose authenticator device to look up.
-
-    Returns:
-        str | None: The device's persistent ID, or None if the user has no confirmed authenticator app.
-    """
-    # Only confirmed devices can be used to log in. The oldest one is used if there are several.
-    device = await TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").afirst()
-    # The persistent ID is "<model>/<id>". The login form uses it to pick the device.
-    return device.persistent_id if device else None
-
-
-async def has_otp_devices(user):
-    """
-    Return whether the user has any TOTP device, confirmed or still pending.
-
-    Accounts that skipped the authenticator step have no TOTP device at all, so they log in with
-    the password alone. An account with a pending device is not skipped and still needs a code.
-
-    Parameters:
-        user (User): The user to check.
-
-    Returns:
-        bool: True if the user has at least one TOTP device, otherwise False.
-    """
-    return await TOTPDevice.objects.filter(user=user).aexists()
 
 
 def hash_recovery_code(code, device):

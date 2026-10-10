@@ -35,7 +35,7 @@ class TestSkipAuthenticator(TestCase):
 
         self.assertRedirects(response, reverse("api:login"), fetch_redirect_response=False)
         self.assertFalse(TOTPDevice.objects.filter(user=user).exists())
-        self.assertFalse(StaticDevice.objects.filter(user=user).exists())
+        self.assertTrue(StaticDevice.objects.filter(user=user).exists())
         self.assertNotIn(PENDING_DEVICE_SESSION_KEY, self.client.session)
         self.assertNotIn(PENDING_CODES_SESSION_KEY, self.client.session)
 
@@ -48,13 +48,25 @@ class TestSkipAuthenticator(TestCase):
         self.assertRedirects(response, "/", fetch_redirect_response=False)
         self.assertEqual(int(self.client.session[SESSION_KEY]), user.pk)
 
-    def test_pending_account_cannot_log_in_with_password_only(self):
+    def test_unconfirmed_account_logs_in_with_password_only(self):
         user = self._pending_signup("pending")
 
         response = self.client.post(reverse("api:login"), {"username": user.username, "password": PASSWORD})
 
-        self.assertEqual(response.status_code, 400)
-        self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertRedirects(response, "/", fetch_redirect_response=False)
+        self.assertEqual(int(self.client.session[SESSION_KEY]), user.pk)
+
+    def test_get_signup_abandons_pending_enrollment(self):
+        self._pending_signup("abandoned")
+
+        response = self.client.get(reverse("api:signup"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="username"')
+        self.assertNotContains(response, 'name="otp_token"')
+        self.assertFalse(TOTPDevice.objects.filter(user__username="abandoned").exists())
+        self.assertNotIn(PENDING_DEVICE_SESSION_KEY, self.client.session)
+        self.assertNotIn(PENDING_CODES_SESSION_KEY, self.client.session)
 
     def test_wrong_password_does_not_log_in(self):
         user = User.objects.create_user(username="nopass", password=PASSWORD)
