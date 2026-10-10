@@ -2,11 +2,39 @@ from urllib.parse import parse_qs, urlparse
 
 import segno
 from asgiref.sync import sync_to_async
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
+from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from backend.utils.authentication import hash_recovery_code
+
+
+class SignupForm(UserCreationForm):
+    """
+    The account creation form. A username that differs from an existing one only in letter case is taken.
+    """
+
+    def clean_username(self):
+        """
+        Check that no account already uses this username, ignoring letter case.
+
+        Django calls this during form.is_valid(), after the username field's own checks have passed.
+
+        Returns:
+            str: The username, unchanged.
+
+        Raises:
+            ValidationError: If an account already uses this name in any letter case.
+        """
+        username = self.cleaned_data["username"]
+        # The database unique check is case-sensitive, so check case-insensitively here.
+        if get_user_model().objects.filter(username__iexact=username).exists():
+            raise ValidationError("A user with that username already exists.")
+        return username
+
 
 # How many single-use recovery codes to create for each new account.
 RECOVERY_CODE_COUNT = 10

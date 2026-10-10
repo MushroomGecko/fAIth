@@ -1,13 +1,14 @@
 import logging
 
 from asgiref.sync import sync_to_async
-from django.contrib.auth.forms import UserCreationForm
+from django.db import IntegrityError
 from django.shortcuts import render
 from ninja import Router
 
 from backend.utils.signup import (
     ENROLLMENT_STEP,
     SKIP_STEP,
+    SignupForm,
     abandon_pending_enrollment,
     confirm_enrollment,
     create_user_and_devices,
@@ -40,7 +41,7 @@ async def signup_page(request):
     # Leaving the authenticator step without confirming it means no TOTP, so a new signup starts from scratch.
     await abandon_pending_enrollment(request.session)
 
-    form = await sync_to_async(UserCreationForm, thread_sensitive=True)()
+    form = await sync_to_async(SignupForm, thread_sensitive=True)()
     return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form})
 
 
@@ -63,7 +64,7 @@ async def signup(request):
         return await skip_enrollment(request)
 
     # Build the signup form from the submitted data. Django's form.is_valid() runs the field checks and the password validators from AUTH_PASSWORD_VALIDATORS, so it's run in a thread.
-    form = await sync_to_async(UserCreationForm, thread_sensitive=True)(request.POST)
+    form = await sync_to_async(SignupForm, thread_sensitive=True)(request.POST)
     is_valid = await sync_to_async(form.is_valid, thread_sensitive=True)()
 
     # Show the form again with its errors. The 400 status tells the browser the submission was rejected, and nothing is created.
@@ -71,6 +72,11 @@ async def signup(request):
         return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
 
     # Create the account and its unconfirmed devices, then show the setup step.
-    totp, codes = await create_user_and_devices(form)
+    try:
+        totp, codes = await create_user_and_devices(form)
+    except IntegrityError:
+        # Another request saved the same username after the check above. Show the form again instead of a 500.
+        form.add_error("username", "A user with that username already exists.")
+        return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
     await store_pending_device(request.session, totp.id, codes)
     return await render_authenticate(request, totp, codes)

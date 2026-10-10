@@ -28,13 +28,17 @@
                                 <input class="form-control" type="text" name="{{ form.username.html_name }}"
                                        id="{{ form.username.id_for_label }}" value="{{ form.username.value|default_if_none:'' }}"
                                        autocomplete="username" required autofocus>
-                                {{ form.username.errors }}
+                                {% if form.username.errors %}
+                                    <div class="alert alert-danger mt-2">{{ form.username.errors|first }}</div>
+                                {% endif %}
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" for="{{ form.password.id_for_label }}">Password</label>
                                 <input class="form-control" type="password" name="{{ form.password.html_name }}"
                                        id="{{ form.password.id_for_label }}" autocomplete="current-password" required>
-                                {{ form.password.errors }}
+                                {% if form.password.errors %}
+                                    <div class="alert alert-danger mt-2">{{ form.password.errors|first }}</div>
+                                {% endif %}
                             </div>
                             <hr class="my-4">
                             <div class="mb-4">
@@ -46,7 +50,9 @@
                                 <div class="form-text">
                                     If you set up an authenticator app, enter the 6-digit code it shows. Leave this blank if you didn't.
                                 </div>
-                                {{ form.otp_token.errors }}
+                                {% if form.otp_token.errors %}
+                                    <div class="alert alert-danger mt-2">{{ form.otp_token.errors|first }}</div>
+                                {% endif %}
                             </div>
                             <button class="btn btn-primary w-100" type="submit">Log In</button>
                         </form>

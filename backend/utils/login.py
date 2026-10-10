@@ -1,9 +1,26 @@
 from asgiref.sync import sync_to_async
+from django.contrib.auth import get_user_model
 from django.shortcuts import render
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 # The login page template. render_login() is the only place that renders it.
 LOGIN_TEMPLATE = "registration/login.html"
+
+
+async def canonical_username(username):
+    """
+    Return the stored spelling of a username, matched without regard to letter case.
+
+    Signup stops two usernames from differing only in case, so at most one account matches.
+
+    Parameters:
+        username (str): The username as the user typed it.
+
+    Returns:
+        str: The stored username if an account matches ignoring case, otherwise the input unchanged.
+    """
+    user = await get_user_model().objects.filter(username__iexact=username).afirst()
+    return user.username if user else username
 
 
 async def authenticator_device_id(user):
