@@ -49,6 +49,14 @@ async def login(request):
     # An account that skipped the authenticator step has no TOTP device, so the password is the whole login.
     # Accounts with a pending device still fall through to the code check below, so they can't skip it this way.
     if user is not None and not await has_otp_devices(user):
+        if request.POST.get("otp_token", "").strip():
+            # The password is right, but this account has no authenticator, so any code is an error.
+            form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, request.POST)
+            await sync_to_async(form.is_valid, thread_sensitive=True)()
+            # The form adds "Please select a device." here because this user has no device. Replace it with our message.
+            form.errors.clear()
+            form.add_error(None, "TOTP not set up or wrong code entered.")
+            return await render_login(request, form, status=400)
         await alogin(request, user)
         return redirect("/")
 
@@ -64,5 +72,4 @@ async def login(request):
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, form.get_user())
         return redirect("/")
-
     return await render_login(request, form, status=400)

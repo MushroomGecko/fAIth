@@ -19,7 +19,9 @@
 
                         <form method="post" action="{% url 'api:login' %}">
                             {% csrf_token %}
-                            {{ form.non_field_errors }}
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">{{ form.non_field_errors|first }}</div>
+                            {% endif %}
 
                             <div class="mb-3">
                                 <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
@@ -34,11 +36,16 @@
                                        id="{{ form.password.id_for_label }}" autocomplete="current-password" required>
                                 {{ form.password.errors }}
                             </div>
-                            <div class="mb-3">
-                                <p class="form-text mb-1">If you set up an authenticator app, enter the 6-digit code it shows. Leave this blank if you didn't.</p>
-                                <label class="form-label" for="{{ form.otp_token.id_for_label }}">Verification code</label>
+                            <hr class="my-4">
+                            <div class="mb-4">
+                                <label class="form-label" for="{{ form.otp_token.id_for_label }}">
+                                    Verification code <span class="text-muted">(optional)</span>
+                                </label>
                                 <input class="form-control" type="text" name="{{ form.otp_token.html_name }}"
                                        id="{{ form.otp_token.id_for_label }}" autocomplete="one-time-code" inputmode="text">
+                                <div class="form-text">
+                                    If you set up an authenticator app, enter the 6-digit code it shows. Leave this blank if you didn't.
+                                </div>
                                 {{ form.otp_token.errors }}
                             </div>
                             <button class="btn btn-primary w-100" type="submit">Log In</button>
