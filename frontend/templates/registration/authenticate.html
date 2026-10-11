@@ -42,9 +42,7 @@
                             <p>An authenticator app is optional, but we strongly recommend it. It protects your sensitive notes, AI generations, and AI usage limits.</p>
 
                             <p>Scan this QR code with an authenticator app, then enter the 6-digit code it shows.</p>
-                            <div class="text-center mb-2">{{ svg|safe }}</div>
-                            <p class="text-center small mb-1">Or paste the code into your authenticator app if you can't scan QR codes:</p>
-                            <p class="text-center font-monospace user-select-all mb-4">{{ secret }}</p>
+                            {% include "registration/partials/totp_qr.html" %}
 
                             {% if error %}
                                 <div class="alert alert-danger">{{ error }}</div>

@@ -61,16 +61,6 @@ async def authenticator_device_id(user):
     return device.persistent_id if device else None
 
 
-async def delete_unconfirmed_totp(user):
-    """
-    Delete the user's unconfirmed TOTP device, if any. Recovery codes are not touched.
-
-    Parameters:
-        user (User): The user whose unfinished authenticator setup should be cleared.
-    """
-    await TOTPDevice.objects.filter(user=user, confirmed=False).adelete()
-
-
 async def render_login(request, form, status=200):
     """
     Render the login form.

@@ -1,6 +1,3 @@
-from urllib.parse import parse_qs, urlparse
-
-import segno
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
@@ -9,7 +6,12 @@ from django.shortcuts import redirect, render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
-from backend.utils.authentication import hash_recovery_code
+from backend.utils.authentication import (
+    INVALID_CODE_MESSAGE,
+    confirm_device,
+    enrollment_details,
+    hash_recovery_code,
+)
 
 
 class SignupForm(UserCreationForm):
@@ -48,7 +50,6 @@ ENROLLMENT_STEP = "authenticate"
 
 # Hidden form value that tells POST /signup the user is skipping the authenticator step.
 SKIP_STEP = "skip"
-INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and try again."
 
 # The authenticator setup page template. render_authenticate() is the only place that renders it.
 AUTHENTICATE_TEMPLATE = "registration/authenticate.html"
@@ -109,28 +110,6 @@ async def pending_device(device_id):
         return None
     # Only unconfirmed devices count as pending. A confirmed device has already finished enrollment.
     return await TOTPDevice.objects.filter(id=device_id, confirmed=False).select_related("user").afirst()
-
-
-async def confirm_device(device, token):
-    """
-    Confirm the TOTP device and recovery codes if the token is valid.
-
-    Parameters:
-        device (TOTPDevice): The unconfirmed TOTP device to check the token against.
-        token (str): The 6-digit code from the user's authenticator app.
-
-    Returns:
-        bool: True if the token was valid and the devices are now confirmed, otherwise False.
-    """
-    # django-otp's verify_token has no async version, so run it in a thread.
-    if not await sync_to_async(device.verify_token, thread_sensitive=True)(token):
-        return False
-    # Mark the authenticator app as confirmed. Only confirmed devices can be used to log in.
-    device.confirmed = True
-    await device.asave(update_fields=["confirmed"])
-    # Confirming the authenticator also confirms the recovery codes, which were created at the same time.
-    await StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).aupdate(confirmed=True)
-    return True
 
 
 async def store_pending_device(session, device_id, codes):
@@ -199,28 +178,6 @@ async def clear_pending_device(session):
     await session.apop(PENDING_CODES_SESSION_KEY, None)
 
 
-def enrollment_details(device):
-    """
-    Return the QR code as inline SVG and the base32 secret for manual entry.
-
-    Both are generated on the server from the device's otpauth URL. This is pure computation,
-    so it stays synchronous.
-
-    Parameters:
-        device (TOTPDevice): The TOTP device to enroll.
-
-    Returns:
-        dict[str, str]: The inline SVG under "svg" and the base32 secret under "secret".
-    """
-    # The otpauth URL contains the secret and the account name. Authenticator apps read it from the QR code.
-    config_url = device.config_url
-    # The manual-entry secret is the "secret" parameter in that URL.
-    secret = parse_qs(urlparse(config_url).query)["secret"][0]
-    # Draw the QR code as SVG on the server, so no third-party script is needed.
-    svg = segno.make(config_url, error="m").svg_inline(scale=5)
-    return {"svg": svg, "secret": secret}
-
-
 async def render_authenticate(request, device, codes, status=200, error=None):
     """
     Render the authenticator setup step with the QR code, secret, and recovery codes.
@@ -263,7 +220,8 @@ async def confirm_enrollment(request):
 
     # Strip stray spaces so a code pasted with a trailing space still works.
     token = request.POST.get("otp_token", "").strip()
-    if await confirm_device(device, token):
+    # confirm_device is synchronous, so run it in a thread.
+    if await sync_to_async(confirm_device, thread_sensitive=True)(device, token):
         # Enrollment is finished, so the recovery codes shouldn't stay in the session.
         await clear_pending_device(request.session)
         return redirect("api:login")

@@ -4,10 +4,10 @@ from django.shortcuts import redirect
 from django_otp.forms import OTPAuthenticationForm
 from ninja import Router
 
+from backend.utils.authentication import clear_unconfirmed_totp
 from backend.utils.login import (
     authenticator_device_id,
     canonical_username,
-    delete_unconfirmed_totp,
     get_next_url,
     render_login,
 )
@@ -67,7 +67,7 @@ async def login(request):
             form.add_error(None, "TOTP not set up or wrong code entered.")
             return await render_login(request, form, status=400)
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
-        await delete_unconfirmed_totp(user)
+        await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(user)
         await alogin(request, user)
         return redirect(get_next_url(request))
 
@@ -79,7 +79,10 @@ async def login(request):
     form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, data)
     is_valid = await sync_to_async(form.is_valid, thread_sensitive=True)()
     if is_valid:
+        # Logging in with a code also ends any unfinished setup, the same as a password-only login.
+        logged_in_user = form.get_user()
+        await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(logged_in_user)
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
-        await alogin(request, form.get_user())
+        await alogin(request, logged_in_user)
         return redirect(get_next_url(request))
     return await render_login(request, form, status=400)
