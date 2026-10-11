@@ -1,0 +1,38 @@
+<div class="py-2" style="max-width: 40rem;">
+    <h1 class="h2 mb-4">Account</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="h5 mb-1">Username</h2>
+            <p class="text-muted small mb-3">This is the name you use to log in and is shown in the navigation bar. Use up to 150 letters, numbers, or any of <code>@ . + - _</code>. Spaces are not allowed.</p>
+
+            <form hx-post="{% url 'api:profile_username' %}" hx-target="#accountPartialLoader" hx-swap="innerHTML">
+                {% csrf_token %}
+                <label class="form-label" for="{{ form.username.id_for_label }}">New username</label>
+                <input class="form-control" type="text" name="{{ form.username.html_name }}"
+                       id="{{ form.username.id_for_label }}" value="{{ form.username.value|default_if_none:'' }}"
+                       autocomplete="username" required>
+                {% if form.username.errors %}
+                    <div class="alert alert-danger mt-2 mb-0">{{ form.username.errors|first }}</div>
+                {% endif %}
+                {% if saved %}
+                    <div class="alert alert-success mt-2 mb-0">Your username was changed.</div>
+                {% endif %}
+
+                {% include "profile/partials/confirm_action.html" with collapse_id="username-confirm" trigger_label="Change username" confirm_label="Confirm" tone="primary" intro="Confirm it's you to change your username." auth_error=username_auth_error %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-danger mt-4">
+        <div class="card-body p-4">
+            <h2 class="h5 text-danger mb-1">Danger zone</h2>
+            <p class="small mb-3"><strong>Deleting your account is permanent.</strong> Your login and everything saved to your account will be deleted. This cannot be undone.</p>
+
+            <form hx-post="{% url 'api:profile_delete' %}" hx-target="#accountPartialLoader" hx-swap="innerHTML">
+                {% csrf_token %}
+                {% include "profile/partials/confirm_action.html" with collapse_id="delete-confirm" trigger_label="Delete my account" confirm_label="Permanently delete my account" tone="danger" border_class="border-danger" auth_error=delete_auth_error %}
+            </form>
+        </div>
+    </div>
+</div>

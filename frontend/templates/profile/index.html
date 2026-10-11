@@ -10,15 +10,20 @@
 {% block content %}
 
         <!-- Navbar -->
-        {% include 'account/navbar.html' %}
+        {% include 'profile/navbar.html' %}
 
         <!-- Content -->
         <div class="d-flex flex-grow-1" style="overflow: hidden;">
             <!-- Sidebar -->
-            {% include 'account/sidebar.html' %}
+            {% include 'profile/sidebar.html' %}
 
-            <!-- Partial Loader -->
-            <div id="accountPartialLoader" class="d-none"></div>
+            <!-- Section content. Loads the Account section on page load; sidebar buttons replace it. -->
+            <div id="accountPartialLoader" class="flex-grow-1 p-4 overflow-auto"
+                 hx-get="{% url 'api:profile_account' %}" hx-trigger="load" hx-swap="innerHTML"></div>
         </div>
 
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/fAIth/profile/partials/settings.js' %}"></script>
 {% endblock %}

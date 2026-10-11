@@ -1,0 +1,13 @@
+<nav class="navbar navbar-expand navbar-light bg-light flex-column">
+    <!-- Title -->
+    <div class="container-fluid">
+        <div class="col-12 d-flex flex-column align-items-center">
+            <a class="navbar-brand m-0" href="{% url 'default_view' %}">fAIth - AI Powered Study Bible</a>
+            {% if user.is_authenticated %}
+                <p id="welcomeText" class="mb-0">Welcome, {{ user.username }}!</p>
+            {% else %}
+                <p class="mb-0">You are not logged in</p>
+            {% endif %}
+        </div>
+    </div>
+</nav>
