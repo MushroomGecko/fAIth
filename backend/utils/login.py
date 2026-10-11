@@ -1,10 +1,32 @@
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.shortcuts import render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 # The login page template. render_login() is the only place that renders it.
 LOGIN_TEMPLATE = "registration/login.html"
+
+
+def get_next_url(request, default=None):
+    """
+    Return the page to send the user to after login or logout.
+
+    Uses the "next" value from the form or the query string if it is a safe local path. Otherwise
+    falls back to default, so external URLs are never used.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        default (str | None): The fallback path. Defaults to settings.LOGIN_REDIRECT_URL.
+
+    Returns:
+        str: A local URL path to redirect to.
+    """
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
+    if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return next_url
+    return default if default is not None else settings.LOGIN_REDIRECT_URL
 
 
 async def canonical_username(username):
@@ -61,5 +83,9 @@ async def render_login(request, form, status=200):
     Returns:
         HttpResponse: The rendered login page.
     """
+    # Pass "next" back to the template so the form can post it along with the login.
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
     # Django's render() is synchronous, so run it in a thread to keep the event loop free.
-    return await sync_to_async(render, thread_sensitive=True)(request, LOGIN_TEMPLATE, {"form": form}, status=status)
+    return await sync_to_async(render, thread_sensitive=True)(
+        request, LOGIN_TEMPLATE, {"form": form, "next": next_url}, status=status
+    )

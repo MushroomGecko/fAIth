@@ -51,8 +51,11 @@ SECURE_HSTS_SECONDS = 3600 if DJANGO_HTTPS else 0
 if DJANGO_HTTPS:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Send users to the main site after a successful login or logout.
+# Where @login_required sends anonymous users. Matches the login route in backend/views/accounts/login.py.
+LOGIN_URL = "/accounts/login/"
+# Where users go after a successful login when there is no safe "next" page (see get_next_url in backend/utils/login.py).
 LOGIN_REDIRECT_URL = "/"
+# Where users go after logout.
 LOGOUT_REDIRECT_URL = "/"
 
 

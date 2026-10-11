@@ -19,6 +19,8 @@
 
                         <form method="post" action="{% url 'api:login' %}">
                             {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ next }}">
+
                             {% if form.non_field_errors %}
                                 <div class="alert alert-danger">{{ form.non_field_errors|first }}</div>
                             {% endif %}

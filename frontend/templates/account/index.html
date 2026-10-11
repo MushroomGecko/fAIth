@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}fAIth{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'bootstrap/icons/bootstrap-icons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/installed/verse_styling.css' %}">
+{% endblock %}
+{% block body_class %}d-flex flex-column vh-100{% endblock %}
+{% block content %}
+
+        <!-- Navbar -->
+        {% include 'account/navbar.html' %}
+
+        <!-- Content -->
+        <div class="d-flex flex-grow-1" style="overflow: hidden;">
+            <!-- Sidebar -->
+            {% include 'account/sidebar.html' %}
+
+            <!-- Partial Loader -->
+            <div id="accountPartialLoader" class="d-none"></div>
+        </div>
+
+{% endblock %}

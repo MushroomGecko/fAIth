@@ -27,7 +27,7 @@ router = Router()
 SIGNUP_TEMPLATE = "registration/signup.html"
 
 
-@router.get("/signup", tags=[APITags.BACKEND], url_name="signup")
+@router.get("/signup/", tags=[APITags.BACKEND], url_name="signup")
 async def signup_page(request):
     """
     Show a fresh account creation form. Any unfinished authenticator step from earlier is abandoned.
@@ -45,7 +45,7 @@ async def signup_page(request):
     return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form})
 
 
-@router.post("/signup", tags=[APITags.BACKEND])
+@router.post("/signup/", tags=[APITags.BACKEND])
 async def signup(request):
     """
     Create an account and show the authenticator setup step, or confirm or skip that step when the form says so.

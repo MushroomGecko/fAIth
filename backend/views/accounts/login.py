@@ -8,6 +8,7 @@ from backend.utils.login import (
     authenticator_device_id,
     canonical_username,
     delete_unconfirmed_totp,
+    get_next_url,
     render_login,
 )
 from fAIth.api_tags import APITags
@@ -16,7 +17,7 @@ from fAIth.api_tags import APITags
 router = Router()
 
 
-@router.get("/login", tags=[APITags.BACKEND], url_name="login")
+@router.get("/login/", tags=[APITags.BACKEND], url_name="login")
 async def login_page(request):
     """
     Show the login form.
@@ -32,7 +33,7 @@ async def login_page(request):
     return await render_login(request, form)
 
 
-@router.post("/login", tags=[APITags.BACKEND])
+@router.post("/login/", tags=[APITags.BACKEND])
 async def login(request):
     """
     Log in with username, password, and an authenticator app code in one request.
@@ -68,7 +69,7 @@ async def login(request):
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await delete_unconfirmed_totp(user)
         await alogin(request, user)
-        return redirect("/")
+        return redirect(get_next_url(request))
 
     # The server always sets the device to the user's authenticator app. The browser can't choose
     # a recovery-code device, and recovery codes are never checked at login.
@@ -80,5 +81,5 @@ async def login(request):
     if is_valid:
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, form.get_user())
-        return redirect("/")
+        return redirect(get_next_url(request))
     return await render_login(request, form, status=400)
