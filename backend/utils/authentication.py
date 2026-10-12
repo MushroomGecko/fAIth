@@ -27,7 +27,7 @@ def hash_recovery_code(code, device):
     Hash one recovery code with PBKDF2 and truncate it to fit StaticToken.token.
 
     The salt is built from the device's primary key. It isn't secret, it only needs to be unique
-    per device. This is CPU-bound, so call it through sync_to_async from async code.
+    per device. This is CPU-bound, so async callers run it through sync_to_async.
 
     Parameters:
         code (str): The recovery code, as the user typed it or as it was generated.
@@ -75,11 +75,9 @@ async def verify_recovery_code(device, code):
     return True
 
 
-def create_recovery_codes(user, confirmed):
+async def create_recovery_codes(user, confirmed):
     """
     Create a recovery-code device for the user with new random codes. Only hashes are stored.
-
-    Hashing is CPU-bound, so async callers wrap this in sync_to_async.
 
     Parameters:
         user (User): The user the codes belong to.
@@ -89,16 +87,16 @@ def create_recovery_codes(user, confirmed):
     Returns:
         list[str]: The plain-text recovery codes, to show the user one time.
     """
-    device = StaticDevice.objects.create(user=user, name=RECOVERY_DEVICE_NAME, confirmed=confirmed)
+    device = await StaticDevice.objects.acreate(user=user, name=RECOVERY_DEVICE_NAME, confirmed=confirmed)
     codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
+    # Hashing is CPU-bound (PBKDF2), so all the codes are hashed together in one worker thread.
+    hashes = await sync_to_async(lambda: [hash_recovery_code(code, device) for code in codes], thread_sensitive=False)()
     # Save all the hashed codes in one query instead of one query per code.
-    StaticToken.objects.bulk_create(
-        [StaticToken(device=device, token=hash_recovery_code(code, device)) for code in codes]
-    )
+    await StaticToken.objects.abulk_create([StaticToken(device=device, token=token) for token in hashes])
     return codes
 
 
-def create_totp_device(user):
+async def create_totp_device(user):
     """
     Create an unconfirmed authenticator app device for the user.
 
@@ -108,10 +106,10 @@ def create_totp_device(user):
     Returns:
         TOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
     """
-    return TOTPDevice.objects.create(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+    return await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
 
-def confirmed_totp_device(user):
+async def confirmed_totp_device(user):
     """
     Return the user's confirmed authenticator app device, or None if they have none.
 
@@ -121,7 +119,7 @@ def confirmed_totp_device(user):
     Returns:
         TOTPDevice | None: The oldest confirmed device, if any.
     """
-    return TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").first()
+    return await TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").afirst()
 
 
 def _unconfirmed_totp_devices():
@@ -136,7 +134,7 @@ def _unconfirmed_totp_devices():
     return TOTPDevice.objects.filter(confirmed=False).select_related("user").order_by("id")
 
 
-def unconfirmed_totp_by_user(user):
+async def unconfirmed_totp_by_user(user):
     """
     Return the user's unfinished authenticator app setup, or None if there isn't one.
 
@@ -148,10 +146,10 @@ def unconfirmed_totp_by_user(user):
     Returns:
         TOTPDevice | None: The oldest unconfirmed device, if any.
     """
-    return _unconfirmed_totp_devices().filter(user=user).first()
+    return await _unconfirmed_totp_devices().filter(user=user).afirst()
 
 
-def unconfirmed_totp_by_device_id(device_id):
+async def unconfirmed_totp_by_device_id(device_id):
     """
     Return the unfinished authenticator app setup with this ID, or None if there isn't one.
 
@@ -166,7 +164,7 @@ def unconfirmed_totp_by_device_id(device_id):
     """
     if device_id is None:
         return None
-    return _unconfirmed_totp_devices().filter(id=device_id).first()
+    return await _unconfirmed_totp_devices().filter(id=device_id).afirst()
 
 
 def users_matching_username(username):
@@ -179,30 +177,29 @@ def users_matching_username(username):
         username (str): The username to match.
 
     Returns:
-        QuerySet: The matching accounts. Callers add .exists(), .first(), or .afirst() as needed.
+        QuerySet: The matching accounts. Callers add .aexists(), .afirst(), or .exists() as needed.
     """
     return get_user_model().objects.filter(username__iexact=username)
 
 
-def clear_unconfirmed_totp(user):
+async def clear_unconfirmed_totp(user):
     """
     Delete the user's unfinished authenticator app setup, if any. Confirmed devices and recovery codes are not touched.
 
-    Called when the user leaves the Security setup, opens their profile, or logs in. It is synchronous,
-    so async callers wrap it in sync_to_async.
+    Called when the user leaves the Security setup, opens their profile, or logs in.
 
     Parameters:
         user (User): The user whose unfinished setup should be cleared.
     """
-    TOTPDevice.objects.filter(user=user, confirmed=False).delete()
+    await TOTPDevice.objects.filter(user=user, confirmed=False).adelete()
 
 
-def enrollment_details(device):
+async def enrollment_details(device):
     """
     Return the QR code as inline SVG and the base32 secret for manual entry.
 
-    Both are generated on the server from the device's otpauth URL. This is pure computation,
-    so it stays synchronous.
+    Both are generated on the server from the device's otpauth URL. The QR code is drawn in a worker
+    thread, since it is CPU-bound work.
 
     Parameters:
         device (TOTPDevice): The TOTP device to enroll.
@@ -215,15 +212,15 @@ def enrollment_details(device):
     # The manual-entry secret is the "secret" parameter in that URL.
     secret = parse_qs(urlparse(config_url).query)["secret"][0]
     # Draw the QR code as SVG on the server, so no third-party script is needed.
-    svg = segno.make(config_url, error="m").svg_inline(scale=5)
+    svg = await sync_to_async(lambda: segno.make(config_url, error="m").svg_inline(scale=5), thread_sensitive=False)()
     return {"svg": svg, "secret": secret}
 
 
-def confirm_device(device, token):
+async def confirm_device(device, token):
     """
     Confirm the TOTP device and its recovery codes if the token is valid.
 
-    Used by both signup and the account page. It is synchronous, so async callers wrap it in sync_to_async.
+    Used by both signup and the account page.
 
     Parameters:
         device (TOTPDevice): The unconfirmed TOTP device to check the token against.
@@ -232,13 +229,14 @@ def confirm_device(device, token):
     Returns:
         bool: True if the token was valid and the devices are now confirmed, otherwise False.
     """
-    if not device.verify_token(token):
+    # verify_token saves throttling state to the database, so it runs in a thread.
+    if not await sync_to_async(device.verify_token, thread_sensitive=True)(token):
         return False
     # Mark the authenticator app as confirmed. Only confirmed devices can be used to log in.
     device.confirmed = True
-    device.save(update_fields=["confirmed"])
+    await device.asave(update_fields=["confirmed"])
     # Confirming the authenticator also confirms the recovery codes, which were created at the same time.
-    StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).update(confirmed=True)
+    await StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).aupdate(confirmed=True)
     return True
 
 

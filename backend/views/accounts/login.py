@@ -70,7 +70,7 @@ async def login(request):
             form.add_error(None, "TOTP not set up or wrong code entered.")
             return await render_login(request, form, LOGIN_TEMPLATE, status=400)
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
-        await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(user)
+        await clear_unconfirmed_totp(user)
         await alogin(request, user)
         return redirect(get_next_url(request))
 
@@ -84,7 +84,7 @@ async def login(request):
     if is_valid:
         # Logging in with a code also ends any unfinished setup, the same as a password-only login.
         logged_in_user = form.get_user()
-        await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(logged_in_user)
+        await clear_unconfirmed_totp(logged_in_user)
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, logged_in_user)
         return redirect(get_next_url(request))

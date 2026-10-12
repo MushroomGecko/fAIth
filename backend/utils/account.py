@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -22,6 +23,8 @@ class UsernameForm(forms.ModelForm):
 
     A username that differs from another account's only in letter case is taken. The user's own current
     username is not checked against itself, so they can change its letter case.
+
+    The form is synchronous, because Django forms are. Async callers run is_valid() and save() through sync_to_async.
     """
 
     class Meta:
@@ -50,6 +53,8 @@ class PasswordForm(forms.Form):
     The form for setting a new password for the logged-in user.
 
     The current password is checked separately with check_reauth, so it is not a field here.
+
+    The form is synchronous, because Django forms are. Async callers run is_valid() and save() through sync_to_async.
     """
 
     new_password1 = forms.CharField(
@@ -104,7 +109,7 @@ class PasswordForm(forms.Form):
 
     def save(self):
         """
-        Set the user's password to the new one and save it.
+        Set the user's password to the new one and save it. Synchronous, so async callers use sync_to_async.
 
         Returns:
             User: The updated user.
@@ -114,7 +119,7 @@ class PasswordForm(forms.Form):
         return self.user
 
 
-def start_totp_setup(user):
+async def start_totp_setup(user):
     """
     Begin turning on two-factor authentication. Any earlier unfinished setup is replaced with a new device.
 
@@ -124,11 +129,11 @@ def start_totp_setup(user):
     Returns:
         TOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
     """
-    clear_unconfirmed_totp(user)
-    return create_totp_device(user)
+    await clear_unconfirmed_totp(user)
+    return await create_totp_device(user)
 
 
-def turn_off_totp(user):
+async def turn_off_totp(user):
     """
     Remove the user's authenticator app, so the account logs in with the password alone.
 
@@ -137,10 +142,10 @@ def turn_off_totp(user):
     Parameters:
         user (User): The user turning off two-factor authentication.
     """
-    TOTPDevice.objects.filter(user=user).delete()
+    await TOTPDevice.objects.filter(user=user).adelete()
 
 
-def replace_recovery_codes(user):
+async def replace_recovery_codes(user):
     """
     Replace the user's recovery codes with a new set. The old codes stop working straight away.
 
@@ -154,11 +159,11 @@ def replace_recovery_codes(user):
         list[str]: The new plain-text recovery codes, to show the user one time.
     """
     # Deleting the recovery-code device also deletes its tokens, so the old codes can't be used.
-    StaticDevice.objects.filter(user=user).delete()
-    return create_recovery_codes(user, confirmed=True)
+    await StaticDevice.objects.filter(user=user).adelete()
+    return await create_recovery_codes(user, confirmed=True)
 
 
-def has_totp(user):
+async def has_totp(user):
     """
     Return True if the user has a confirmed authenticator app. The settings page uses this to decide
     whether to ask for a verification code.
@@ -169,10 +174,10 @@ def has_totp(user):
     Returns:
         bool: True if the account has a confirmed authenticator app.
     """
-    return confirmed_totp_device(user) is not None
+    return await confirmed_totp_device(user) is not None
 
 
-def check_reauth(user, password, otp_token):
+async def check_reauth(user, password, otp_token):
     """
     Check the password, and the verification code if the account has an authenticator app.
 
@@ -189,20 +194,21 @@ def check_reauth(user, password, otp_token):
     """
     if not password:
         return "Enter your password to confirm."
-    if not user.check_password(password):
+    if not await user.acheck_password(password):
         return "That password is not correct."
 
-    device = confirmed_totp_device(user)
+    device = await confirmed_totp_device(user)
     if device is not None:
         code = (otp_token or "").strip()
         if not code:
             return "Enter the 6-digit code from your authenticator app."
-        if not device.verify_token(code):
+        # verify_token saves throttling state to the database, so it runs in a thread.
+        if not await sync_to_async(device.verify_token, thread_sensitive=True)(code):
             return "That verification code is not correct."
     return None
 
 
-def section_context(request, **extra):
+async def section_context(request, **extra):
     """
     Build the template context for the Account section. The form and has_totp are always included,
     and extra values such as error messages are added on top.
@@ -214,12 +220,14 @@ def section_context(request, **extra):
     Returns:
         dict: The context for the Account section template.
     """
-    context = {"form": UsernameForm(instance=request.user), "has_totp": has_totp(request.user)}
+    # request.user is a lazy wrapper that queries the database synchronously, so use the async accessor.
+    user = await request.auser()
+    context = {"form": UsernameForm(instance=user), "has_totp": await has_totp(user)}
     context.update(extra)
     return context
 
 
-def security_context(request, **extra):
+async def security_context(request, **extra):
     """
     Build the template context for the Security section. The password form, has_totp, and any unfinished
     two-factor setup are always included, and extra values such as error messages are added on top.
@@ -233,14 +241,15 @@ def security_context(request, **extra):
     Returns:
         dict: The context for the Security section template.
     """
-    user = request.user
-    pending = unconfirmed_totp_by_user(user)
+    # request.user is a lazy wrapper that queries the database synchronously, so use the async accessor.
+    user = await request.auser()
+    pending = await unconfirmed_totp_by_user(user)
     context = {
         "password_form": PasswordForm(user),
-        "has_totp": has_totp(user),
+        "has_totp": await has_totp(user),
         "pending_totp": pending,
     }
     if pending is not None:
-        context.update(enrollment_details(pending))
+        context.update(await enrollment_details(pending))
     context.update(extra)
     return context

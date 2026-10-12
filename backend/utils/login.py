@@ -1,4 +1,3 @@
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils.http import url_has_allowed_host_and_scheme
 
@@ -52,7 +51,7 @@ async def authenticator_device_id(user):
         str | None: The device's persistent ID, or None if the user has no confirmed authenticator app.
     """
     # Only confirmed devices can be used to log in. The shared lookup returns the oldest one if there are several.
-    device = await sync_to_async(confirmed_totp_device, thread_sensitive=True)(user)
+    device = await confirmed_totp_device(user)
     # The persistent ID is "<model>/<id>". The login form uses it to pick the device.
     return device.persistent_id if device else None
 

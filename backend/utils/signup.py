@@ -63,9 +63,8 @@ async def create_user_and_devices(form):
     """
     # Django's form.save() has no async version, so run it in a thread.
     user = await sync_to_async(form.save, thread_sensitive=True)()
-    totp = await sync_to_async(create_totp_device, thread_sensitive=True)(user)
-    # Hashing the codes is slow, so run it in a worker thread instead of blocking the event loop.
-    codes = await sync_to_async(create_recovery_codes, thread_sensitive=False)(user, confirmed=False)
+    totp = await create_totp_device(user)
+    codes = await create_recovery_codes(user, confirmed=False)
     return totp, codes
 
 
@@ -80,7 +79,7 @@ async def pending_device(device_id):
         TOTPDevice | None: The unconfirmed device, or None if there is none.
     """
     # Only unconfirmed devices count as pending. A confirmed device has already finished enrollment.
-    return await sync_to_async(unconfirmed_totp_by_device_id, thread_sensitive=True)(device_id)
+    return await unconfirmed_totp_by_device_id(device_id)
 
 
 async def store_pending_device(session, device_id, codes):
@@ -165,7 +164,7 @@ async def render_authenticate(request, device, codes, template, status=200, erro
         HttpResponse: The rendered authenticator setup page.
     """
     # The QR code and secret come from the device, so they're rebuilt on every render.
-    details = enrollment_details(device)
+    details = await enrollment_details(device)
     context = {**details, "codes": codes, "error": error}
     # The signup views are wrapped in never_cache, so this page is not stored by the browser.
     return await render_async(request, template, context, status=status)
@@ -189,8 +188,7 @@ async def confirm_enrollment(request, template):
 
     # Strip stray spaces so a code pasted with a trailing space still works.
     token = request.POST.get("otp_token", "").strip()
-    # confirm_device is synchronous, so run it in a thread.
-    if await sync_to_async(confirm_device, thread_sensitive=True)(device, token):
+    if await confirm_device(device, token):
         # Enrollment is finished, so the recovery codes shouldn't stay in the session.
         await clear_pending_device(request.session)
         return redirect("api:login")
@@ -216,7 +214,7 @@ async def skip_enrollment(request):
         return redirect("api:signup")
 
     # Only the unconfirmed TOTP device is removed. The recovery codes stay on the account.
-    await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(device.user)
+    await clear_unconfirmed_totp(device.user)
     # Forget the pending enrollment, so the recovery codes don't stay in the session.
     await clear_pending_device(request.session)
     return redirect("api:login")
@@ -231,5 +229,5 @@ async def abandon_pending_enrollment(session):
     """
     device, _ = await load_pending_enrollment(session)
     if device is not None:
-        await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(device.user)
+        await clear_unconfirmed_totp(device.user)
     await clear_pending_device(session)
