@@ -1,12 +1,8 @@
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.shortcuts import render
 from django.utils.http import url_has_allowed_host_and_scheme
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
-# The login page template. render_login() is the only place that renders it.
-LOGIN_TEMPLATE = "registration/login.html"
+from backend.utils.authentication import confirmed_totp_device, render_async, users_matching_username
 
 
 def get_next_url(request, default=None):
@@ -41,7 +37,7 @@ async def canonical_username(username):
     Returns:
         str: The stored username if an account matches ignoring case, otherwise the input unchanged.
     """
-    user = await get_user_model().objects.filter(username__iexact=username).afirst()
+    user = await users_matching_username(username).afirst()
     return user.username if user else username
 
 
@@ -55,19 +51,20 @@ async def authenticator_device_id(user):
     Returns:
         str | None: The device's persistent ID, or None if the user has no confirmed authenticator app.
     """
-    # Only confirmed devices can be used to log in. The oldest one is used if there are several.
-    device = await TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").afirst()
+    # Only confirmed devices can be used to log in. The shared lookup returns the oldest one if there are several.
+    device = await sync_to_async(confirmed_totp_device, thread_sensitive=True)(user)
     # The persistent ID is "<model>/<id>". The login form uses it to pick the device.
     return device.persistent_id if device else None
 
 
-async def render_login(request, form, status=200):
+async def render_login(request, form, template, status=200):
     """
     Render the login form.
 
     Parameters:
         request (HttpRequest): The current request.
         form (OTPAuthenticationForm): The form to display, with any errors already attached.
+        template (str): The login page template path, passed in by the view.
         status (int): The HTTP status code for the response (default: 200).
 
     Returns:
@@ -75,7 +72,4 @@ async def render_login(request, form, status=200):
     """
     # Pass "next" back to the template so the form can post it along with the login.
     next_url = request.POST.get("next") or request.GET.get("next") or ""
-    # Django's render() is synchronous, so run it in a thread to keep the event loop free.
-    return await sync_to_async(render, thread_sensitive=True)(
-        request, LOGIN_TEMPLATE, {"form": form, "next": next_url}, status=status
-    )
+    return await render_async(request, template, {"form": form, "next": next_url}, status=status)

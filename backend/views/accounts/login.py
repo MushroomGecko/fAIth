@@ -16,6 +16,9 @@ from fAIth.api_tags import APITags
 # Create router for login endpoints
 router = Router()
 
+# The login page template, rendered by the login views.
+LOGIN_TEMPLATE = "registration/login.html"
+
 
 @router.get("/login/", tags=[APITags.BACKEND], url_name="login")
 async def login_page(request):
@@ -30,7 +33,7 @@ async def login_page(request):
     """
     # An unbound form, so the page starts empty with no errors.
     form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request)
-    return await render_login(request, form)
+    return await render_login(request, form, LOGIN_TEMPLATE)
 
 
 @router.post("/login/", tags=[APITags.BACKEND])
@@ -65,7 +68,7 @@ async def login(request):
             # The form adds "Please select a device." here because this user has no device. Replace it with our message.
             form.errors.clear()
             form.add_error(None, "TOTP not set up or wrong code entered.")
-            return await render_login(request, form, status=400)
+            return await render_login(request, form, LOGIN_TEMPLATE, status=400)
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(user)
         await alogin(request, user)
@@ -85,4 +88,4 @@ async def login(request):
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, logged_in_user)
         return redirect(get_next_url(request))
-    return await render_login(request, form, status=400)
+    return await render_login(request, form, LOGIN_TEMPLATE, status=400)

@@ -3,11 +3,20 @@ from urllib.parse import parse_qs, urlparse
 
 import segno
 from asgiref.sync import sync_to_async
+from django.contrib.auth import get_user_model
+from django.shortcuts import render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 # How many PBKDF2 iterations to run on each recovery code.
 RECOVERY_CODE_HASH_ITERATIONS = 100000
+
+# How many single-use recovery codes to create for each account.
+RECOVERY_CODE_COUNT = 10
+
+# Device names. The login device dropdown shows them, so they should read clearly.
+TOTP_DEVICE_NAME = "Authenticator app"
+RECOVERY_DEVICE_NAME = "Recovery code"
 
 # Shown when the 6-digit code from an authenticator app is wrong during setup.
 INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and try again."
@@ -66,6 +75,115 @@ async def verify_recovery_code(device, code):
     return True
 
 
+def create_recovery_codes(user, confirmed):
+    """
+    Create a recovery-code device for the user with new random codes. Only hashes are stored.
+
+    Hashing is CPU-bound, so async callers wrap this in sync_to_async.
+
+    Parameters:
+        user (User): The user the codes belong to.
+        confirmed (bool): Whether the device is confirmed. Signup creates it unconfirmed until the
+            authenticator app is confirmed. Replacing codes creates it confirmed.
+
+    Returns:
+        list[str]: The plain-text recovery codes, to show the user one time.
+    """
+    device = StaticDevice.objects.create(user=user, name=RECOVERY_DEVICE_NAME, confirmed=confirmed)
+    codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
+    # Save all the hashed codes in one query instead of one query per code.
+    StaticToken.objects.bulk_create(
+        [StaticToken(device=device, token=hash_recovery_code(code, device)) for code in codes]
+    )
+    return codes
+
+
+def create_totp_device(user):
+    """
+    Create an unconfirmed authenticator app device for the user.
+
+    Parameters:
+        user (User): The user the device belongs to.
+
+    Returns:
+        TOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
+    """
+    return TOTPDevice.objects.create(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+
+
+def confirmed_totp_device(user):
+    """
+    Return the user's confirmed authenticator app device, or None if they have none.
+
+    Parameters:
+        user (User): The user to look up.
+
+    Returns:
+        TOTPDevice | None: The oldest confirmed device, if any.
+    """
+    return TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").first()
+
+
+def _unconfirmed_totp_devices():
+    """
+    Return the queryset of unconfirmed authenticator app devices.
+
+    Every unconfirmed lookup starts here, so the confirmed=False filter can't be left out by a caller.
+
+    Returns:
+        QuerySet: Unconfirmed TOTP devices, oldest first, with the user loaded.
+    """
+    return TOTPDevice.objects.filter(confirmed=False).select_related("user").order_by("id")
+
+
+def unconfirmed_totp_by_user(user):
+    """
+    Return the user's unfinished authenticator app setup, or None if there isn't one.
+
+    The user must be the logged-in user (request.user), never a value taken from request data.
+
+    Parameters:
+        user (User): The logged-in user to look up.
+
+    Returns:
+        TOTPDevice | None: The oldest unconfirmed device, if any.
+    """
+    return _unconfirmed_totp_devices().filter(user=user).first()
+
+
+def unconfirmed_totp_by_device_id(device_id):
+    """
+    Return the unfinished authenticator app setup with this ID, or None if there isn't one.
+
+    Only signup uses this, because its session stores the device ID before the user is logged in.
+    The ID must come from the server-side session, never from request data.
+
+    Parameters:
+        device_id (int | None): The device ID from the session.
+
+    Returns:
+        TOTPDevice | None: The unconfirmed device, or None if the ID is missing or not unconfirmed.
+    """
+    if device_id is None:
+        return None
+    return _unconfirmed_totp_devices().filter(id=device_id).first()
+
+
+def users_matching_username(username):
+    """
+    Return a queryset of the accounts whose username matches, ignoring letter case.
+
+    Signup stops two usernames from differing only in case, so at most one account matches.
+
+    Parameters:
+        username (str): The username to match.
+
+    Returns:
+        QuerySet: The matching accounts. Callers add .exists(), .first(), or .afirst() as needed.
+    """
+    return get_user_model().objects.filter(username__iexact=username)
+
+
 def clear_unconfirmed_totp(user):
     """
     Delete the user's unfinished authenticator app setup, if any. Confirmed devices and recovery codes are not touched.
@@ -122,3 +240,19 @@ def confirm_device(device, token):
     # Confirming the authenticator also confirms the recovery codes, which were created at the same time.
     StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).update(confirmed=True)
     return True
+
+
+async def render_async(request, template, context=None, status=200):
+    """
+    Render a template from async code. Django's render() is synchronous, so it runs in a thread.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        template (str): The template path, passed in by the view.
+        context (dict | None): The template context. Defaults to none.
+        status (int): The HTTP status code for the response (default: 200).
+
+    Returns:
+        HttpResponse: The rendered page.
+    """
+    return await sync_to_async(render, thread_sensitive=True)(request, template, context, status=status)

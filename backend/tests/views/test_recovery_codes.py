@@ -42,7 +42,8 @@ class TestRecoveryCodes(TestCase):
         response = self._refresh()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Cache-Control"], "no-store")
+        # never_cache sets no-store along with other directives, so check that the directive is present.
+        self.assertIn("no-store", response["Cache-Control"])
         self.assertContains(response, "I have written down my codes")
         self.assertNotContains(response, "Get new recovery codes")
 

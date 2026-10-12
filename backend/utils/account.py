@@ -2,11 +2,18 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
+from django_otp.plugins.otp_static.models import StaticDevice
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
-from backend.utils.authentication import enrollment_details, hash_recovery_code
-from backend.utils.signup import RECOVERY_CODE_COUNT
+from backend.utils.authentication import (
+    clear_unconfirmed_totp,
+    confirmed_totp_device,
+    create_recovery_codes,
+    create_totp_device,
+    enrollment_details,
+    unconfirmed_totp_by_user,
+    users_matching_username,
+)
 
 
 class UsernameForm(forms.ModelForm):
@@ -32,7 +39,7 @@ class UsernameForm(forms.ModelForm):
             ValidationError: If another account already uses this name in any letter case.
         """
         username = self.cleaned_data["username"]
-        taken = get_user_model().objects.filter(username__iexact=username).exclude(pk=self.instance.pk)
+        taken = users_matching_username(username).exclude(pk=self.instance.pk)
         if taken.exists():
             raise ValidationError("A user with that username already exists.")
         return username
@@ -107,32 +114,6 @@ class PasswordForm(forms.Form):
         return self.user
 
 
-def confirmed_totp_device(user):
-    """
-    Return the user's confirmed authenticator app device, or None if they have none.
-
-    Parameters:
-        user (User): The user to look up.
-
-    Returns:
-        TOTPDevice | None: The oldest confirmed device, if any.
-    """
-    return TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").first()
-
-
-def unconfirmed_totp_device(user):
-    """
-    Return the user's unfinished authenticator app setup, or None if there isn't one.
-
-    Parameters:
-        user (User): The user to look up.
-
-    Returns:
-        TOTPDevice | None: The oldest unconfirmed device, if any.
-    """
-    return TOTPDevice.objects.filter(user=user, confirmed=False).order_by("id").first()
-
-
 def start_totp_setup(user):
     """
     Begin turning on two-factor authentication. Any earlier unfinished setup is replaced with a new device.
@@ -143,8 +124,8 @@ def start_totp_setup(user):
     Returns:
         TOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
     """
-    TOTPDevice.objects.filter(user=user, confirmed=False).delete()
-    return TOTPDevice.objects.create(user=user, name="Authenticator app", confirmed=False)
+    clear_unconfirmed_totp(user)
+    return create_totp_device(user)
 
 
 def turn_off_totp(user):
@@ -174,12 +155,7 @@ def replace_recovery_codes(user):
     """
     # Deleting the recovery-code device also deletes its tokens, so the old codes can't be used.
     StaticDevice.objects.filter(user=user).delete()
-    device = StaticDevice.objects.create(user=user, name="Recovery code", confirmed=True)
-    codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
-    StaticToken.objects.bulk_create(
-        [StaticToken(device=device, token=hash_recovery_code(code, device)) for code in codes]
-    )
-    return codes
+    return create_recovery_codes(user, confirmed=True)
 
 
 def has_totp(user):
@@ -258,7 +234,7 @@ def security_context(request, **extra):
         dict: The context for the Security section template.
     """
     user = request.user
-    pending = unconfirmed_totp_device(user)
+    pending = unconfirmed_totp_by_user(user)
     context = {
         "password_form": PasswordForm(user),
         "has_totp": has_totp(user),

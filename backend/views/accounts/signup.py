@@ -2,9 +2,10 @@ import logging
 
 from asgiref.sync import sync_to_async
 from django.db import IntegrityError
-from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 from ninja import Router
 
+from backend.utils.authentication import render_async
 from backend.utils.signup import (
     ENROLLMENT_STEP,
     SKIP_STEP,
@@ -25,9 +26,12 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 SIGNUP_TEMPLATE = "registration/signup.html"
+# The authenticator setup page template, shown after the account is created.
+AUTHENTICATE_TEMPLATE = "registration/authenticate.html"
 
 
 @router.get("/signup/", tags=[APITags.BACKEND], url_name="signup")
+@never_cache
 async def signup_page(request):
     """
     Show a fresh account creation form. Any unfinished authenticator step from earlier is abandoned.
@@ -42,10 +46,11 @@ async def signup_page(request):
     await abandon_pending_enrollment(request.session)
 
     form = await sync_to_async(SignupForm, thread_sensitive=True)()
-    return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form})
+    return await render_async(request, SIGNUP_TEMPLATE, {"form": form})
 
 
 @router.post("/signup/", tags=[APITags.BACKEND])
+@never_cache
 async def signup(request):
     """
     Create an account and show the authenticator setup step, or confirm or skip that step when the form says so.
@@ -59,7 +64,7 @@ async def signup(request):
     # The authenticator step posts a hidden "step" value, so it's handled as confirmation or skip, not signup.
     step = request.POST.get("step")
     if step == ENROLLMENT_STEP:
-        return await confirm_enrollment(request)
+        return await confirm_enrollment(request, AUTHENTICATE_TEMPLATE)
     if step == SKIP_STEP:
         return await skip_enrollment(request)
 
@@ -69,7 +74,7 @@ async def signup(request):
 
     # Show the form again with its errors. The 400 status tells the browser the submission was rejected, and nothing is created.
     if not is_valid:
-        return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
+        return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
 
     # Create the account and its unconfirmed devices, then show the setup step.
     try:
@@ -77,6 +82,6 @@ async def signup(request):
     except IntegrityError:
         # Another request saved the same username after the check above. Show the form again instead of a 500.
         form.add_error("username", "A user with that username already exists.")
-        return await sync_to_async(render, thread_sensitive=True)(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
+        return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
     await store_pending_device(request.session, totp.id, codes)
-    return await render_authenticate(request, totp, codes)
+    return await render_authenticate(request, totp, codes, AUTHENTICATE_TEMPLATE)

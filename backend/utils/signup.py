@@ -1,16 +1,18 @@
 from asgiref.sync import sync_to_async
-from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
-from django.shortcuts import redirect, render
-from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
+from django.shortcuts import redirect
 
 from backend.utils.authentication import (
     INVALID_CODE_MESSAGE,
+    clear_unconfirmed_totp,
     confirm_device,
+    create_recovery_codes,
+    create_totp_device,
     enrollment_details,
-    hash_recovery_code,
+    render_async,
+    unconfirmed_totp_by_device_id,
+    users_matching_username,
 )
 
 
@@ -33,13 +35,10 @@ class SignupForm(UserCreationForm):
         """
         username = self.cleaned_data["username"]
         # The database unique check is case-sensitive, so check case-insensitively here.
-        if get_user_model().objects.filter(username__iexact=username).exists():
+        if users_matching_username(username).exists():
             raise ValidationError("A user with that username already exists.")
         return username
 
-
-# How many single-use recovery codes to create for each new account.
-RECOVERY_CODE_COUNT = 10
 
 # Session keys for the signup enrollment that is waiting for the user to confirm their authenticator app.
 PENDING_DEVICE_SESSION_KEY = "pending_totp_device_id"
@@ -50,23 +49,6 @@ ENROLLMENT_STEP = "authenticate"
 
 # Hidden form value that tells POST /signup the user is skipping the authenticator step.
 SKIP_STEP = "skip"
-
-# The authenticator setup page template. render_authenticate() is the only place that renders it.
-AUTHENTICATE_TEMPLATE = "registration/authenticate.html"
-
-
-def hash_recovery_codes(codes, device):
-    """
-    Hash a batch of recovery codes for one device. This is CPU-bound, so call it through sync_to_async.
-
-    Parameters:
-        codes (list[str]): The plain-text recovery codes.
-        device (StaticDevice): The recovery-code device the codes belong to.
-
-    Returns:
-        list[str]: The truncated hashes, in the same order as the codes.
-    """
-    return [hash_recovery_code(code, device) for code in codes]
 
 
 async def create_user_and_devices(form):
@@ -81,17 +63,9 @@ async def create_user_and_devices(form):
     """
     # Django's form.save() has no async version, so run it in a thread.
     user = await sync_to_async(form.save, thread_sensitive=True)()
-    # The device names appear in the login device dropdown, so they should read clearly.
-    totp = await TOTPDevice.objects.acreate(user=user, name="Authenticator app", confirmed=False)
-    static = await StaticDevice.objects.acreate(user=user, name="Recovery code", confirmed=False)
-    # Generate the recovery codes once. They're returned here so they can be shown to the user one time.
-    codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
-    # Hashing 10 codes at 100,000 iterations each is slow, so run it in a worker thread instead of blocking the event loop.
-    hashed_codes = await sync_to_async(hash_recovery_codes, thread_sensitive=False)(codes, static)
-    # Save all the codes in one query instead of one query per code.
-    await StaticToken.objects.abulk_create(
-        [StaticToken(device=static, token=hashed_code) for hashed_code in hashed_codes]
-    )
+    totp = await sync_to_async(create_totp_device, thread_sensitive=True)(user)
+    # Hashing the codes is slow, so run it in a worker thread instead of blocking the event loop.
+    codes = await sync_to_async(create_recovery_codes, thread_sensitive=False)(user, confirmed=False)
     return totp, codes
 
 
@@ -105,11 +79,8 @@ async def pending_device(device_id):
     Returns:
         TOTPDevice | None: The unconfirmed device, or None if there is none.
     """
-    # No enrollment is pending if the session has no device ID.
-    if device_id is None:
-        return None
     # Only unconfirmed devices count as pending. A confirmed device has already finished enrollment.
-    return await TOTPDevice.objects.filter(id=device_id, confirmed=False).select_related("user").afirst()
+    return await sync_to_async(unconfirmed_totp_by_device_id, thread_sensitive=True)(device_id)
 
 
 async def store_pending_device(session, device_id, codes):
@@ -178,7 +149,7 @@ async def clear_pending_device(session):
     await session.apop(PENDING_CODES_SESSION_KEY, None)
 
 
-async def render_authenticate(request, device, codes, status=200, error=None):
+async def render_authenticate(request, device, codes, template, status=200, error=None):
     """
     Render the authenticator setup step with the QR code, secret, and recovery codes.
 
@@ -186,6 +157,7 @@ async def render_authenticate(request, device, codes, status=200, error=None):
         request (HttpRequest): The current request.
         device (TOTPDevice): The unconfirmed TOTP device to enroll.
         codes (list[str] | None): The recovery codes to display, or None once they're no longer shown.
+        template (str): The authenticator setup page template path, passed in by the view.
         status (int): The HTTP status code for the response (default: 200).
         error (str | None): An error message to display above the form (default: None).
 
@@ -195,20 +167,17 @@ async def render_authenticate(request, device, codes, status=200, error=None):
     # The QR code and secret come from the device, so they're rebuilt on every render.
     details = enrollment_details(device)
     context = {**details, "codes": codes, "error": error}
-    response = await sync_to_async(render, thread_sensitive=True)(
-        request, AUTHENTICATE_TEMPLATE, context, status=status
-    )
-    # This page shows the TOTP secret and recovery codes. Forbid browsers and proxies from storing a copy.
-    response["Cache-Control"] = "no-store"
-    return response
+    # The signup views are wrapped in never_cache, so this page is not stored by the browser.
+    return await render_async(request, template, context, status=status)
 
 
-async def confirm_enrollment(request):
+async def confirm_enrollment(request, template):
     """
     Confirm the authenticator app with a code from the user's device.
 
     Parameters:
         request (HttpRequest): The current request, with the code in POST as "otp_token".
+        template (str): The authenticator setup page template path, passed in by the view.
 
     Returns:
         HttpResponse: A redirect to login on success, otherwise the setup page with an error.
@@ -226,7 +195,7 @@ async def confirm_enrollment(request):
         await clear_pending_device(request.session)
         return redirect("api:login")
 
-    return await render_authenticate(request, device, codes, status=400, error=INVALID_CODE_MESSAGE)
+    return await render_authenticate(request, device, codes, template, status=400, error=INVALID_CODE_MESSAGE)
 
 
 async def skip_enrollment(request):
@@ -247,7 +216,7 @@ async def skip_enrollment(request):
         return redirect("api:signup")
 
     # Only the unconfirmed TOTP device is removed. The recovery codes stay on the account.
-    await TOTPDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
+    await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(device.user)
     # Forget the pending enrollment, so the recovery codes don't stay in the session.
     await clear_pending_device(request.session)
     return redirect("api:login")
@@ -262,5 +231,5 @@ async def abandon_pending_enrollment(session):
     """
     device, _ = await load_pending_enrollment(session)
     if device is not None:
-        await TOTPDevice.objects.filter(user_id=device.user_id, confirmed=False).adelete()
+        await sync_to_async(clear_unconfirmed_totp, thread_sensitive=True)(device.user)
     await clear_pending_device(session)

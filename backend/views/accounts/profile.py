@@ -3,6 +3,7 @@ from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 from ninja import Router
 
 from backend.utils.account import (
@@ -15,9 +16,13 @@ from backend.utils.account import (
     security_context,
     start_totp_setup,
     turn_off_totp,
-    unconfirmed_totp_device,
 )
-from backend.utils.authentication import INVALID_CODE_MESSAGE, clear_unconfirmed_totp, confirm_device
+from backend.utils.authentication import (
+    INVALID_CODE_MESSAGE,
+    clear_unconfirmed_totp,
+    confirm_device,
+    unconfirmed_totp_by_user,
+)
 from fAIth.api_tags import APITags
 
 # Create router for account endpoints
@@ -31,6 +36,7 @@ SECURITY_SECTION_TEMPLATE = "profile/partials/security.html"
 
 
 @router.get("/profile/", tags=[APITags.BACKEND], url_name="profile")
+@never_cache
 @login_required
 def account_page(request):
     """
@@ -43,6 +49,7 @@ def account_page(request):
 
 
 @router.get("/profile/account/", tags=[APITags.BACKEND], url_name="profile_account")
+@never_cache
 @login_required
 def account_section(request):
     """
@@ -56,6 +63,7 @@ def account_section(request):
 
 
 @router.post("/profile/username/", tags=[APITags.BACKEND], url_name="profile_username")
+@never_cache
 @login_required
 def change_username(request):
     """
@@ -93,6 +101,7 @@ def change_username(request):
 
 
 @router.post("/profile/delete/", tags=[APITags.BACKEND], url_name="profile_delete")
+@never_cache
 @login_required
 def delete_account(request):
     """
@@ -122,6 +131,7 @@ def delete_account(request):
 
 
 @router.get("/profile/security/", tags=[APITags.BACKEND], url_name="profile_security")
+@never_cache
 @login_required
 def security_section(request):
     """
@@ -131,6 +141,7 @@ def security_section(request):
 
 
 @router.post("/profile/password/", tags=[APITags.BACKEND], url_name="profile_password")
+@never_cache
 @login_required
 def change_password(request):
     """
@@ -166,6 +177,7 @@ def change_password(request):
 
 
 @router.post("/profile/recovery-codes/", tags=[APITags.BACKEND], url_name="profile_recovery_codes")
+@never_cache
 @login_required
 def refresh_recovery_codes(request):
     """
@@ -192,13 +204,12 @@ def refresh_recovery_codes(request):
         )
 
     codes = replace_recovery_codes(request.user)
-    response = render(request, SECURITY_SECTION_TEMPLATE, security_context(request, recovery_codes=codes))
-    # This response shows the plain-text codes. Forbid browsers and proxies from storing a copy.
-    response["Cache-Control"] = "no-store"
-    return response
+    # This response shows the plain-text codes. The never_cache decorator keeps browsers and proxies from storing it.
+    return render(request, SECURITY_SECTION_TEMPLATE, security_context(request, recovery_codes=codes))
 
 
 @router.post("/profile/totp/enable/", tags=[APITags.BACKEND], url_name="profile_totp_enable")
+@never_cache
 @login_required
 def enable_totp(request):
     """
@@ -235,6 +246,7 @@ def enable_totp(request):
 
 
 @router.post("/profile/totp/confirm/", tags=[APITags.BACKEND], url_name="profile_totp_confirm")
+@never_cache
 @login_required
 def confirm_totp(request):
     """
@@ -247,7 +259,7 @@ def confirm_totp(request):
         HttpResponse: The Security section, showing the authenticator app as on. The status is 400 when the
         code is wrong, or there is no setup in progress.
     """
-    device = unconfirmed_totp_device(request.user)
+    device = unconfirmed_totp_by_user(request.user)
     if device is None:
         return render(
             request,
@@ -274,6 +286,7 @@ def confirm_totp(request):
 
 
 @router.post("/profile/totp/cancel/", tags=[APITags.BACKEND], url_name="profile_totp_cancel")
+@never_cache
 @login_required
 def cancel_totp(request):
     """
@@ -290,6 +303,7 @@ def cancel_totp(request):
 
 
 @router.post("/profile/totp/disable/", tags=[APITags.BACKEND], url_name="profile_totp_disable")
+@never_cache
 @login_required
 def disable_totp(request):
     """
