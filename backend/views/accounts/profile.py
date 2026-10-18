@@ -26,14 +26,14 @@ from backend.utils.authentication import (
 )
 from fAIth.api_tags import APITags
 
-# Create router for account endpoints
-router = Router()
-
 # The Account section partial, and the greeting that the username change swaps into the navbar.
 ACCOUNT_SECTION_TEMPLATE = "profile/partials/settings.html"
 GREETING_TEMPLATE = "profile/partials/greeting.html"
 # The Security section partial, which holds the password, two-factor, and recovery key cards.
 SECURITY_SECTION_TEMPLATE = "profile/partials/security.html"
+
+# Create router for account endpoints
+router = Router()
 
 # In async views, always get the logged-in user with `await request.auser()`, never `request.user`.
 # request.user is a lazy wrapper that queries the database synchronously, which async code can't do.
@@ -88,7 +88,7 @@ async def change_username(request):
     form = UsernameForm(request.POST, instance=user)
 
     # Check the password and code first, so a wrong password never reveals whether the name is taken.
-    auth_error = await check_reauth(user, request.POST.get("password", ""), request.POST.get("otp_token", ""))
+    auth_error = await check_reauth(request, user)
     if auth_error:
         context = await section_context(request, form=form, username_auth_error=auth_error)
         return await render_async(request, ACCOUNT_SECTION_TEMPLATE, context, status=400)
@@ -122,7 +122,7 @@ async def delete_account(request):
         when the password or code is wrong.
     """
     user = await request.auser()
-    auth_error = await check_reauth(user, request.POST.get("password", ""), request.POST.get("otp_token", ""))
+    auth_error = await check_reauth(request, user)
     if auth_error:
         context = await section_context(request, delete_auth_error=auth_error)
         return await render_async(request, ACCOUNT_SECTION_TEMPLATE, context, status=400)
@@ -150,11 +150,12 @@ async def security_section(request):
 @login_required
 async def change_password(request):
     """
-    Change the logged-in user's password after confirming the current password (and verification code if the
-    account has an authenticator app).
+    Change the logged-in user's password after confirming either the current password and a code from the
+    authenticator app, or a recovery code on its own.
 
     Parameters:
-        request (HttpRequest): The current request, with password, otp_token, new_password1, and new_password2 in POST.
+        request (HttpRequest): The current request, with password, otp_token, recovery_code, new_password1,
+            and new_password2 in POST.
 
     Returns:
         HttpResponse: The Security section, with a success message when the change works. The status is 400 when
@@ -163,7 +164,7 @@ async def change_password(request):
     """
     user = await request.auser()
     # Check the current password and code first, so a wrong password never shows feedback about the new one.
-    auth_error = await check_reauth(user, request.POST.get("password", ""), request.POST.get("otp_token", ""))
+    auth_error = await check_reauth(request, user, allow_recovery_code=True)
     if auth_error:
         context = await security_context(request, password_auth_error=auth_error)
         return await render_async(request, SECURITY_SECTION_TEMPLATE, context, status=400)
@@ -200,7 +201,7 @@ async def refresh_recovery_codes(request):
         code is wrong. The settings.js script swaps that response in, since HTMX skips 4xx by default.
     """
     user = await request.auser()
-    auth_error = await check_reauth(user, request.POST.get("password", ""), request.POST.get("otp_token", ""))
+    auth_error = await check_reauth(request, user)
     if auth_error:
         context = await security_context(request, recovery_auth_error=auth_error)
         return await render_async(request, SECURITY_SECTION_TEMPLATE, context, status=400)
@@ -231,7 +232,7 @@ async def enable_totp(request):
         return await render_async(request, SECURITY_SECTION_TEMPLATE, context, status=400)
 
     # No authenticator app exists yet, so check_reauth asks for the password only.
-    auth_error = await check_reauth(user, request.POST.get("password", ""), "")
+    auth_error = await check_reauth(request, user)
     if auth_error:
         context = await security_context(request, totp_enable_error=auth_error)
         return await render_async(request, SECURITY_SECTION_TEMPLATE, context, status=400)
@@ -293,17 +294,18 @@ async def cancel_totp(request):
 @login_required
 async def disable_totp(request):
     """
-    Turn off two-factor authentication after confirming the password and a code from the authenticator app.
+    Turn off two-factor authentication after confirming either the password and a code from the authenticator
+    app, or a recovery code on its own. Only one of the two codes may be given.
 
     Parameters:
-        request (HttpRequest): The current request, with password and otp_token in POST.
+        request (HttpRequest): The current request, with password, otp_token, and recovery_code in POST.
 
     Returns:
         HttpResponse: The Security section, showing two-factor authentication as off. The status is 400 when
-        the password or code is wrong.
+        the password or code is wrong, or when both codes are given.
     """
     user = await request.auser()
-    auth_error = await check_reauth(user, request.POST.get("password", ""), request.POST.get("otp_token", ""))
+    auth_error = await check_reauth(request, user, allow_recovery_code=True)
     if auth_error:
         context = await security_context(request, totp_disable_error=auth_error)
         return await render_async(request, SECURITY_SECTION_TEMPLATE, context, status=400)

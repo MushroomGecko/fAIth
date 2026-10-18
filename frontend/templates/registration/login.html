@@ -45,7 +45,7 @@
                             <hr class="my-4">
                             <div class="mb-4">
                                 <label class="form-label" for="{{ form.otp_token.id_for_label }}">
-                                    Verification code <span class="text-muted">(optional)</span>
+                                    Authenticator app code <span class="text-muted">(optional)</span>
                                 </label>
                                 <input class="form-control" type="text" name="{{ form.otp_token.html_name }}"
                                        id="{{ form.otp_token.id_for_label }}" autocomplete="one-time-code" inputmode="text">
@@ -58,6 +58,12 @@
                             </div>
                             <button class="btn btn-primary w-100" type="submit">Log In</button>
                         </form>
+                        <div class="text-center mt-3">
+                            <span class="text-muted">No account yet?</span> <a href="{% url 'api:signup' %}">Sign up</a>
+                        </div>
+                        <div class="text-center mt-2">
+                            <a href="{% url 'api:recover' %}">Forgot your password or two-factor authentication?</a>
+                        </div>
                     </div>
                 </div>
             </div>

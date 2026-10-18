@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Recover Account | fAIth{% endblock %}
+{% block description %}Recover your fAIth account with a recovery code{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+    <header class="navbar navbar-light bg-light">
+        <div class="container-fluid justify-content-center">
+            <a class="navbar-brand m-0" href="/">fAIth - AI Powered Study Bible</a>
+        </div>
+    </header>
+
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-6 col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h1 class="h3 text-center mb-4">Recover Account</h1>
+                        <p class="text-muted small">Enter your username and one of the recovery codes you saved. Each code works once. Then choose a new password.</p>
+                        <p class="text-muted small">After you reset your password, your recovery codes are replaced with new ones and your authenticator app is turned off. You can set the app up again on the next page or skip it.</p>
+
+                        <form method="post" action="{% url 'api:recover' %}">
+                            {% csrf_token %}
+                            {% if error %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endif %}
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">{{ form.non_field_errors|first }}</div>
+                            {% endif %}
+
+                            <div class="mb-3">
+                                <label class="form-label" for="recover-username">Username</label>
+                                <input class="form-control" type="text" name="username" id="recover-username"
+                                       value="{{ username|default_if_none:'' }}" autocomplete="username" required autofocus>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" for="recover-code">Recovery code</label>
+                                <input class="form-control font-monospace" type="text" name="recovery_code" id="recover-code"
+                                       autocomplete="off" autocapitalize="none" spellcheck="false" required>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="{{ form.new_password1.id_for_label }}">New password</label>
+                                <input class="form-control" type="password" name="{{ form.new_password1.html_name }}"
+                                       id="{{ form.new_password1.id_for_label }}" autocomplete="new-password" required>
+                                {% if form.new_password1.errors %}
+                                    <div class="alert alert-danger mt-2">{{ form.new_password1.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="{{ form.new_password2.id_for_label }}">Confirm new password</label>
+                                <input class="form-control" type="password" name="{{ form.new_password2.html_name }}"
+                                       id="{{ form.new_password2.id_for_label }}" autocomplete="new-password" required>
+                                {% if form.new_password2.errors %}
+                                    <div class="alert alert-danger mt-2">{{ form.new_password2.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-primary w-100" type="submit">Reset Password</button>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            <a href="{% url 'api:login' %}">Back to log in</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

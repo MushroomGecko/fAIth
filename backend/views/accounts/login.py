@@ -13,11 +13,11 @@ from backend.utils.login import (
 )
 from fAIth.api_tags import APITags
 
-# Create router for login endpoints
-router = Router()
-
 # The login page template, rendered by the login views.
 LOGIN_TEMPLATE = "registration/login.html"
+
+# Create router for login endpoints
+router = Router()
 
 
 @router.get("/login/", tags=[APITags.BACKEND], url_name="login")
@@ -72,7 +72,7 @@ async def login(request):
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await clear_unconfirmed_totp(user)
         await alogin(request, user)
-        return redirect(get_next_url(request))
+        return redirect(await get_next_url(request))
 
     # The server always sets the device to the user's authenticator app. The browser can't choose
     # a recovery-code device, and recovery codes are never checked at login.
@@ -87,5 +87,5 @@ async def login(request):
         await clear_unconfirmed_totp(logged_in_user)
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, logged_in_user)
-        return redirect(get_next_url(request))
+        return redirect(await get_next_url(request))
     return await render_login(request, form, LOGIN_TEMPLATE, status=400)

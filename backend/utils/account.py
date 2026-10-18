@@ -8,12 +8,14 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from backend.utils.authentication import (
     clear_unconfirmed_totp,
+    confirmed_recovery_device,
     confirmed_totp_device,
     create_recovery_codes,
     create_totp_device,
     enrollment_details,
     unconfirmed_totp_by_user,
     users_matching_username,
+    verify_recovery_code,
 )
 
 
@@ -177,34 +179,59 @@ async def has_totp(user):
     return await confirmed_totp_device(user) is not None
 
 
-async def check_reauth(user, password, otp_token):
+async def check_reauth(request, user, allow_recovery_code=False):
     """
-    Check the password, and the verification code if the account has an authenticator app.
+    Check that the user is who they say they are before a sensitive action such as changing the username
+    or deleting the account.
 
-    Used before sensitive actions such as changing the username or deleting the account. The code is
-    derived from the account: it is only required when the user has a confirmed authenticator app.
+    The password and authenticator code are read from request.POST. Without a recovery code, the password is
+    required, and so is the verification code when the account has a confirmed authenticator app. When
+    allow_recovery_code is True, a recovery code on its own is also accepted in place of both the password and
+    the authenticator code. The two options are: (password and authenticator code) or (recovery code). Giving
+    both codes is an error, and the check runs before any code is verified, so entering both never uses up a
+    recovery code.
 
     Parameters:
+        request (HttpRequest): The current request, with password, otp_token, and recovery_code in POST.
         user (User): The logged-in user performing the action.
-        password (str): The password the user typed.
-        otp_token (str): The verification code the user typed, or an empty string.
+        allow_recovery_code (bool): Whether this action accepts a recovery code. Only the actions that show a
+            recovery code field pass True. Defaults to False.
 
     Returns:
         str | None: An error message for the user, or None if the checks pass.
     """
+    password = request.POST.get("password", "")
+    code = request.POST.get("otp_token", "").strip()
+    recovery = request.POST.get("recovery_code", "").strip() if allow_recovery_code else ""
+
+    if code and recovery:
+        # Checked before anything is verified, so a recovery code isn't used up when both are entered.
+        return "Enter either an authenticator code or a recovery code, not both."
+
+    if recovery:
+        recovery_device = await confirmed_recovery_device(user)
+        if recovery_device is None or not await verify_recovery_code(recovery_device, recovery):
+            return "That recovery code is not correct."
+        return None
+
     if not password:
         return "Enter your password to confirm."
     if not await user.acheck_password(password):
         return "That password is not correct."
 
     device = await confirmed_totp_device(user)
-    if device is not None:
-        code = (otp_token or "").strip()
-        if not code:
-            return "Enter the 6-digit code from your authenticator app."
-        # verify_token saves throttling state to the database, so it runs in a thread.
-        if not await sync_to_async(device.verify_token, thread_sensitive=True)(code):
-            return "That verification code is not correct."
+    if device is None:
+        return None
+
+    if not code:
+        if allow_recovery_code:
+            return (
+                "Enter the 6-digit code from your authenticator app, or use a recovery code instead of your password."
+            )
+        return "Enter the 6-digit code from your authenticator app."
+    # verify_token saves throttling state to the database, so it runs in a thread.
+    if not await sync_to_async(device.verify_token, thread_sensitive=True)(code):
+        return "That verification code is not correct."
     return None
 
 

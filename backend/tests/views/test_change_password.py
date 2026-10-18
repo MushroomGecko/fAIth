@@ -54,7 +54,7 @@ class TestChangePassword(TestCase):
         response = self._post(password="wrong-password")
 
         self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "That password is not correct.")
+        self.assertContains(response, "That password is not correct.", status_code=400)
         self._refresh()
         self.assertTrue(self.user.check_password(PASSWORD))
 
@@ -69,7 +69,7 @@ class TestChangePassword(TestCase):
         response = self._post(new_password2="a-different-test-password-789")
 
         self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "The two passwords do not match.")
+        self.assertContains(response, "The two passwords do not match.", status_code=400)
         self._refresh()
         self.assertTrue(self.user.check_password(PASSWORD))
 
@@ -77,7 +77,7 @@ class TestChangePassword(TestCase):
         response = self._post(new_password1=PASSWORD, new_password2=PASSWORD)
 
         self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "different from your current one")
+        self.assertContains(response, "different from your current one", status_code=400)
         self._refresh()
         self.assertTrue(self.user.check_password(PASSWORD))
 
@@ -94,7 +94,7 @@ class TestChangePassword(TestCase):
         response = self._post()
 
         self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "Enter the 6-digit code")
+        self.assertContains(response, "Enter the 6-digit code", status_code=400)
         self._refresh()
         self.assertTrue(self.user.check_password(PASSWORD))
 

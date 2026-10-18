@@ -1,3 +1,4 @@
+from asgiref.sync import async_to_sync
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -55,7 +56,7 @@ class TestRecoveryCodes(TestCase):
         codes = response.context["recovery_codes"]
         self.assertEqual(len(codes), 10)
         stored = set(StaticToken.objects.filter(device=device).values_list("token", flat=True))
-        self.assertEqual(stored, {hash_recovery_code(code, device) for code in codes})
+        self.assertEqual(stored, {async_to_sync(hash_recovery_code)(code, device) for code in codes})
 
     def test_refresh_replaces_old_codes(self):
         old = StaticDevice.objects.create(user=self.user, name="Recovery code", confirmed=True)

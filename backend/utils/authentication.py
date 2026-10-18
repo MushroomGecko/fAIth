@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 from urllib.parse import parse_qs, urlparse
 
@@ -22,12 +23,12 @@ RECOVERY_DEVICE_NAME = "Recovery code"
 INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and try again."
 
 
-def hash_recovery_code(code, device):
+async def hash_recovery_code(code, device):
     """
     Hash one recovery code with PBKDF2 and truncate it to fit StaticToken.token.
 
     The salt is built from the device's primary key. It isn't secret, it only needs to be unique
-    per device. This is CPU-bound, so async callers run it through sync_to_async.
+    per device. PBKDF2 is CPU-bound, so it runs in a worker thread and doesn't block the event loop.
 
     Parameters:
         code (str): The recovery code, as the user typed it or as it was generated.
@@ -39,7 +40,9 @@ def hash_recovery_code(code, device):
     # Normalize first. random_token() returns lowercase, so a typed code must match that form.
     normalized = code.strip().lower()
     salt = str(device.pk)
-    digest = hashlib.pbkdf2_hmac("sha256", normalized.encode(), salt.encode(), RECOVERY_CODE_HASH_ITERATIONS)
+    digest = await asyncio.to_thread(
+        hashlib.pbkdf2_hmac, "sha256", normalized.encode(), salt.encode(), RECOVERY_CODE_HASH_ITERATIONS
+    )
     return digest.hex()[:16]
 
 
@@ -63,7 +66,7 @@ async def verify_recovery_code(device, code):
     if not allowed:
         return False
 
-    hashed = await sync_to_async(hash_recovery_code, thread_sensitive=False)(code, device)
+    hashed = await hash_recovery_code(code, device)
     # Deleting the matching token both checks and uses it. The count tells us whether it matched.
     deleted, _ = await StaticToken.objects.filter(device=device, token=hashed).adelete()
     if not deleted:
@@ -89,8 +92,8 @@ async def create_recovery_codes(user, confirmed):
     """
     device = await StaticDevice.objects.acreate(user=user, name=RECOVERY_DEVICE_NAME, confirmed=confirmed)
     codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
-    # Hashing is CPU-bound (PBKDF2), so all the codes are hashed together in one worker thread.
-    hashes = await sync_to_async(lambda: [hash_recovery_code(code, device) for code in codes], thread_sensitive=False)()
+    # Each PBKDF2 hash runs in its own worker thread, so the codes are hashed in parallel.
+    hashes = await asyncio.gather(*(hash_recovery_code(code, device) for code in codes))
     # Save all the hashed codes in one query instead of one query per code.
     await StaticToken.objects.abulk_create([StaticToken(device=device, token=token) for token in hashes])
     return codes
@@ -122,7 +125,20 @@ async def confirmed_totp_device(user):
     return await TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").afirst()
 
 
-def _unconfirmed_totp_devices():
+async def confirmed_recovery_device(user):
+    """
+    Return the user's confirmed recovery-code device, or None if they have none.
+
+    Parameters:
+        user (User): The user to look up.
+
+    Returns:
+        StaticDevice | None: The recovery-code device, if any.
+    """
+    return await StaticDevice.objects.filter(user=user, name=RECOVERY_DEVICE_NAME, confirmed=True).afirst()
+
+
+async def _unconfirmed_totp_devices():
     """
     Return the queryset of unconfirmed authenticator app devices.
 
@@ -146,7 +162,7 @@ async def unconfirmed_totp_by_user(user):
     Returns:
         TOTPDevice | None: The oldest unconfirmed device, if any.
     """
-    return await _unconfirmed_totp_devices().filter(user=user).afirst()
+    return await (await _unconfirmed_totp_devices()).filter(user=user).afirst()
 
 
 async def unconfirmed_totp_by_device_id(device_id):
@@ -164,7 +180,7 @@ async def unconfirmed_totp_by_device_id(device_id):
     """
     if device_id is None:
         return None
-    return await _unconfirmed_totp_devices().filter(id=device_id).afirst()
+    return await (await _unconfirmed_totp_devices()).filter(id=device_id).afirst()
 
 
 def users_matching_username(username):

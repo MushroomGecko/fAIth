@@ -52,7 +52,7 @@
                                 <input type="hidden" name="step" value="authenticate">
                                 {% csrf_token %}
                                 <div class="mb-3">
-                                    <label class="form-label" for="otp_token">Verification code</label>
+                                    <label class="form-label" for="otp_token">Authenticator app code</label>
                                     <input class="form-control" type="text" name="otp_token" id="otp_token"
                                            autocomplete="one-time-code" required>
                                 </div>

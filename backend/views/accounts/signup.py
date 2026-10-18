@@ -19,15 +19,15 @@ from backend.utils.signup import (
 )
 from fAIth.api_tags import APITags
 
+SIGNUP_TEMPLATE = "registration/signup.html"
+# The authenticator setup page template, shown after the account is created.
+AUTHENTICATE_TEMPLATE = "registration/authenticate.html"
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
 # Create router for signup endpoints
 router = Router()
-
-SIGNUP_TEMPLATE = "registration/signup.html"
-# The authenticator setup page template, shown after the account is created.
-AUTHENTICATE_TEMPLATE = "registration/authenticate.html"
 
 
 @router.get("/signup/", tags=[APITags.BACKEND], url_name="signup")

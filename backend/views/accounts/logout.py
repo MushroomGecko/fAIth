@@ -13,4 +13,4 @@ router = Router()
 async def logout(request):
     """Log out the current user and redirect to the page they were on, or the main site."""
     await alogout(request)
-    return redirect(get_next_url(request, default=settings.LOGOUT_REDIRECT_URL))
+    return redirect(await get_next_url(request, default=settings.LOGOUT_REDIRECT_URL))

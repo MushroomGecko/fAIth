@@ -4,7 +4,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from backend.utils.authentication import confirmed_totp_device, render_async, users_matching_username
 
 
-def get_next_url(request, default=None):
+async def get_next_url(request, default=None):
     """
     Return the page to send the user to after login or logout.
 

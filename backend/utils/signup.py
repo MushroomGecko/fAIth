@@ -15,6 +15,16 @@ from backend.utils.authentication import (
     users_matching_username,
 )
 
+# Session keys for the signup enrollment that is waiting for the user to confirm their authenticator app.
+PENDING_DEVICE_SESSION_KEY = "pending_totp_device_id"
+PENDING_CODES_SESSION_KEY = "pending_recovery_codes"
+
+# Hidden form value that tells POST /signup the user is confirming the authenticator step.
+ENROLLMENT_STEP = "authenticate"
+
+# Hidden form value that tells POST /signup the user is skipping the authenticator step.
+SKIP_STEP = "skip"
+
 
 class SignupForm(UserCreationForm):
     """
@@ -38,17 +48,6 @@ class SignupForm(UserCreationForm):
         if users_matching_username(username).exists():
             raise ValidationError("A user with that username already exists.")
         return username
-
-
-# Session keys for the signup enrollment that is waiting for the user to confirm their authenticator app.
-PENDING_DEVICE_SESSION_KEY = "pending_totp_device_id"
-PENDING_CODES_SESSION_KEY = "pending_recovery_codes"
-
-# Hidden form value that tells POST /signup the user is confirming the authenticator step.
-ENROLLMENT_STEP = "authenticate"
-
-# Hidden form value that tells POST /signup the user is skipping the authenticator step.
-SKIP_STEP = "skip"
 
 
 async def create_user_and_devices(form):

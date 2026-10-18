@@ -26,7 +26,7 @@
                     <div class="alert alert-success mt-2 mb-0">Your password was changed.</div>
                 {% endif %}
 
-                {% include "profile/partials/confirm_action.html" with collapse_id="password-confirm" trigger_label="Change password" confirm_label="Confirm" tone="primary" intro="Enter your current password to confirm it's you." auth_error=password_auth_error %}
+                {% include "profile/partials/confirm_action.html" with collapse_id="password-confirm" trigger_label="Change password" confirm_label="Confirm" tone="primary" intro="To change your password, enter your current password and a code from your authenticator app. Or enter a recovery code instead of both." recovery_key=True auth_error=password_auth_error %}
             </form>
         </div>
     </div>
@@ -44,7 +44,7 @@
 
                 <form hx-post="{% url 'api:profile_totp_disable' %}" hx-target="#accountPartialLoader" hx-swap="innerHTML">
                     {% csrf_token %}
-                    {% include "profile/partials/confirm_action.html" with collapse_id="totp-disable-confirm" trigger_label="Turn off two-factor authentication" confirm_label="Turn off" tone="danger" border_class="border-danger" intro="Enter your password and a code from your authenticator app to turn off two-factor authentication." auth_error=totp_disable_error %}
+                    {% include "profile/partials/confirm_action.html" with collapse_id="totp-disable-confirm" trigger_label="Turn off two-factor authentication" confirm_label="Turn off" tone="danger" border_class="border-danger" intro="To turn off two-factor authentication, enter your password and a code from your authenticator app. Or enter a recovery code instead of both." recovery_key=True auth_error=totp_disable_error %}
                 </form>
 
             {% elif pending_totp %}
@@ -57,7 +57,7 @@
 
                 <form hx-post="{% url 'api:profile_totp_confirm' %}" hx-target="#accountPartialLoader" hx-swap="innerHTML">
                     {% csrf_token %}
-                    <label class="form-label" for="totp-setup-otp">Verification code</label>
+                    <label class="form-label" for="totp-setup-otp">Authenticator app code</label>
                     <input class="form-control" type="text" name="otp_token" id="totp-setup-otp"
                            autocomplete="one-time-code" inputmode="numeric" required
                            data-cancel-url="{% url 'api:profile_totp_cancel' %}">
