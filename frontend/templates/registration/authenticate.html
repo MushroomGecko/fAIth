@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Set Up Verification | fAIth{% endblock %}
 {% block description %}Set up two-factor verification for fAIth{% endblock %}
@@ -71,11 +72,8 @@
             </div>
         </div>
     </main>
+{% endblock %}
 
-    <script>
-        // Once the user confirms they've saved the recovery codes, the button has done its job, so hide it.
-        document.getElementById('authenticator-setup').addEventListener('shown.bs.collapse', function () {
-            document.getElementById('reveal-authenticator').classList.add('d-none');
-        });
-    </script>
+{% block extra_js %}
+    <script src="{% static 'js/fAIth/registration/authenticate.js' %}"></script>
 {% endblock %}
