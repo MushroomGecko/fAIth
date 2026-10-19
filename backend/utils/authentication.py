@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import hashlib
+import secrets
 from urllib.parse import parse_qs, urlparse
 
 import segno
@@ -15,6 +17,13 @@ RECOVERY_CODE_HASH_ITERATIONS = 100000
 # How many single-use recovery codes to create for each account.
 RECOVERY_CODE_COUNT = 10
 
+# How many random bytes each recovery code holds. 16 bytes is 128 bits, shown as 32 hex characters.
+RECOVERY_CODE_BYTES = 16
+
+# How many bytes of the PBKDF2 hash to keep. 12 bytes is 96 bits, which encodes to exactly 16 base64url characters,
+# the most that StaticToken.token can hold.
+RECOVERY_HASH_BYTES = 12
+
 # Device names. The login device dropdown shows them, so they should read clearly.
 TOTP_DEVICE_NAME = "Authenticator app"
 RECOVERY_DEVICE_NAME = "Recovery code"
@@ -25,7 +34,7 @@ INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and
 
 async def hash_recovery_code(code, device):
     """
-    Hash one recovery code with PBKDF2 and truncate it to fit StaticToken.token.
+    Hash one recovery code with PBKDF2 and keep 96 bits of it, encoded to fit StaticToken.token.
 
     The salt is built from the device's primary key. It isn't secret, it only needs to be unique
     per device. PBKDF2 is CPU-bound, so it runs in a worker thread and doesn't block the event loop.
@@ -35,15 +44,16 @@ async def hash_recovery_code(code, device):
         device (StaticDevice): The recovery-code device the code belongs to.
 
     Returns:
-        str: The hash as 16 hex characters (64 bits).
+        str: The hash as 16 base64url characters (96 bits).
     """
-    # Normalize first. random_token() returns lowercase, so a typed code must match that form.
-    normalized = code.strip().lower()
+    # Normalize first. Codes are shown lowercase with dashes, so a typed code is lowercased and the dashes and
+    # spaces are removed before hashing. Then "3fa2c9d1-07b4" and "3fa2c9d107b4" hash to the same value.
+    normalized = "".join(code.split()).replace("-", "").lower()
     salt = str(device.pk)
     digest = await asyncio.to_thread(
         hashlib.pbkdf2_hmac, "sha256", normalized.encode(), salt.encode(), RECOVERY_CODE_HASH_ITERATIONS
     )
-    return digest.hex()[:16]
+    return base64.urlsafe_b64encode(digest[:RECOVERY_HASH_BYTES]).decode("ascii")
 
 
 async def verify_recovery_code(device, code):
@@ -78,20 +88,31 @@ async def verify_recovery_code(device, code):
     return True
 
 
+def new_recovery_code():
+    """
+    Return a new random recovery code of 128 bits, as 32 lowercase hex characters in four dash-separated groups.
+
+    Returns:
+        str: The code to show the user once, for example "3fa2c9d1-07b4e8a5-6c1d0f93-b2e75a48".
+    """
+    code = secrets.token_hex(RECOVERY_CODE_BYTES)
+    return "-".join(code[i : i + 8] for i in range(0, len(code), 8))
+
+
 async def create_recovery_codes(user, confirmed):
     """
     Create a recovery-code device for the user with new random codes. Only hashes are stored.
 
     Parameters:
         user (User): The user the codes belong to.
-        confirmed (bool): Whether the device is confirmed. Signup creates it unconfirmed until the
-            authenticator app is confirmed. Replacing codes creates it confirmed.
+        confirmed (bool): Whether the device is confirmed. Signup and replacing codes both create it confirmed,
+            since only the authenticator app waits for confirmation.
 
     Returns:
         list[str]: The plain-text recovery codes, to show the user one time.
     """
     device = await StaticDevice.objects.acreate(user=user, name=RECOVERY_DEVICE_NAME, confirmed=confirmed)
-    codes = [StaticToken.random_token() for _ in range(RECOVERY_CODE_COUNT)]
+    codes = [new_recovery_code() for _ in range(RECOVERY_CODE_COUNT)]
     # Each PBKDF2 hash runs in its own worker thread, so the codes are hashed in parallel.
     hashes = await asyncio.gather(*(hash_recovery_code(code, device) for code in codes))
     # Save all the hashed codes in one query instead of one query per code.
@@ -234,7 +255,8 @@ async def enrollment_details(device):
 
 async def confirm_device(device, token):
     """
-    Confirm the TOTP device and its recovery codes if the token is valid.
+    Confirm the TOTP device if the token is valid. Recovery codes are not touched, since they are confirmed
+    when they are created.
 
     Used by both signup and the account page.
 
@@ -243,7 +265,7 @@ async def confirm_device(device, token):
         token (str): The 6-digit code from the user's authenticator app.
 
     Returns:
-        bool: True if the token was valid and the devices are now confirmed, otherwise False.
+        bool: True if the token was valid and the device is now confirmed, otherwise False.
     """
     # verify_token saves throttling state to the database, so it runs in a thread.
     if not await sync_to_async(device.verify_token, thread_sensitive=True)(token):
@@ -251,8 +273,6 @@ async def confirm_device(device, token):
     # Mark the authenticator app as confirmed. Only confirmed devices can be used to log in.
     device.confirmed = True
     await device.asave(update_fields=["confirmed"])
-    # Confirming the authenticator also confirms the recovery codes, which were created at the same time.
-    await StaticDevice.objects.filter(user_id=device.user_id, confirmed=False).aupdate(confirmed=True)
     return True
 
 

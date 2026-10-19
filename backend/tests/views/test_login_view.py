@@ -15,6 +15,7 @@ from backend.utils.authentication import (
     TOTP_DEVICE_NAME,
     create_recovery_codes,
 )
+from backend.utils.signup import PENDING_CODES_SESSION_KEY, PENDING_DEVICE_SESSION_KEY
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
@@ -304,3 +305,52 @@ class TestLoginCallsAlogin(LoginViewTestBase):
                     self._post(**data)
 
                 mock_alogin.assert_not_awaited()
+
+
+class TestLoginClearsPendingRecoveryCodes(LoginViewTestBase):
+    """A successful login drops the plain-text recovery codes of any unfinished signup or recovery setup."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(username="pending-user", password=PASSWORD)
+
+    def _store_pending_codes(self):
+        """Put pending recovery codes into the test client's session, as signup or recovery would."""
+        session = self.client.session
+        session[PENDING_DEVICE_SESSION_KEY] = 1
+        session[PENDING_CODES_SESSION_KEY] = ["3fa2c9d1-07b4e8a5-6c1d0f93-b2e75a48"]
+        session.save()
+
+    def _pending_keys(self):
+        """Return the pending enrollment keys that are still in the test client's session."""
+        session = self.client.session
+        return [key for key in (PENDING_DEVICE_SESSION_KEY, PENDING_CODES_SESSION_KEY) if key in session]
+
+    def test_password_only_login_clears_pending_codes(self):
+        """Logging in with a password, on an account with no authenticator, drops the pending recovery codes."""
+        self._store_pending_codes()
+
+        self._post(username="pending-user", password=PASSWORD)
+
+        assert self._is_logged_in()
+        assert self._pending_keys() == []
+
+    def test_authenticator_login_clears_pending_codes(self):
+        """Logging in with a code also drops the pending recovery codes."""
+        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = TOTPDevice.objects.get(user=self.user)
+        self._store_pending_codes()
+
+        self._post(username="pending-user", password=PASSWORD, otp_token=_totp_code(device))
+
+        assert self._is_logged_in()
+        assert self._pending_keys() == []
+
+    def test_failed_login_keeps_pending_codes(self):
+        """A refused login doesn't log anyone in, so the pending codes stay for the user's next try."""
+        self._store_pending_codes()
+
+        self._post(username="pending-user", password="wrong-password-123")
+
+        assert not self._is_logged_in()
+        assert len(self._pending_keys()) == 2

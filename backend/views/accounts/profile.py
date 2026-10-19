@@ -4,6 +4,7 @@ from django.contrib.auth import alogout, aupdate_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
 from ninja import Router
 
 from backend.utils.account import (
@@ -69,6 +70,7 @@ async def account_section(request):
 
 
 @router.post("/profile/username/", tags=[APITags.BACKEND], url_name="profile_username")
+@csrf_protect
 @never_cache
 @login_required
 async def change_username(request):
@@ -109,6 +111,7 @@ async def change_username(request):
 
 
 @router.post("/profile/delete/", tags=[APITags.BACKEND], url_name="profile_delete")
+@csrf_protect
 @never_cache
 @login_required
 async def delete_account(request):
@@ -148,6 +151,7 @@ async def security_section(request):
 
 
 @router.post("/profile/password/", tags=[APITags.BACKEND], url_name="profile_password")
+@csrf_protect
 @never_cache
 @login_required
 async def change_password(request):
@@ -185,6 +189,7 @@ async def change_password(request):
 
 
 @router.post("/profile/recovery-codes/", tags=[APITags.BACKEND], url_name="profile_recovery_codes")
+@csrf_protect
 @never_cache
 @login_required
 async def refresh_recovery_codes(request):
@@ -214,6 +219,7 @@ async def refresh_recovery_codes(request):
 
 
 @router.post("/profile/totp/enable/", tags=[APITags.BACKEND], url_name="profile_totp_enable")
+@csrf_protect
 @never_cache
 @login_required
 async def enable_totp(request):
@@ -244,6 +250,7 @@ async def enable_totp(request):
 
 
 @router.post("/profile/totp/confirm/", tags=[APITags.BACKEND], url_name="profile_totp_confirm")
+@csrf_protect
 @never_cache
 @login_required
 async def confirm_totp(request):
@@ -274,6 +281,7 @@ async def confirm_totp(request):
 
 
 @router.post("/profile/totp/cancel/", tags=[APITags.BACKEND], url_name="profile_totp_cancel")
+@csrf_protect
 @never_cache
 @login_required
 async def cancel_totp(request):
@@ -292,6 +300,7 @@ async def cancel_totp(request):
 
 
 @router.post("/profile/totp/disable/", tags=[APITags.BACKEND], url_name="profile_totp_disable")
+@csrf_protect
 @never_cache
 @login_required
 async def disable_totp(request):

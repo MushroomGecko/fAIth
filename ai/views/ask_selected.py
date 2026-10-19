@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.ask_selected import AskSelectedInputSerializer
@@ -24,6 +25,7 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 @router.post("/ask_selected", tags=[APITags.AI], url_name="ask_selected")
+@csrf_protect
 async def ask_selected(request, payload: AskSelectedInputSerializer = Form(...)):
     """
     API endpoint for answering questions about selected text using RAG (Retrieval-Augmented Generation).

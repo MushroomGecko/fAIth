@@ -109,12 +109,12 @@ class TestCreateAccount(SignupViewTestBase):
         device = self._pending_totp()
         assert device.name == TOTP_DEVICE_NAME
 
-    def test_creates_unconfirmed_recovery_device(self):
-        """The recovery-code device is created unconfirmed, until the authenticator is confirmed."""
+    def test_creates_confirmed_recovery_device(self):
+        """The recovery-code device is created confirmed, so it works even if the authenticator step is skipped."""
         self._create_account()
 
         device = StaticDevice.objects.get(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME)
-        assert device.confirmed is False
+        assert device.confirmed is True
 
     def test_shows_ten_recovery_codes_once(self):
         """The authenticator setup page shows the ten plain-text recovery codes."""
@@ -254,7 +254,9 @@ class TestSkipAuthenticator(SignupViewTestBase):
 
         assert not TOTPDevice.objects.filter(user__username="new-signup-user").exists()
         assert User.objects.filter(username="new-signup-user").exists()
-        assert StaticDevice.objects.filter(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME).exists()
+        assert StaticDevice.objects.filter(
+            user__username="new-signup-user", name=RECOVERY_DEVICE_NAME, confirmed=True
+        ).exists()
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
         assert PENDING_CODES_SESSION_KEY not in self.client.session
 

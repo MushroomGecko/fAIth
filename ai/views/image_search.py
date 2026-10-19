@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.image_search import ImageSearchInputSerializer
@@ -24,6 +25,7 @@ SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT", 10)).strip())
 
 
 @router.post("/image_search", tags=[APITags.AI], url_name="image_search")
+@csrf_protect
 async def image_search(request, payload: ImageSearchInputSerializer = Form(...)):
     """
     API endpoint for searching for images based on selected text.

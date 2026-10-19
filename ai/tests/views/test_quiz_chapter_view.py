@@ -10,6 +10,7 @@ from django.test import SimpleTestCase
 from ninja.testing import TestAsyncClient
 
 from ai.views.quiz_chapter import quiz_chapter, router
+from fAIth.test_helpers.csrf_helpers import add_csrf_token
 
 ALL_VERSES = {"bsb": {"Genesis": {1: {"1": "In the beginning God created the heavens and the earth."}}}}
 
@@ -37,7 +38,7 @@ class TestQuizChapterView(SimpleTestCase):
         return asyncio.run(quiz_chapter(request, payload))
 
     def _build_request(self, completions=None):
-        request = HttpRequest()
+        request = add_csrf_token(HttpRequest())
         request.method = "POST"
         request.state = {"completions_obj": AsyncMock()}
         request.state["completions_obj"].completions = AsyncMock(return_value=completions)

@@ -144,15 +144,15 @@ class TestCreateUserAndDevices(TestCase):
         assert len(codes) == 10
         assert all(isinstance(code, str) and code for code in codes)
 
-    async def test_recovery_device_is_saved_unconfirmed(self):
-        """The recovery-code device is saved but stays unconfirmed until the authenticator is confirmed."""
+    async def test_recovery_device_is_saved_confirmed(self):
+        """The recovery-code device is confirmed right away, even though the authenticator is not yet confirmed."""
         form = await _valid_form("signup-recovery-user")
 
         await create_user_and_devices(form)
 
         device = await StaticDevice.objects.aget(user__username="signup-recovery-user")
         assert device.name == RECOVERY_DEVICE_NAME
-        assert device.confirmed is False
+        assert device.confirmed is True
 
     async def test_totp_device_is_saved_in_database(self):
         """The returned authenticator device is stored, so it can be looked up later."""
@@ -375,6 +375,16 @@ class TestSkipEnrollment(TestCase):
         await skip_enrollment(request)
 
         assert await StaticDevice.objects.filter(user=totp.user, name=RECOVERY_DEVICE_NAME).aexists()
+
+    async def test_skipped_recovery_codes_are_confirmed(self):
+        """Skipping only removes the authenticator. The recovery codes stay confirmed so they can be used."""
+        totp, _, session = await _start_enrollment("skip-confirmed-codes-user")
+        request = _request_with_session(session)
+
+        await skip_enrollment(request)
+
+        device = await StaticDevice.objects.aget(user=totp.user, name=RECOVERY_DEVICE_NAME)
+        assert device.confirmed is True
 
     async def test_keeps_confirmed_authenticator_device(self):
         """A confirmed authenticator on the same account is not deleted by skipping."""

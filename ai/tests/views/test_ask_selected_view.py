@@ -10,6 +10,7 @@ from django.test import SimpleTestCase
 from ninja.testing import TestAsyncClient
 
 from ai.views.ask_selected import ask_selected, router
+from fAIth.test_helpers.csrf_helpers import add_csrf_token
 
 
 class TestAskSelectedView(SimpleTestCase):
@@ -25,7 +26,7 @@ class TestAskSelectedView(SimpleTestCase):
 
     def _build_request(self):
         """Build a request with the required state."""
-        request = HttpRequest()
+        request = add_csrf_token(HttpRequest())
         request.method = "POST"
         request.state = {
             "milvus_db": AsyncMock(),

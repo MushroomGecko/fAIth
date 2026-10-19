@@ -9,6 +9,7 @@ from django.test import SimpleTestCase
 from ninja.testing import TestAsyncClient
 
 from ai.views.search import router, search
+from fAIth.test_helpers.csrf_helpers import add_csrf_token
 
 
 class TestSearchView(SimpleTestCase):
@@ -19,7 +20,7 @@ class TestSearchView(SimpleTestCase):
         return asyncio.run(search(request, payload))
 
     def _build_request(self):
-        request = HttpRequest()
+        request = add_csrf_token(HttpRequest())
         request.method = "POST"
         request.state = {"milvus_db": MagicMock()}
         request.state["milvus_db"].search = AsyncMock()

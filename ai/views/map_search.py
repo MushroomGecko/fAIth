@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.map_search import MapSearchInputSerializer
@@ -24,6 +25,7 @@ SEARXNG_IMAGE_LIMIT = int(str(os.getenv("SEARXNG_IMAGE_LIMIT", 10)).strip())
 
 
 @router.post("/map_search", tags=[APITags.AI], url_name="map_search")
+@csrf_protect
 async def map_search(request, payload: MapSearchInputSerializer = Form(...)):
     """
     API endpoint for searching for maps based on selected text.

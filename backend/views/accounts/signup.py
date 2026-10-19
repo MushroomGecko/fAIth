@@ -3,6 +3,7 @@ import logging
 from asgiref.sync import sync_to_async
 from django.db import IntegrityError
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
 from ninja import Router
 
 from backend.utils.authentication import render_async
@@ -50,6 +51,7 @@ async def signup_page(request):
 
 
 @router.post("/signup/", tags=[APITags.BACKEND])
+@csrf_protect
 @never_cache
 async def signup(request):
     """

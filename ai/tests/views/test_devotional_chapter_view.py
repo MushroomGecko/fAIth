@@ -10,6 +10,7 @@ from django.test import SimpleTestCase
 from ninja.testing import TestAsyncClient
 
 from ai.views.devotional_chapter import devotional_chapter, router
+from fAIth.test_helpers.csrf_helpers import add_csrf_token
 
 DEFAULT_ALL_VERSES = {
     "bsb": {
@@ -39,7 +40,7 @@ class TestDevotionalChapterView(SimpleTestCase):
 
     def _build_request(self):
         """Build a request with the required state."""
-        request = HttpRequest()
+        request = add_csrf_token(HttpRequest())
         request.method = "POST"
         request.state = {
             "completions_obj": AsyncMock(),

@@ -5,8 +5,9 @@ from backend.utils.account import PasswordForm, replace_recovery_codes, turn_off
 from backend.utils.authentication import create_totp_device, render_async
 from backend.utils.signup import store_pending_device
 
-# Shown for any wrong username or code, so the page never reveals which accounts exist.
-INVALID_RECOVERY_MESSAGE = "That username or recovery code is not correct."
+# Shown for every failed recovery attempt, whatever the reason. It never says which field was wrong, whether
+# the username exists, or whether the new password was rejected, so the page reveals nothing about the account.
+INVALID_RECOVERY_MESSAGE = "The password could not be reset. Check your username, recovery code, and new passwords, then try again."
 
 
 async def blank_recovery_user():
@@ -73,3 +74,21 @@ async def render_recovery_page(request, template, form, username="", error=None,
     """
     context = {"form": form, "username": username, "error": error}
     return await render_async(request, template, context, status=status)
+
+
+async def recovery_failed(request, template, username):
+    """
+    Return the one response used for every failed recovery attempt. The form is unbound, so no field errors show.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        template (str): The recovery page template path, passed in by the view.
+        username (str): The username as typed, so the user doesn't have to retype it.
+
+    Returns:
+        HttpResponse: The recovery page with the generic error, status 400.
+    """
+    form = await recovery_password_form(await blank_recovery_user())
+    return await render_recovery_page(
+        request, template, form, username=username, error=INVALID_RECOVERY_MESSAGE, status=400
+    )

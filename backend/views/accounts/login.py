@@ -1,6 +1,7 @@
 from asgiref.sync import sync_to_async
 from django.contrib.auth import aauthenticate, alogin
 from django.shortcuts import redirect
+from django.views.decorators.csrf import csrf_protect
 from django_otp.forms import OTPAuthenticationForm
 from ninja import Router
 
@@ -11,6 +12,7 @@ from backend.utils.login import (
     get_next_url,
     render_login,
 )
+from backend.utils.signup import clear_pending_device
 from fAIth.api_tags import APITags
 
 # The login page template, rendered by the login views.
@@ -37,6 +39,7 @@ async def login_page(request):
 
 
 @router.post("/login/", tags=[APITags.BACKEND])
+@csrf_protect
 async def login(request):
     """
     Log in with username, password, and an authenticator app code in one request.
@@ -71,6 +74,8 @@ async def login(request):
             return await render_login(request, form, LOGIN_TEMPLATE, status=400)
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await clear_unconfirmed_totp(user)
+        # The pending recovery codes are plain text in the session. Drop them before alogin keeps the session.
+        await clear_pending_device(request.session)
         await alogin(request, user)
         return redirect(await get_next_url(request))
 
@@ -85,6 +90,8 @@ async def login(request):
         # Logging in with a code also ends any unfinished setup, the same as a password-only login.
         logged_in_user = form.get_user()
         await clear_unconfirmed_totp(logged_in_user)
+        # The pending recovery codes are plain text in the session. Drop them before alogin keeps the session.
+        await clear_pending_device(request.session)
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, logged_in_user)
         return redirect(await get_next_url(request))

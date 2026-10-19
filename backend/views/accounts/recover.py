@@ -2,6 +2,7 @@ import logging
 
 from asgiref.sync import sync_to_async
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
 from ninja import Router
 
 from backend.utils.authentication import (
@@ -10,8 +11,8 @@ from backend.utils.authentication import (
     verify_recovery_code,
 )
 from backend.utils.recover import (
-    INVALID_RECOVERY_MESSAGE,
     blank_recovery_user,
+    recovery_failed,
     recovery_password_form,
     render_recovery_page,
     reset_second_factor,
@@ -47,6 +48,7 @@ async def recovery_page(request):
 
 
 @router.post("/recover/", tags=[APITags.BACKEND])
+@csrf_protect
 @never_cache
 async def recovery_submit(request):
     """
@@ -67,19 +69,18 @@ async def recovery_submit(request):
 
     user = await users_matching_username(username).afirst()
 
+    # Every failure below returns the same response, with no field-level errors. Otherwise the messages would
+    # reveal whether the username exists, whether the code was wrong, or whether the new password matched the
+    # current one.
     # Check the new passwords first. Nothing is used up yet, so a password typo doesn't cost the user their code.
     form = await recovery_password_form(user or await blank_recovery_user(), request.POST)
     if not await sync_to_async(form.is_valid, thread_sensitive=True)():
-        return await render_recovery_page(request, RECOVERY_TEMPLATE, form, username=username, status=400)
+        return await recovery_failed(request, RECOVERY_TEMPLATE, username)
 
     # Then check the username and recovery code. A valid code is used up here, before the password is saved.
     device = await confirmed_recovery_device(user) if user is not None else None
     if device is None or not await verify_recovery_code(device, code):
-        # Same message for a missing username and a wrong code.
-        form = await recovery_password_form(await blank_recovery_user())
-        return await render_recovery_page(
-            request, RECOVERY_TEMPLATE, form, username=username, error=INVALID_RECOVERY_MESSAGE, status=400
-        )
+        return await recovery_failed(request, RECOVERY_TEMPLATE, username)
 
     # The password hash changes, so Django's session check signs out any other browser still holding this account.
     await sync_to_async(form.save, thread_sensitive=True)()

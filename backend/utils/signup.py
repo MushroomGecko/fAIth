@@ -52,7 +52,7 @@ class SignupForm(UserCreationForm):
 
 async def create_user_and_devices(form):
     """
-    Save the user and create unconfirmed TOTP and recovery-code devices.
+    Save the user, create an unconfirmed TOTP device, and create a confirmed recovery-code device.
 
     Parameters:
         form (UserCreationForm): The validated signup form.
@@ -63,7 +63,8 @@ async def create_user_and_devices(form):
     # Django's form.save() has no async version, so run it in a thread.
     user = await sync_to_async(form.save, thread_sensitive=True)()
     totp = await create_totp_device(user)
-    codes = await create_recovery_codes(user, confirmed=False)
+    # Recovery codes are confirmed right away. Only the authenticator app waits for confirmation.
+    codes = await create_recovery_codes(user, confirmed=True)
     return totp, codes
 
 

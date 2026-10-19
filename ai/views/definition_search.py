@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpRequest, HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.definition_search import DefinitionSearchInputSerializer
@@ -24,6 +25,7 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 @router.post("/definition_search", tags=[APITags.AI], url_name="definition_search")
+@csrf_protect
 async def definition_search(request: HttpRequest, payload: DefinitionSearchInputSerializer = Form(...)):
     """
     API endpoint for searching for definitions of selected text using RAG (Retrieval-Augmented Generation).

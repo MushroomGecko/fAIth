@@ -1,7 +1,8 @@
 """Tests for the two-factor authentication helpers in backend.utils.authentication."""
 
 import hashlib
-from base64 import b32encode
+import re
+from base64 import b32encode, urlsafe_b64encode
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
@@ -63,18 +64,18 @@ class TestHashRecoveryCode(TestCase):
         self.user = User.objects.create_user(username="hash-user", password=PASSWORD)
         self.device = StaticDevice.objects.create(user=self.user, name=RECOVERY_DEVICE_NAME, confirmed=True)
 
-    async def test_returns_sixteen_hex_characters(self):
-        """The hash is truncated to 16 hex characters so it fits in StaticToken.token."""
+    async def test_returns_sixteen_base64url_characters(self):
+        """The hash is 96 bits encoded as 16 base64url characters so it fits in StaticToken.token."""
         result = await hash_recovery_code("abcd1234", self.device)
 
-        assert len(result) == 16
-        assert all(char in "0123456789abcdef" for char in result)
+        assert re.fullmatch(r"[A-Za-z0-9_-]{16}", result)
 
     async def test_matches_pbkdf2_of_normalized_code_and_device_pk(self):
-        """The hash is PBKDF2-SHA256 of the lowercase code, salted with the device primary key."""
-        expected = hashlib.pbkdf2_hmac(
+        """The hash is PBKDF2-SHA256 of the lowercase code, salted with the device primary key, first 96 bits."""
+        digest = hashlib.pbkdf2_hmac(
             "sha256", b"abcd1234", str(self.device.pk).encode(), RECOVERY_CODE_HASH_ITERATIONS
-        ).hex()[:16]
+        )
+        expected = urlsafe_b64encode(digest[:12]).decode("ascii")
 
         result = await hash_recovery_code("abcd1234", self.device)
 
@@ -86,6 +87,15 @@ class TestHashRecoveryCode(TestCase):
         typed = await hash_recovery_code("  ABCD1234 \n", self.device)
 
         assert typed == plain
+
+    async def test_dashes_and_spaces_are_ignored(self):
+        """A code typed with dashes or spaces between groups hashes to the same value as the plain code."""
+        plain = await hash_recovery_code("3fa2c9d107b4e8a56c1d0f93b2e75a48", self.device)
+        dashed = await hash_recovery_code("3FA2C9D1-07B4E8A5-6C1D0F93-B2E75A48", self.device)
+        spaced = await hash_recovery_code("3fa2c9d1 07b4e8a5 6c1d0f93 b2e75a48", self.device)
+
+        assert dashed == plain
+        assert spaced == plain
 
     async def test_is_deterministic(self):
         """Hashing the same code twice gives the same result."""
@@ -212,6 +222,12 @@ class TestCreateRecoveryCodes(TestCase):
         assert len(codes) == RECOVERY_CODE_COUNT
         assert len(set(codes)) == RECOVERY_CODE_COUNT
         assert all(isinstance(code, str) and code == code.lower() for code in codes)
+
+    async def test_codes_are_128_bit_hex_in_four_dashed_groups(self):
+        """Each code is 32 hex characters (128 bits) shown as four groups of 8, separated by dashes."""
+        codes = await create_recovery_codes(self.user, confirmed=True)
+
+        assert all(re.fullmatch(r"[0-9a-f]{8}(-[0-9a-f]{8}){3}", code) for code in codes)
 
     async def test_creates_recovery_device_for_user(self):
         """Creates one recovery-code device for the user with the expected name."""
@@ -543,14 +559,14 @@ class TestConfirmDevice(TestCase):
         await device.arefresh_from_db()
         assert device.confirmed is False
 
-    async def test_wrong_code_does_not_confirm_recovery_codes(self):
-        """A wrong code leaves the recovery codes unconfirmed too."""
+    async def test_wrong_code_leaves_recovery_codes_confirmed(self):
+        """Recovery codes are confirmed when created, so a wrong authenticator code doesn't change them."""
         device = await create_totp_device(self.user)
-        await create_recovery_codes(self.user, confirmed=False)
+        await create_recovery_codes(self.user, confirmed=True)
 
         await confirm_device(device, "000000")
 
-        assert not await StaticDevice.objects.filter(user=self.user, confirmed=True).aexists()
+        assert await StaticDevice.objects.filter(user=self.user, confirmed=True).acount() == 1
 
     async def test_correct_code_confirms_device(self):
         """A valid code confirms the authenticator device and returns True."""
@@ -562,25 +578,26 @@ class TestConfirmDevice(TestCase):
         await device.arefresh_from_db()
         assert device.confirmed is True
 
-    async def test_correct_code_confirms_users_recovery_codes(self):
-        """A valid code also confirms the recovery codes created with the setup."""
+    async def test_correct_code_does_not_confirm_other_users_authenticator(self):
+        """Confirming one user's setup leaves another user's unconfirmed authenticator device alone."""
+        other_user = await _acreate_user("confirm-other")
+        other_device = await create_totp_device(other_user)
         device = await create_totp_device(self.user)
-        await create_recovery_codes(self.user, confirmed=False)
+
+        result = await confirm_device(device, _totp_code(device))
+
+        assert result is True
+        await other_device.arefresh_from_db()
+        assert other_device.confirmed is False
+
+    async def test_correct_code_leaves_recovery_codes_confirmed(self):
+        """A valid code confirms only the authenticator. The recovery codes were already confirmed at creation."""
+        device = await create_totp_device(self.user)
+        await create_recovery_codes(self.user, confirmed=True)
 
         await confirm_device(device, _totp_code(device))
 
         assert await StaticDevice.objects.filter(user=self.user, confirmed=True).acount() == 1
-
-    async def test_correct_code_does_not_confirm_other_users_recovery_codes(self):
-        """Confirming one user's setup leaves other users' unconfirmed recovery codes alone."""
-        other_user = await _acreate_user("confirm-other")
-        await create_recovery_codes(other_user, confirmed=False)
-        device = await create_totp_device(self.user)
-        await create_recovery_codes(self.user, confirmed=False)
-
-        await confirm_device(device, _totp_code(device))
-
-        assert not await StaticDevice.objects.filter(user=other_user, confirmed=True).aexists()
 
 
 class TestRenderAsync(TestCase):

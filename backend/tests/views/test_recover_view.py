@@ -159,24 +159,21 @@ class TestRecoverySuccess(RecoverViewTestBase):
 class TestRecoveryPasswordChecks(RecoverViewTestBase):
     """Tests for the password checks, which run before the recovery code is used."""
 
-    def test_bad_passwords_are_refused_and_keep_password_and_code(self):
-        """Mismatched, reused, or weak new passwords return status 400, and the password and code are both kept."""
+    def test_bad_passwords_get_generic_error_and_keep_password_and_code(self):
+        """Mismatched, reused, or weak new passwords return the generic error with no field errors, and the password and code are both kept."""
         cases = [
-            ("mismatched", {"new_password2": "different-pass-789"}, "new_password2"),
-            (
-                "reuses current password",
-                {"new_password1": OLD_PASSWORD, "new_password2": OLD_PASSWORD},
-                "new_password1",
-            ),
-            ("weak", {"new_password1": "123", "new_password2": "123"}, "new_password1"),
+            ("mismatched", {"new_password2": "different-pass-789"}),
+            ("reuses current password", {"new_password1": OLD_PASSWORD, "new_password2": OLD_PASSWORD}),
+            ("weak", {"new_password1": "123", "new_password2": "123"}),
         ]
-        for name, overrides, field in cases:
+        for name, overrides in cases:
             with self.subTest(case=name):
                 response = self._recover(**overrides)
 
                 assert response.status_code == 400
                 self.assertTemplateUsed(response, "registration/recover.html")
-                assert field in response.context["form"].errors
+                assert response.context["error"] == INVALID_RECOVERY_MESSAGE
+                assert not response.context["form"].errors
                 assert self._code_still_works(self.codes[0]) is True
                 self.user.refresh_from_db()
                 assert self.user.check_password(OLD_PASSWORD)

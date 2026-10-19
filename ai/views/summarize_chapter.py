@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.server_text_response import ServerTextResponseSerializer
@@ -25,6 +26,7 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 @router.post("/summarize_chapter", tags=[APITags.AI], url_name="summarize_chapter")
+@csrf_protect
 async def summarize_chapter(request, payload: SummarizeChapterInputSerializer = Form(...)):
     """
     API endpoint for summarizing a chapter using RAG (Retrieval-Augmented Generation).
