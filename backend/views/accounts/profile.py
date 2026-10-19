@@ -85,14 +85,16 @@ async def change_username(request):
         in, since HTMX skips 4xx by default.
     """
     user = await request.auser()
-    form = UsernameForm(request.POST, instance=user)
 
     # Check the password and code first, so a wrong password never reveals whether the name is taken.
+    # On this error the section gets the default unbound form. A bound form would be validated when the
+    # template renders its errors, and that would show the "already exists" message.
     auth_error = await check_reauth(request, user)
     if auth_error:
-        context = await section_context(request, form=form, username_auth_error=auth_error)
+        context = await section_context(request, username_auth_error=auth_error)
         return await render_async(request, ACCOUNT_SECTION_TEMPLATE, context, status=400)
 
+    form = UsernameForm(request.POST, instance=user)
     # Django forms are synchronous, and is_valid() queries the database for uniqueness.
     if not await sync_to_async(form.is_valid, thread_sensitive=True)():
         return await render_async(

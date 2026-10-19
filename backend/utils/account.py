@@ -187,9 +187,9 @@ async def check_reauth(request, user, allow_recovery_code=False):
     The password and authenticator code are read from request.POST. Without a recovery code, the password is
     required, and so is the verification code when the account has a confirmed authenticator app. When
     allow_recovery_code is True, a recovery code on its own is also accepted in place of both the password and
-    the authenticator code. The two options are: (password and authenticator code) or (recovery code). Giving
-    both codes is an error, and the check runs before any code is verified, so entering both never uses up a
-    recovery code.
+    the authenticator code. The two options are: (password and authenticator code) or (recovery code). Combining
+    a recovery code with the password or an authenticator code is an error, and the check runs before any code
+    is verified, so an invalid combination never uses up a recovery code.
 
     Parameters:
         request (HttpRequest): The current request, with password, otp_token, and recovery_code in POST.
@@ -204,9 +204,9 @@ async def check_reauth(request, user, allow_recovery_code=False):
     code = request.POST.get("otp_token", "").strip()
     recovery = request.POST.get("recovery_code", "").strip() if allow_recovery_code else ""
 
-    if code and recovery:
-        # Checked before anything is verified, so a recovery code isn't used up when both are entered.
-        return "Enter either an authenticator code or a recovery code, not both."
+    if recovery and (password or code):
+        # A recovery code stands alone. Checked before anything is verified, so an invalid combination never uses it up.
+        return "Enter either your password and an authenticator code, or a recovery code on its own, not both."
 
     if recovery:
         recovery_device = await confirmed_recovery_device(user)

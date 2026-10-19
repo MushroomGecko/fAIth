@@ -408,7 +408,21 @@ class TestCheckReauth(TestCase):
             allow_recovery_code=True,
         )
 
-        assert error == "Enter either an authenticator code or a recovery code, not both."
+        assert error == "Enter either your password and an authenticator code, or a recovery code on its own, not both."
+
+    async def test_recovery_code_with_totp_code_and_no_password_is_refused(self):
+        """A recovery code sent with an authenticator code, and no password, is refused and the code is kept."""
+        user, codes = await self._user_with_recovery("reauth-recovery-totp-user")
+
+        error = await check_reauth(
+            _post_request(otp_token="123456", recovery_code=codes[0]),
+            user,
+            allow_recovery_code=True,
+        )
+
+        assert error == "Enter either your password and an authenticator code, or a recovery code on its own, not both."
+        device = await confirmed_recovery_device(user)
+        assert await verify_recovery_code(device, codes[0]) is True
 
     async def test_both_codes_does_not_use_up_recovery_code(self):
         """Entering both kinds of code is refused before the recovery code is checked, so it isn't used up."""
@@ -430,6 +444,18 @@ class TestCheckReauth(TestCase):
         error = await check_reauth(_post_request(recovery_code=codes[0]), user, allow_recovery_code=True)
 
         assert error is None
+
+    async def test_password_with_recovery_code_is_refused(self):
+        """A password sent with a recovery code is refused, and the recovery code is not used up."""
+        user, codes = await self._user_with_recovery("reauth-pw-and-recovery-user")
+
+        error = await check_reauth(
+            _post_request(password=PASSWORD, recovery_code=codes[0]), user, allow_recovery_code=True
+        )
+
+        assert error == "Enter either your password and an authenticator code, or a recovery code on its own, not both."
+        device = await confirmed_recovery_device(user)
+        assert await verify_recovery_code(device, codes[0]) is True
 
     async def test_recovery_code_is_consumed_when_used(self):
         """A recovery code accepted here can't be used a second time."""
