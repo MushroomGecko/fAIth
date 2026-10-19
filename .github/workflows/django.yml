@@ -28,6 +28,7 @@ jobs:
     - name: Check Django System
       env:
         DJANGO_SECRET_KEY: "secret_key"
+        RECOVERY_CODE_ENCRYPTION_KEY: "wJTODaOVKgVGXU2Ybv6m7fNJ55y_5Mh7MLp15O8dbqs="
         POSTGRES_PASSWORD: "password"
         MILVUS_PASSWORD: "password"
       run: |

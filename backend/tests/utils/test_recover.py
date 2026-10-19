@@ -24,7 +24,7 @@ from backend.utils.recover import (
     render_recovery_page,
     reset_second_factor,
 )
-from backend.utils.signup import read_pending_device_id
+from backend.utils.signup import read_pending_codes, read_pending_device_id
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
@@ -208,7 +208,8 @@ class TestResetSecondFactor(TestCase):
 
         _, codes = await reset_second_factor(user, session)
 
-        assert await session.aget("pending_recovery_codes") == codes
+        assert await read_pending_codes(session) == codes
+        assert codes[0] not in await session.aget("pending_recovery_codes")
 
     async def test_leaves_other_users_devices_alone(self):
         """Another user's authenticator and recovery codes are not touched."""

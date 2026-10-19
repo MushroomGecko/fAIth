@@ -9,6 +9,7 @@ These values are test-only stubs and must never be used in production.
 import os
 
 os.environ.setdefault("DJANGO_SECRET_KEY", "test-only-secret-key-not-for-production")
+os.environ.setdefault("RECOVERY_CODE_ENCRYPTION_KEY", "wJTODaOVKgVGXU2Ybv6m7fNJ55y_5Mh7MLp15O8dbqs=")
 os.environ.setdefault("POSTGRES_PASSWORD", "test-only-postgres-password-not-for-production")
 os.environ.setdefault("MILVUS_PASSWORD", "test-only-milvus-password-not-for-production")
 

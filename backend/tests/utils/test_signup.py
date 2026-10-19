@@ -18,6 +18,9 @@ from backend.utils.authentication import (
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
 )
+from cryptography.fernet import Fernet
+from django.test import override_settings
+
 from backend.utils.signup import (
     PENDING_CODES_SESSION_KEY,
     PENDING_DEVICE_SESSION_KEY,
@@ -215,10 +218,27 @@ class TestPendingSession(TestCase):
         """The enrollment is stored under the documented session keys."""
         session = SessionStore()
 
-        await store_pending_device(session, 7, ["abc"])
+        code = "3fa2c9d1-07b4e8a5-6c1d0f93-b2e75a48"
+        await store_pending_device(session, 7, [code])
 
         assert await session.aget(PENDING_DEVICE_SESSION_KEY) == 7
-        assert await session.aget(PENDING_CODES_SESSION_KEY) == ["abc"]
+        assert code not in await session.aget(PENDING_CODES_SESSION_KEY)
+        assert await read_pending_codes(session) == [code]
+
+    async def test_codes_are_unreadable_after_key_change_and_read_as_empty(self):
+        """If the encryption key changes, the stored codes can't be decrypted, so they read as empty."""
+        session = SessionStore()
+        await store_pending_device(session, 9, ["3fa2c9d1-07b4e8a5-6c1d0f93-b2e75a48"])
+
+        with override_settings(RECOVERY_CODE_ENCRYPTION_KEY=Fernet.generate_key().decode()):
+            assert await read_pending_codes(session) == []
+
+    async def test_damaged_codes_read_as_empty(self):
+        """A stored value that isn't a valid encrypted token reads as empty instead of raising an error."""
+        session = SessionStore()
+        await session.aset(PENDING_CODES_SESSION_KEY, "not-a-valid-token")
+
+        assert await read_pending_codes(session) == []
 
     async def test_load_returns_device_and_codes(self):
         """load_pending_enrollment returns the pending device and its codes together."""

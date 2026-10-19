@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 
 import wn
+from cryptography.fernet import Fernet
 
 from fAIth.function_globals import derive_boolean_from_string
 
@@ -34,6 +35,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 if not SECRET_KEY or SECRET_KEY == "CHANGE_ME_use_a_long_secret_key":
     raise ValueError("DJANGO_SECRET_KEY environment variable is not set or was set to the default value")
+
+# Fernet key that encrypts the recovery codes kept in the session during signup and recovery.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+RECOVERY_CODE_ENCRYPTION_KEY = os.getenv("RECOVERY_CODE_ENCRYPTION_KEY")
+if not RECOVERY_CODE_ENCRYPTION_KEY or RECOVERY_CODE_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("RECOVERY_CODE_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(RECOVERY_CODE_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("RECOVERY_CODE_ENCRYPTION_KEY must be a valid Fernet key") from error
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))

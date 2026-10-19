@@ -130,11 +130,13 @@ class TestCreateAccount(SignupViewTestBase):
         assert response.context["secret"]
 
     def test_stores_pending_enrollment_in_session(self):
-        """The pending authenticator device and its codes are kept in the session for the setup step."""
+        """The pending authenticator device is kept in the session, and the codes are kept there encrypted."""
         response = self._create_account()
 
         assert self.client.session[PENDING_DEVICE_SESSION_KEY] == self._pending_totp().pk
-        assert self.client.session[PENDING_CODES_SESSION_KEY] == response.context["codes"]
+        stored = self.client.session[PENDING_CODES_SESSION_KEY]
+        assert stored != response.context["codes"]
+        assert response.context["codes"][0] not in stored
 
     def test_taken_username_is_rejected_in_any_letter_case(self):
         """A username matching an existing account, in any letter case, returns the signup page with status 400."""

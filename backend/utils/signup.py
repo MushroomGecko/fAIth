@@ -1,4 +1,8 @@
+import json
+
 from asgiref.sync import sync_to_async
+from cryptography.fernet import Fernet, InvalidToken
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
@@ -91,9 +95,9 @@ async def store_pending_device(session, device_id, codes):
         device_id (int): The ID of the unconfirmed TOTP device.
         codes (list[str]): The recovery codes generated for this enrollment.
     """
-    # Store the pending device and codes, so the enrollment page still works after a page reload.
+    # Store the pending device, and the codes encrypted, so the enrollment page still works after a page reload.
     await session.aset(PENDING_DEVICE_SESSION_KEY, device_id)
-    await session.aset(PENDING_CODES_SESSION_KEY, codes)
+    await session.aset(PENDING_CODES_SESSION_KEY, _session_cipher().encrypt(json.dumps(codes).encode()).decode("ascii"))
 
 
 async def read_pending_device_id(session):
@@ -109,6 +113,11 @@ async def read_pending_device_id(session):
     return await session.aget(PENDING_DEVICE_SESSION_KEY)
 
 
+def _session_cipher():
+    """Return the Fernet cipher for the recovery codes kept in the session, built from RECOVERY_CODE_ENCRYPTION_KEY."""
+    return Fernet(settings.RECOVERY_CODE_ENCRYPTION_KEY)
+
+
 async def read_pending_codes(session):
     """
     Read the recovery codes generated for this enrollment.
@@ -119,7 +128,14 @@ async def read_pending_codes(session):
     Returns:
         list[str]: The recovery codes, or an empty list if there are none.
     """
-    return await session.aget(PENDING_CODES_SESSION_KEY) or []
+    token = await session.aget(PENDING_CODES_SESSION_KEY)
+    if not token:
+        return []
+    try:
+        return json.loads(_session_cipher().decrypt(token.encode("ascii")))
+    except InvalidToken:
+        # The key was changed, or the stored value was damaged. The codes can't be read, so treat them as gone.
+        return []
 
 
 async def load_pending_enrollment(session):
