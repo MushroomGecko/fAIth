@@ -5,6 +5,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
+from django.db import connection, transaction
 from django.shortcuts import redirect
 
 from backend.utils.authentication import (
@@ -50,8 +51,36 @@ class SignupForm(UserCreationForm):
         username = self.cleaned_data["username"]
         # The database unique check is case-sensitive, so check case-insensitively here.
         if users_matching_username(username).exists():
-            raise ValidationError("A user with that username already exists.")
+            raise ValidationError("Username unavailable.")
         return username
+
+
+def save_user_with_username_lock(form):
+    """
+    Save the user while holding a PostgreSQL advisory lock on the lowercased username.
+
+    The lock is taken inside a transaction and released when it commits. A signup for a name that differs
+    only in letter case waits at the lock, then finds this user in the re-check. The lock is held by the
+    database, so it works across processes, including when the app runs more than one worker.
+
+    Parameters:
+        form (SignupForm): The validated signup form.
+
+    Returns:
+        User: The saved user.
+
+    Raises:
+        ValidationError: If an account with the same name in any letter case exists once the lock is held.
+    """
+    username = form.cleaned_data["username"]
+    with transaction.atomic():
+        # SQLite, used by the tests, has no advisory locks. The re-check below still runs there.
+        if connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [username.lower()])
+        if users_matching_username(username).exists():
+            raise ValidationError("Username unavailable.")
+        return form.save()
 
 
 async def create_user_and_devices(form):
@@ -64,8 +93,8 @@ async def create_user_and_devices(form):
     Returns:
         tuple[TOTPDevice, list[str]]: The new TOTP device and the plain-text recovery codes.
     """
-    # Django's form.save() has no async version, so run it in a thread.
-    user = await sync_to_async(form.save, thread_sensitive=True)()
+    # Save under the username lock. The database calls are blocking, so this runs in a thread.
+    user = await sync_to_async(save_user_with_username_lock, thread_sensitive=True)(form)
     totp = await create_totp_device(user)
     # Recovery codes are confirmed right away. Only the authenticator app waits for confirmation.
     codes = await create_recovery_codes(user, confirmed=True)

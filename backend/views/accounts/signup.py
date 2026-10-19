@@ -1,6 +1,7 @@
 import logging
 
 from asgiref.sync import sync_to_async
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -81,9 +82,13 @@ async def signup(request):
     # Create the account and its unconfirmed devices, then show the setup step.
     try:
         totp, codes = await create_user_and_devices(form)
+    except ValidationError as error:
+        # Another signup took this name in some letter case after the check above. Show the form again.
+        form.add_error("username", error)
+        return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
     except IntegrityError:
         # Another request saved the same username after the check above. Show the form again instead of a 500.
-        form.add_error("username", "A user with that username already exists.")
+        form.add_error("username", "Username unavailable.")
         return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
     await store_pending_device(request.session, totp.id, codes)
     return await render_authenticate(request, totp, codes, AUTHENTICATE_TEMPLATE)

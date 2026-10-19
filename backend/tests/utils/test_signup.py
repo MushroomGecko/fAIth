@@ -7,6 +7,7 @@ from asgiref.sync import sync_to_async
 from cryptography.fernet import Fernet
 from django.contrib.auth import get_user_model
 from django.contrib.sessions.backends.db import SessionStore
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
@@ -90,14 +91,14 @@ class TestSignupForm(TestCase):
         form = SignupForm(data=_signup_data("TakenName"))
 
         assert not form.is_valid()
-        assert "A user with that username already exists." in form.errors["username"]
+        assert "Username unavailable." in form.errors["username"]
 
     def test_username_differing_only_in_case_is_rejected(self):
         """A username that differs from an existing one only in letter case is rejected."""
         form = SignupForm(data=_signup_data("takenname"))
 
         assert not form.is_valid()
-        assert "A user with that username already exists." in form.errors["username"]
+        assert "Username unavailable." in form.errors["username"]
 
     def test_uppercase_variant_is_rejected(self):
         """An all-caps version of an existing username is rejected too."""
@@ -116,6 +117,16 @@ class TestSignupForm(TestCase):
 
 class TestCreateUserAndDevices(TestCase):
     """Tests for create_user_and_devices."""
+
+    async def test_refuses_name_taken_in_another_letter_case_after_validation(self):
+        """A name taken in any letter case after the form was checked is refused, and no second account is saved."""
+        form = await _valid_form("lockbob")
+        await User.objects.acreate(username="LockBob")
+
+        with self.assertRaises(ValidationError):
+            await create_user_and_devices(form)
+
+        assert await User.objects.filter(username__iexact="lockbob").acount() == 1
 
     async def test_saves_user_with_password(self):
         """The user is saved with the chosen password, hashed."""

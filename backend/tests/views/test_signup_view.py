@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, patch
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
@@ -148,7 +149,7 @@ class TestCreateAccount(SignupViewTestBase):
 
                 assert response.status_code == 400
                 self.assertTemplateUsed(response, "registration/signup.html")
-                assert "A user with that username already exists." in response.context["form"].errors["username"]
+                assert "Username unavailable." in response.context["form"].errors["username"]
         assert User.objects.filter(username__iexact="takenname").count() == 1
 
     def test_invalid_signup_is_rejected_and_stores_nothing(self):
@@ -168,6 +169,20 @@ class TestCreateAccount(SignupViewTestBase):
                 assert not User.objects.filter(username="new-signup-user").exists()
                 assert PENDING_DEVICE_SESSION_KEY not in self.client.session
 
+    def test_locked_recheck_error_shows_form_again(self):
+        """If the locked re-check finds the name taken in another letter case, the form is shown again instead of a 500."""
+        with patch(
+            "backend.views.accounts.signup.create_user_and_devices",
+            new_callable=AsyncMock,
+            side_effect=ValidationError("Username unavailable."),
+        ):
+            response = self._create_account()
+
+        assert response.status_code == 400
+        self.assertTemplateUsed(response, "registration/signup.html")
+        assert "Username unavailable." in response.context["form"].errors["username"]
+        assert PENDING_DEVICE_SESSION_KEY not in self.client.session
+
     def test_integrity_error_shows_form_again(self):
         """If another request takes the username during save, the form is shown again instead of a 500."""
         with patch(
@@ -179,7 +194,7 @@ class TestCreateAccount(SignupViewTestBase):
 
         assert response.status_code == 400
         self.assertTemplateUsed(response, "registration/signup.html")
-        assert "A user with that username already exists." in response.context["form"].errors["username"]
+        assert "Username unavailable." in response.context["form"].errors["username"]
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
 
 
