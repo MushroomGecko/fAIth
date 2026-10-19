@@ -7,7 +7,9 @@ from backend.utils.signup import store_pending_device
 
 # Shown for every failed recovery attempt, whatever the reason. It never says which field was wrong, whether
 # the username exists, or whether the new password was rejected, so the page reveals nothing about the account.
-INVALID_RECOVERY_MESSAGE = "The password could not be reset. Check your username, recovery code, and new passwords, then try again."
+INVALID_RECOVERY_MESSAGE = (
+    "The password could not be reset. Check your username, recovery code, and new passwords, then try again."
+)
 
 
 async def blank_recovery_user():

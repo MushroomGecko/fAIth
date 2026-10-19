@@ -72,9 +72,7 @@ class TestHashRecoveryCode(TestCase):
 
     async def test_matches_pbkdf2_of_normalized_code_and_device_pk(self):
         """The hash is PBKDF2-SHA256 of the lowercase code, salted with the device primary key, first 96 bits."""
-        digest = hashlib.pbkdf2_hmac(
-            "sha256", b"abcd1234", str(self.device.pk).encode(), RECOVERY_CODE_HASH_ITERATIONS
-        )
+        digest = hashlib.pbkdf2_hmac("sha256", b"abcd1234", str(self.device.pk).encode(), RECOVERY_CODE_HASH_ITERATIONS)
         expected = urlsafe_b64encode(digest[:12]).decode("ascii")
 
         result = await hash_recovery_code("abcd1234", self.device)

@@ -4,10 +4,11 @@ from base64 import b32encode
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from asgiref.sync import sync_to_async
+from cryptography.fernet import Fernet
 from django.contrib.auth import get_user_model
 from django.contrib.sessions.backends.db import SessionStore
 from django.http import HttpResponse, HttpResponseRedirect
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice
@@ -18,9 +19,6 @@ from backend.utils.authentication import (
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
 )
-from cryptography.fernet import Fernet
-from django.test import override_settings
-
 from backend.utils.signup import (
     PENDING_CODES_SESSION_KEY,
     PENDING_DEVICE_SESSION_KEY,
