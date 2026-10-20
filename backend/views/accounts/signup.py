@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_protect
 from ninja import Router
 
 from backend.utils.authentication import render_async
+from backend.utils.login import get_next_url
 from backend.utils.signup import (
     ENROLLMENT_STEP,
     SKIP_STEP,
@@ -48,7 +49,9 @@ async def signup_page(request):
     await abandon_pending_enrollment(request.session)
 
     form = await sync_to_async(SignupForm, thread_sensitive=True)()
-    return await render_async(request, SIGNUP_TEMPLATE, {"form": form})
+    # Keep the "next" page from the login link so it can be passed on through the signup steps.
+    next_url = await get_next_url(request, default="")
+    return await render_async(request, SIGNUP_TEMPLATE, {"form": form, "next": next_url})
 
 
 @router.post("/signup/", tags=[APITags.BACKEND])
@@ -70,6 +73,7 @@ async def signup(request):
         return await confirm_enrollment(request, AUTHENTICATE_TEMPLATE)
     if step == SKIP_STEP:
         return await skip_enrollment(request)
+    next_url = await get_next_url(request, default="")
 
     # Build the signup form from the submitted data. Django's form.is_valid() runs the field checks and the password validators from AUTH_PASSWORD_VALIDATORS, so it's run in a thread.
     form = await sync_to_async(SignupForm, thread_sensitive=True)(request.POST)
@@ -77,7 +81,7 @@ async def signup(request):
 
     # Show the form again with its errors. The 400 status tells the browser the submission was rejected, and nothing is created.
     if not is_valid:
-        return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
+        return await render_async(request, SIGNUP_TEMPLATE, {"form": form, "next": next_url}, status=400)
 
     # Create the account and its unconfirmed devices, then show the setup step.
     try:
@@ -85,10 +89,10 @@ async def signup(request):
     except ValidationError as error:
         # Another signup took this name in some letter case after the check above. Show the form again.
         form.add_error("username", error)
-        return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
+        return await render_async(request, SIGNUP_TEMPLATE, {"form": form, "next": next_url}, status=400)
     except IntegrityError:
         # Another request saved the same username after the check above. Show the form again instead of a 500.
         form.add_error("username", "Username unavailable.")
-        return await render_async(request, SIGNUP_TEMPLATE, {"form": form}, status=400)
+        return await render_async(request, SIGNUP_TEMPLATE, {"form": form, "next": next_url}, status=400)
     await store_pending_device(request.session, totp.id, codes)
-    return await render_authenticate(request, totp, codes, AUTHENTICATE_TEMPLATE)
+    return await render_authenticate(request, totp, codes, AUTHENTICATE_TEMPLATE, next_url=next_url)

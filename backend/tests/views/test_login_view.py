@@ -59,11 +59,28 @@ class TestLoginPage(LoginViewTestBase):
         assert response.context["form"].is_bound is False
         assert response.context["form"].errors == {}
 
-    def test_next_from_query_string_is_passed_to_template(self):
-        """A next value in the URL is passed back to the template so the form can post it."""
-        response = self.client.get(self.url, {"next": "/books/"})
+    def test_keeps_only_local_next_for_form_and_signup_link(self):
+        """A local next value goes back into the form and the Sign up link. Anything else is dropped."""
+        signup_url = reverse("api:signup")
+        cases = [
+            ("local next", "/books/", "/books/"),
+            ("external next", "https://evil.example.com/", ""),
+            ("protocol-relative next", "//evil.example.com/", ""),
+            ("javascript next", "javascript:alert(1)", ""),
+            ("no next", "", ""),
+        ]
+        for name, sent, kept in cases:
+            with self.subTest(case=name):
+                response = self.client.get(self.url, {"next": sent})
 
-        assert response.context["next"] == "/books/"
+                assert response.context["next"] == kept
+                assert f'name="next" value="{kept}"' in response.content.decode()
+                if kept:
+                    assert f'action="{self.url}?next={kept}"' in response.content.decode()
+                    assert f'href="{signup_url}?next={kept}"' in response.content.decode()
+                else:
+                    assert f'action="{self.url}"' in response.content.decode()
+                    assert f'href="{signup_url}"' in response.content.decode()
 
     def test_next_is_empty_when_missing(self):
         """Without a next value, the template gets an empty string."""
@@ -130,6 +147,8 @@ class TestLoginPasswordOnly(LoginViewTestBase):
         cases = [
             ("local next", "/books/", "/books/"),
             ("external next", "https://evil.example.com/", "/"),
+            ("protocol-relative next", "//evil.example.com/", "/"),
+            ("javascript next", "javascript:alert(1)", "/"),
         ]
         for name, next_url, expected in cases:
             with self.subTest(case=name):
@@ -222,6 +241,34 @@ class TestLoginWithAuthenticator(LoginViewTestBase):
 
                 assert response.status_code == 400
                 assert not self._is_logged_in()
+
+    def test_keeps_only_local_next_after_authenticator_login(self):
+        """A login with a correct code goes to the page the user asked for, if it is local. Otherwise the default page."""
+        cases = [
+            ("local next", "/books/", "/books/"),
+            ("external next", "https://evil.example.com/", "/"),
+            ("protocol-relative next", "//evil.example.com/", "/"),
+            ("no next", "", "/"),
+        ]
+        for name, sent, expected in cases:
+            with self.subTest(case=name):
+                # django-otp refuses a code it has already accepted in this time window. Reset it so each case can log in.
+                TOTPDevice.objects.filter(pk=self.device.pk).update(last_t=-1)
+                self.client.logout()
+
+                response = self._post(
+                    username="totp-user", password=PASSWORD, otp_token=_totp_code(self.device), next=sent
+                )
+
+                assert response.status_code == 302
+                assert response.url == expected
+
+    def test_wrong_code_keeps_local_next_for_retry(self):
+        """A failed authenticator login shows the form again with the page to return to still in place."""
+        response = self._post(username="totp-user", password=PASSWORD, otp_token="000000", next="/books/")
+
+        assert response.status_code == 400
+        assert response.context["next"] == "/books/"
 
     def test_client_supplied_device_is_overridden(self):
         """The device is always the user's authenticator app, even if the browser sends another device ID."""

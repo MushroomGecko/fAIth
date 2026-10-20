@@ -20,7 +20,8 @@
                         <p class="text-muted small">Enter your username and one of the recovery codes you saved. Each code works once. Then choose a new password.</p>
                         <p class="text-muted small">After you reset your password, your recovery codes are replaced with new ones and your authenticator app is turned off. You can set the app up again on the next page or skip it.</p>
 
-                        <form method="post" action="{% url 'api:recover' %}">
+                        <form method="post" action="{% url 'api:recover' %}{% if next %}?next={{ next|urlencode }}{% endif %}">
+                            <input type="hidden" name="next" value="{{ next }}">
                             {% csrf_token %}
                             {% if error %}
                                 <div class="alert alert-danger">{{ error }}</div>
@@ -62,7 +63,7 @@
                         </form>
 
                         <div class="text-center mt-3">
-                            <a href="{% url 'api:login' %}">Back to log in</a>
+                            <a href="{% url 'api:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Back to log in</a>
                         </div>
                     </div>
                 </div>

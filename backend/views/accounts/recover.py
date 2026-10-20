@@ -10,6 +10,7 @@ from backend.utils.authentication import (
     users_matching_username,
     verify_recovery_code,
 )
+from backend.utils.login import get_next_url
 from backend.utils.recover import (
     blank_recovery_user,
     recovery_failed,
@@ -44,7 +45,9 @@ async def recovery_page(request):
         HttpResponse: The rendered recovery page.
     """
     form = await recovery_password_form(await blank_recovery_user())
-    return await render_recovery_page(request, RECOVERY_TEMPLATE, form)
+    # Keep the "next" page from the login link so it can be passed on through recovery and back to login.
+    next_url = await get_next_url(request, default="")
+    return await render_recovery_page(request, RECOVERY_TEMPLATE, form, next_url=next_url)
 
 
 @router.post("/recover/", tags=[APITags.BACKEND])
@@ -64,6 +67,7 @@ async def recovery_submit(request):
     Returns:
         HttpResponse: The authenticator setup step with the new recovery codes on success, or the recovery page with errors.
     """
+    next_url = await get_next_url(request, default="")
     username = request.POST.get("username", "").strip()
     code = request.POST.get("recovery_code", "")
 
@@ -75,12 +79,12 @@ async def recovery_submit(request):
     # Check the new passwords first. Nothing is used up yet, so a password typo doesn't cost the user their code.
     form = await recovery_password_form(user or await blank_recovery_user(), request.POST)
     if not await sync_to_async(form.is_valid, thread_sensitive=True)():
-        return await recovery_failed(request, RECOVERY_TEMPLATE, username)
+        return await recovery_failed(request, RECOVERY_TEMPLATE, username, next_url=next_url)
 
     # Then check the username and recovery code. A valid code is used up here, before the password is saved.
     device = await confirmed_recovery_device(user) if user is not None else None
     if device is None or not await verify_recovery_code(device, code):
-        return await recovery_failed(request, RECOVERY_TEMPLATE, username)
+        return await recovery_failed(request, RECOVERY_TEMPLATE, username, next_url=next_url)
 
     # The password hash changes, so Django's session check signs out any other browser still holding this account.
     await sync_to_async(form.save, thread_sensitive=True)()
@@ -88,4 +92,4 @@ async def recovery_submit(request):
     # The old recovery codes are used up and the authenticator app is off, so issue new codes and let the user
     # set the app up again or skip it, the same way signup does.
     totp, codes = await reset_second_factor(user, request.session)
-    return await render_authenticate(request, totp, codes, AUTHENTICATE_TEMPLATE)
+    return await render_authenticate(request, totp, codes, AUTHENTICATE_TEMPLATE, next_url=next_url)

@@ -17,7 +17,7 @@
                     <div class="card-body">
                         <h1 class="h3 text-center mb-4">Log In</h1>
 
-                        <form method="post" action="{% url 'api:login' %}">
+                        <form method="post" action="{% url 'api:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">
                             {% csrf_token %}
                             <input type="hidden" name="next" value="{{ next }}">
 
@@ -59,10 +59,10 @@
                             <button class="btn btn-primary w-100" type="submit">Log In</button>
                         </form>
                         <div class="text-center mt-3">
-                            <span class="text-muted">No account yet?</span> <a href="{% url 'api:signup' %}">Sign up</a>
+                            <span class="text-muted">No account yet?</span> <a href="{% url 'api:signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Sign up</a>
                         </div>
                         <div class="text-center mt-2">
-                            <a href="{% url 'api:recover' %}">Forgot your password or two-factor authentication?</a>
+                            <a href="{% url 'api:recover' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Forgot your password or two-factor authentication?</a>
                         </div>
                     </div>
                 </div>

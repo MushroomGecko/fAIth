@@ -50,6 +50,7 @@
                             {% endif %}
 
                             <form method="post" action="{% url 'api:signup' %}">
+                                <input type="hidden" name="next" value="{{ next }}">
                                 <input type="hidden" name="step" value="authenticate">
                                 {% csrf_token %}
                                 <div class="mb-3">
@@ -61,6 +62,7 @@
                             </form>
 
                             <form method="post" action="{% url 'api:signup' %}" class="mt-3">
+                                <input type="hidden" name="next" value="{{ next }}">
                                 <input type="hidden" name="step" value="skip">
                                 {% csrf_token %}
                                 <button class="btn btn-outline-secondary w-100" type="submit">Skip</button>

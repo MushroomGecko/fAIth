@@ -69,6 +69,6 @@ async def render_login(request, form, template, status=200):
     Returns:
         HttpResponse: The rendered login page.
     """
-    # Pass "next" back to the template so the form can post it along with the login.
-    next_url = request.POST.get("next") or request.GET.get("next") or ""
+    # Pass "next" back to the template so the form can post it along with the login. Only a safe local path is passed on.
+    next_url = await get_next_url(request, default="")
     return await render_async(request, template, {"form": form, "next": next_url}, status=status)

@@ -54,6 +54,91 @@ class SignupViewTestBase(TestCase):
         return TOTPDevice.objects.get(user__username=username, confirmed=False)
 
 
+# (name, next value sent, next value the page should keep)
+SIGNUP_NEXT_CASES = [
+    ("local next", "/books/", "/books/"),
+    ("external next", "https://evil.example.com/", ""),
+    ("protocol-relative next", "//evil.example.com/", ""),
+    ("javascript next", "javascript:alert(1)", ""),
+    ("no next", "", ""),
+]
+
+# (name, next value sent, query string the redirect to login should end with)
+SIGNUP_REDIRECT_CASES = [
+    ("local next", "/books/", "?next=%2Fbooks%2F"),
+    ("external next", "https://evil.example.com/", ""),
+    ("protocol-relative next", "//evil.example.com/", ""),
+    ("javascript next", "javascript:alert(1)", ""),
+    ("no next", "", ""),
+]
+
+
+class TestSignupKeepsNext(SignupViewTestBase):
+    """The "next" page from the login link is carried through the signup steps and back to login."""
+
+    def test_signup_page_keeps_only_local_next(self):
+        """The signup page passes on a local next value in a hidden field. Anything else is dropped."""
+        for name, sent, kept in SIGNUP_NEXT_CASES:
+            with self.subTest(case=name):
+                response = self.client.get(self.url, {"next": sent})
+
+                assert response.context["next"] == kept
+                assert f'name="next" value="{kept}"' in response.content.decode()
+                if kept:
+                    assert f'action="{self.url}?next={kept}"' in response.content.decode()
+                else:
+                    assert f'action="{self.url}"' in response.content.decode()
+
+    def test_invalid_signup_form_keeps_only_local_next(self):
+        """A rejected signup shows the form again with the same next rules applied."""
+        for name, sent, kept in SIGNUP_NEXT_CASES:
+            with self.subTest(case=name):
+                response = self.client.post(self.url, {**_signup_data(password2="does-not-match-123"), "next": sent})
+
+                assert response.status_code == 400
+                assert response.context["next"] == kept
+
+    def test_setup_step_keeps_only_local_next_after_wrong_code(self):
+        """A wrong code shows the setup step again with the same next rules applied."""
+        for index, (name, sent, kept) in enumerate(SIGNUP_NEXT_CASES):
+            with self.subTest(case=name):
+                self._create_account(username=f"next-wrong-{index}")
+
+                response = self._post(step=ENROLLMENT_STEP, otp_token="000000", next=sent)
+
+                assert response.status_code == 400
+                assert response.context["next"] == kept
+
+    def test_confirm_redirects_to_login_with_only_local_next(self):
+        """After the authenticator is confirmed, login gets the page to return to, if it is local."""
+        login_url = reverse("api:login")
+        for index, (name, sent, suffix) in enumerate(SIGNUP_REDIRECT_CASES):
+            with self.subTest(case=name):
+                username = f"next-confirm-{index}"
+                self._create_account(username=username)
+
+                response = self._post(
+                    step=ENROLLMENT_STEP,
+                    otp_token=_totp_code(self._pending_totp(username)),
+                    next=sent,
+                )
+
+                assert response.status_code == 302
+                assert response.url == f"{login_url}{suffix}"
+
+    def test_skip_redirects_to_login_with_only_local_next(self):
+        """Skipping the authenticator sends the user to login, with the page to return to if it is local."""
+        login_url = reverse("api:login")
+        for index, (name, sent, suffix) in enumerate(SIGNUP_REDIRECT_CASES):
+            with self.subTest(case=name):
+                self._create_account(username=f"next-skip-{index}")
+
+                response = self._post(step=SKIP_STEP, next=sent)
+
+                assert response.status_code == 302
+                assert response.url == f"{login_url}{suffix}"
+
+
 class TestSignupPage(SignupViewTestBase):
     """Tests for GET /signup/."""
 

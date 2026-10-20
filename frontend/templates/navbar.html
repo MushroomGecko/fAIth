@@ -17,7 +17,7 @@
                 {% else %}
                     <p>You are not logged in</p>
                     <a href="{% url 'api:login' %}?next={{ request.get_full_path|urlencode }}">Log In</a>
-                    <a href="{% url 'api:signup' %}">Sign Up</a>
+                    <a href="{% url 'api:signup' %}?next={{ request.get_full_path|urlencode }}">Sign Up</a>
                 {% endif %}
             {% endblock %}
         </div>

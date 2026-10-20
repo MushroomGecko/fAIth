@@ -18,7 +18,8 @@
                     <div class="card-body">
                         <h1 class="h3 text-center mb-4">Sign Up</h1>
 
-                        <form method="post" action="{% url 'api:signup' %}">
+                        <form method="post" action="{% url 'api:signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">
+                            <input type="hidden" name="next" value="{{ next }}">
                             {% csrf_token %}
                             {% if form.non_field_errors %}
                                 <div class="alert alert-danger">{{ form.non_field_errors|first }}</div>
@@ -55,7 +56,7 @@
                             <button class="btn btn-primary w-100" type="submit">Sign Up</button>
                         </form>
                         <div class="text-center mt-3">
-                            <span class="text-muted">Already have an account?</span> <a href="{% url 'api:login' %}">Log in</a>
+                            <span class="text-muted">Already have an account?</span> <a href="{% url 'api:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Log in</a>
                         </div>
                     </div>
                 </div>

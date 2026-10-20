@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urlencode
 
 from asgiref.sync import sync_to_async
 from cryptography.fernet import Fernet, InvalidToken
@@ -7,6 +8,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
 from django.shortcuts import redirect
+from django.urls import reverse
 
 from backend.utils.authentication import (
     INVALID_CODE_MESSAGE,
@@ -19,6 +21,7 @@ from backend.utils.authentication import (
     unconfirmed_totp_by_device_id,
     users_matching_username,
 )
+from backend.utils.login import get_next_url
 
 # Session keys for the signup enrollment that is waiting for the user to confirm their authenticator app.
 PENDING_DEVICE_SESSION_KEY = "pending_totp_device_id"
@@ -193,7 +196,21 @@ async def clear_pending_device(session):
     await session.apop(PENDING_CODES_SESSION_KEY, None)
 
 
-async def render_authenticate(request, device, codes, template, status=200, error=None):
+def login_url_for(next_url):
+    """
+    Return the login page URL, keeping the page the user was trying to reach.
+
+    Parameters:
+        next_url (str): A safe local path to return to after login, or an empty string.
+
+    Returns:
+        str: The login URL, with "next" in the query string when next_url is set.
+    """
+    login_url = reverse("api:login")
+    return f"{login_url}?{urlencode({'next': next_url})}" if next_url else login_url
+
+
+async def render_authenticate(request, device, codes, template, status=200, error=None, next_url=""):
     """
     Render the authenticator setup step with the QR code, secret, and recovery codes.
 
@@ -204,13 +221,14 @@ async def render_authenticate(request, device, codes, template, status=200, erro
         template (str): The authenticator setup page template path, passed in by the view.
         status (int): The HTTP status code for the response (default: 200).
         error (str | None): An error message to display above the form (default: None).
+        next_url (str): The page to return to after login, carried in a hidden form field (default: "").
 
     Returns:
         HttpResponse: The rendered authenticator setup page.
     """
     # The QR code and secret come from the device, so they're rebuilt on every render.
     details = await enrollment_details(device)
-    context = {**details, "codes": codes, "error": error}
+    context = {**details, "codes": codes, "error": error, "next": next_url}
     # The signup views are wrapped in never_cache, so this page is not stored by the browser.
     return await render_async(request, template, context, status=status)
 
@@ -226,6 +244,7 @@ async def confirm_enrollment(request, template):
     Returns:
         HttpResponse: A redirect to login on success, otherwise the setup page with an error.
     """
+    next_url = await get_next_url(request, default="")
     # If there's no pending enrollment in this session, send the user back to the start.
     device, codes = await load_pending_enrollment(request.session)
     if device is None:
@@ -236,9 +255,11 @@ async def confirm_enrollment(request, template):
     if await confirm_device(device, token):
         # Enrollment is finished, so the recovery codes shouldn't stay in the session.
         await clear_pending_device(request.session)
-        return redirect("api:login")
+        return redirect(login_url_for(next_url))
 
-    return await render_authenticate(request, device, codes, template, status=400, error=INVALID_CODE_MESSAGE)
+    return await render_authenticate(
+        request, device, codes, template, status=400, error=INVALID_CODE_MESSAGE, next_url=next_url
+    )
 
 
 async def skip_enrollment(request):
@@ -262,7 +283,7 @@ async def skip_enrollment(request):
     await clear_unconfirmed_totp(device.user)
     # Forget the pending enrollment, so the recovery codes don't stay in the session.
     await clear_pending_device(request.session)
-    return redirect("api:login")
+    return redirect(login_url_for(await get_next_url(request, default="")))
 
 
 async def abandon_pending_enrollment(session):

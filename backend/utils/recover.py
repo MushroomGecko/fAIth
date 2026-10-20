@@ -59,7 +59,7 @@ async def reset_second_factor(user, session):
     return totp, codes
 
 
-async def render_recovery_page(request, template, form, username="", error=None, status=200):
+async def render_recovery_page(request, template, form, username="", error=None, status=200, next_url=""):
     """
     Render the single recovery page with its form and any error.
 
@@ -70,15 +70,16 @@ async def render_recovery_page(request, template, form, username="", error=None,
         username (str): The username to fill back into the form.
         error (str | None): A message for the username/code check, if it failed.
         status (int): The HTTP status code to return.
+        next_url (str): The page to return to after login, carried in a hidden field (default: "").
 
     Returns:
         HttpResponse: The rendered recovery page.
     """
-    context = {"form": form, "username": username, "error": error}
+    context = {"form": form, "username": username, "error": error, "next": next_url}
     return await render_async(request, template, context, status=status)
 
 
-async def recovery_failed(request, template, username):
+async def recovery_failed(request, template, username, next_url=""):
     """
     Return the one response used for every failed recovery attempt. The form is unbound, so no field errors show.
 
@@ -86,11 +87,12 @@ async def recovery_failed(request, template, username):
         request (HttpRequest): The current request.
         template (str): The recovery page template path, passed in by the view.
         username (str): The username as typed, so the user doesn't have to retype it.
+        next_url (str): The page to return to after login, kept on the page (default: "").
 
     Returns:
         HttpResponse: The recovery page with the generic error, status 400.
     """
     form = await recovery_password_form(await blank_recovery_user())
     return await render_recovery_page(
-        request, template, form, username=username, error=INVALID_RECOVERY_MESSAGE, status=400
+        request, template, form, username=username, error=INVALID_RECOVERY_MESSAGE, status=400, next_url=next_url
     )

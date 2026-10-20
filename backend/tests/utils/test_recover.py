@@ -239,7 +239,7 @@ class TestRenderRecoveryPage(TestCase):
         assert response is page
         args, kwargs = mock_render.call_args
         assert args[1] == "recover.html"
-        assert args[2] == {"form": form, "username": "name", "error": "Nope"}
+        assert args[2] == {"form": form, "username": "name", "error": "Nope", "next": ""}
         assert kwargs == {"status": 200}
 
     async def test_defaults_are_empty_username_and_no_error(self):

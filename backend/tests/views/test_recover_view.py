@@ -14,7 +14,7 @@ from backend.utils.authentication import (
     hash_recovery_code,
 )
 from backend.utils.recover import INVALID_RECOVERY_MESSAGE
-from backend.utils.signup import PENDING_DEVICE_SESSION_KEY
+from backend.utils.signup import PENDING_DEVICE_SESSION_KEY, SKIP_STEP
 
 User = get_user_model()
 OLD_PASSWORD = "a-long-test-password-123"
@@ -70,6 +70,79 @@ class TestRecoveryPage(RecoverViewTestBase):
         response = self.client.get(self.url)
 
         assert "no-store" in response["Cache-Control"]
+
+
+# (name, next value sent, next value the page should keep)
+RECOVER_NEXT_CASES = [
+    ("local next", "/books/", "/books/"),
+    ("external next", "https://evil.example.com/", ""),
+    ("protocol-relative next", "//evil.example.com/", ""),
+    ("javascript next", "javascript:alert(1)", ""),
+    ("no next", "", ""),
+]
+
+# (name, next value sent, query string the redirect to login should end with)
+RECOVER_REDIRECT_CASES = [
+    ("local next", "/books/", "?next=%2Fbooks%2F"),
+    ("external next", "https://evil.example.com/", ""),
+    ("protocol-relative next", "//evil.example.com/", ""),
+    ("javascript next", "javascript:alert(1)", ""),
+    ("no next", "", ""),
+]
+
+
+class TestRecoveryKeepsNext(RecoverViewTestBase):
+    """The "next" page from login is carried through recovery and back to login."""
+
+    def test_page_keeps_only_local_next(self):
+        """The recovery page keeps a local next value in its form and its Back to log in link. Anything else is dropped."""
+        login_url = reverse("api:login")
+        for name, sent, kept in RECOVER_NEXT_CASES:
+            with self.subTest(case=name):
+                response = self.client.get(self.url, {"next": sent})
+
+                content = response.content.decode()
+                assert response.context["next"] == kept
+                assert f'name="next" value="{kept}"' in content
+                if kept:
+                    assert f'href="{login_url}?next={kept}"' in content
+                else:
+                    assert f'href="{login_url}"' in content
+                if kept:
+                    assert f'action="{self.url}?next={kept}"' in content
+                else:
+                    assert f'action="{self.url}"' in content
+
+    def test_failed_attempt_keeps_only_local_next(self):
+        """A failed recovery shows the page again with the same next rules applied."""
+        for name, sent, kept in RECOVER_NEXT_CASES:
+            with self.subTest(case=name):
+                response = self._recover(recovery_code="not-a-real-code", next=sent)
+
+                assert response.status_code == 400
+                assert response.context["next"] == kept
+
+    def test_success_and_skip_redirect_to_login_with_only_local_next(self):
+        """A successful recovery passes next to the setup step, and skipping it sends the user to login with it."""
+        login_url = reverse("api:login")
+        codes = self.codes
+        for index, (name, sent, suffix) in enumerate(RECOVER_REDIRECT_CASES):
+            with self.subTest(case=name):
+                # Each recovery changes the password and replaces the codes, so use the newest codes and a new password.
+                response = self._recover(
+                    recovery_code=codes[0],
+                    next=sent,
+                    new_password1=f"{NEW_PASSWORD}-{index}",
+                    new_password2=f"{NEW_PASSWORD}-{index}",
+                )
+
+                assert response.status_code == 200
+                assert response.context["next"] == ("/books/" if suffix else "")
+                codes = response.context["codes"]
+
+                skip = self.client.post(reverse("api:signup"), {"step": SKIP_STEP, "next": sent})
+
+                assert skip.url == f"{login_url}{suffix}"
 
 
 class TestRecoverySuccess(RecoverViewTestBase):
