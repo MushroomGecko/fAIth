@@ -1,21 +1,28 @@
 """Tests for the login page and login endpoint in backend.views.accounts.login."""
 
+import asyncio
+from datetime import timedelta
 from unittest.mock import AsyncMock, patch
 
 from asgiref.sync import async_to_sync
+from axes.models import AccessAttempt
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from backend.utils.authentication import (
+    LOCKED_OUT_MESSAGE,
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
     create_recovery_codes,
 )
 from backend.utils.signup import PENDING_CODES_SESSION_KEY, PENDING_DEVICE_SESSION_KEY
+from fAIth.test_helpers.async_client import ServerAsyncClient
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
@@ -401,3 +408,127 @@ class TestLoginClearsPendingRecoveryCodes(LoginViewTestBase):
 
         assert not self._is_logged_in()
         assert len(self._pending_keys()) == 2
+
+
+class TestLoginLockout(LoginViewTestBase):
+    """Tests for the django-axes lockout on POST /login/. The account has no authenticator, so only passwords are involved."""
+
+    OTHER_CLIENT = "203.0.113.9"
+
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(username="lock-user", password=PASSWORD)
+
+    def _post_from(self, ip, **data):
+        """POST to the login endpoint from a given client IP."""
+        return self.client.post(self.url, data, REMOTE_ADDR=ip)
+
+    def test_one_wrong_password_is_counted_once(self):
+        """A wrong password must add one failure, not two. The form's own authenticate() must not count it again."""
+        self._post(username="lock-user", password="wrong-password-123")
+
+        assert AccessAttempt.objects.get().failures_since_start == 1
+
+    def test_below_limit_still_allows_correct_password(self):
+        """Four wrong passwords don't stop the right one."""
+        for _ in range(4):
+            self._post(username="lock-user", password="wrong-password-123")
+
+        response = self._post(username="lock-user", password=PASSWORD)
+
+        assert response.status_code == 302
+        assert self._is_logged_in()
+
+    def test_five_wrong_passwords_lock_the_account_for_this_client(self):
+        """After five wrong passwords, even the right password is refused from the same client, with the lockout message."""
+        for _ in range(4):
+            self._post(username="lock-user", password="wrong-password-123")
+        fifth = self._post(username="lock-user", password="wrong-password-123")
+        assert fifth.status_code == 400
+
+        response = self._post(username="lock-user", password=PASSWORD)
+
+        assert response.status_code == 429
+        assert LOCKED_OUT_MESSAGE in response.context["form"].non_field_errors()
+        assert not self._is_logged_in()
+
+    def test_other_client_can_still_log_in_to_locked_account(self):
+        """A real user on their own connection isn't locked out by someone else's guesses."""
+        for _ in range(5):
+            self._post(username="lock-user", password="wrong-password-123")
+
+        response = self._post_from(self.OTHER_CLIENT, username="lock-user", password=PASSWORD)
+
+        assert response.status_code == 302
+        assert self._is_logged_in()
+
+    def test_one_client_cannot_spread_guesses_across_accounts(self):
+        """Five wrong guesses over five accounts lock this client out of a sixth account too. Another client still gets in."""
+        for index in range(5):
+            User.objects.create_user(username=f"spread-{index}", password=PASSWORD)
+            self._post(username=f"spread-{index}", password="wrong-password-123")
+        User.objects.create_user(username="spread-sixth", password=PASSWORD)
+
+        response = self._post(username="spread-sixth", password=PASSWORD)
+        assert response.status_code == 429
+        assert not self._is_logged_in()
+
+        response = self._post_from(self.OTHER_CLIENT, username="spread-sixth", password=PASSWORD)
+        assert response.status_code == 302
+
+    def test_lock_lifts_after_cool_off(self):
+        """The lock ends after 15 minutes, so a genuine user who was locked out by mistake can log in again."""
+        for _ in range(5):
+            self._post(username="lock-user", password="wrong-password-123")
+        AccessAttempt.objects.update(attempt_time=timezone.now() - timedelta(minutes=16))
+
+        response = self._post(username="lock-user", password=PASSWORD)
+
+        assert response.status_code == 302
+        assert self._is_logged_in()
+
+    def test_successful_login_does_not_clear_earlier_failures(self):
+        """Four wrong passwords, then a right one, leave the count at four. One more wrong password locks the account.
+
+        Clearing the count on success would let someone with their own account reset their IP and keep guessing.
+        """
+        for _ in range(4):
+            self._post(username="lock-user", password="wrong-password-123")
+        assert self._post(username="lock-user", password=PASSWORD).status_code == 302
+        self.client.logout()
+
+        fifth = self._post(username="lock-user", password="wrong-password-123")
+        assert fifth.status_code == 400
+
+        response = self._post(username="lock-user", password=PASSWORD)
+
+        assert response.status_code == 429
+        assert not self._is_logged_in()
+
+
+class TestLoginConcurrency(TestCase):
+    """Simultaneous wrong-password logins from one client must not get past the lockout limit."""
+
+    # Enough requests that the lock check and the failure record overlap in at least one run.
+    BATCH_SIZE = 20
+    CLIENT_IP = "198.51.100.7"
+
+    def setUp(self):
+        self.url = reverse("api:login")
+        self.user = User.objects.create_user(username="race-user", password=PASSWORD)
+
+    async def test_simultaneous_wrong_passwords_respect_the_failure_limit(self):
+        """Fire a batch of wrong passwords at once. At most FAILURE_LIMIT of them may get the normal 400 response."""
+
+        async def attempt():
+            """Send one wrong-password login with its own client, as a separate browser would."""
+            response = await ServerAsyncClient().post(
+                self.url,
+                {"username": "race-user", "password": "wrong-password-123"},
+                REMOTE_ADDR=self.CLIENT_IP,
+            )
+            return response.status_code
+
+        statuses = await asyncio.gather(*(attempt() for _ in range(self.BATCH_SIZE)))
+
+        assert statuses.count(400) <= settings.AXES_FAILURE_LIMIT, statuses

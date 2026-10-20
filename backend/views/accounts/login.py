@@ -5,11 +5,13 @@ from django.views.decorators.csrf import csrf_protect
 from django_otp.forms import OTPAuthenticationForm
 from ninja import Router
 
-from backend.utils.authentication import clear_unconfirmed_totp
+from backend.utils.authentication import account_locked, clear_unconfirmed_totp, record_failed_login
 from backend.utils.login import (
     authenticator_device_id,
     canonical_username,
     get_next_url,
+    login_locked,
+    login_refused,
     render_login,
 )
 from backend.utils.signup import clear_pending_device
@@ -54,6 +56,11 @@ async def login(request):
     data = request.POST.copy()
     data["username"] = await canonical_username(data.get("username", ""))
 
+    # A locked client gets the lockout message and nothing else. The password isn't checked,
+    # so a locked user can't keep guessing, and the form is unbound so django-otp doesn't validate anything.
+    if await account_locked(request, data["username"]):
+        return await login_locked(request, LOGIN_TEMPLATE)
+
     # The device depends on the user, so check the password first to find out who is logging in.
     user = await aauthenticate(
         request,
@@ -71,6 +78,8 @@ async def login(request):
             # The form adds "Please select a device." here because this user has no device. Replace it with our message.
             form.errors.clear()
             form.add_error(None, "TOTP not set up or wrong code entered.")
+            # The password was right, so this wrong code counts against the account.
+            await record_failed_login(request, user.username)
             return await render_login(request, form, LOGIN_TEMPLATE, status=400)
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await clear_unconfirmed_totp(user)
@@ -79,9 +88,14 @@ async def login(request):
         await alogin(request, user)
         return redirect(await get_next_url(request))
 
+    # No user means the password was wrong. aauthenticate() has already counted that attempt, so don't run the form's
+    # own authenticate() too. Running it again would count the same attempt twice.
+    if user is None:
+        return await login_refused(request, LOGIN_TEMPLATE, data["username"])
+
     # The server always sets the device to the user's authenticator app. The browser can't choose
     # a recovery-code device, and recovery codes are never checked at login.
-    data["otp_device"] = (await authenticator_device_id(user) or "") if user else ""
+    data["otp_device"] = await authenticator_device_id(user) or ""
 
     # Validate the code against that device. The form also checks the password again.
     form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, data)
@@ -95,4 +109,6 @@ async def login(request):
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, logged_in_user)
         return redirect(await get_next_url(request))
+    # The password was right, so a wrong code is the only failure left to count against the account.
+    await record_failed_login(request, user.username)
     return await render_login(request, form, LOGIN_TEMPLATE, status=400)

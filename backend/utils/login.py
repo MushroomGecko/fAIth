@@ -1,7 +1,14 @@
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils.http import url_has_allowed_host_and_scheme
+from django_otp.forms import OTPAuthenticationForm
 
-from backend.utils.authentication import confirmed_totp_device, render_async, users_matching_username
+from backend.utils.authentication import (
+    LOCKED_OUT_MESSAGE,
+    confirmed_totp_device,
+    render_async,
+    users_matching_username,
+)
 
 
 async def get_next_url(request, default=None):
@@ -72,3 +79,44 @@ async def render_login(request, form, template, status=200):
     # Pass "next" back to the template so the form can post it along with the login. Only a safe local path is passed on.
     next_url = await get_next_url(request, default="")
     return await render_async(request, template, {"form": form, "next": next_url}, status=status)
+
+
+async def login_locked(request, template):
+    """
+    Return the login page with the lockout message. Used while this client is locked out.
+
+    The form is unbound, so django-otp doesn't validate anything and no password is checked.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        template (str): The login page template path, passed in by the view.
+
+    Returns:
+        HttpResponse: The login page with the lockout message, status 429.
+    """
+    form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request)
+    # add_error() expects cleaned_data, which an unbound form doesn't have. Nothing was validated, so an empty dict is correct.
+    form.cleaned_data = {}
+    form.add_error(None, LOCKED_OUT_MESSAGE)
+    return await render_login(request, form, template, status=429)
+
+
+async def login_refused(request, template, username):
+    """
+    Return the login page for a wrong username or password, with Django's generic login error.
+
+    The form is unbound, so its clean() doesn't run authenticate() again. aauthenticate() has already
+    counted this attempt, and a second count would lock this client out after three tries instead of five.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        template (str): The login page template path, passed in by the view.
+        username (str): The username as typed, so the user doesn't have to retype it.
+
+    Returns:
+        HttpResponse: The login page with the generic login error, status 400.
+    """
+    form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, initial={"username": username})
+    form.cleaned_data = {}
+    form.add_error(None, form.get_invalid_login_error())
+    return await render_login(request, form, template, status=400)

@@ -6,7 +6,11 @@ from urllib.parse import parse_qs, urlparse
 
 import segno
 from asgiref.sync import sync_to_async
+from axes.backends import AxesStandaloneBackend
+from axes.handlers.proxy import AxesProxyHandler
 from django.contrib.auth import get_user_model
+from django.contrib.auth.backends import BaseBackend, ModelBackend
+from django.contrib.auth.signals import user_login_failed
 from django.shortcuts import render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -30,6 +34,10 @@ RECOVERY_DEVICE_NAME = "Recovery code"
 
 # Shown when the 6-digit code from an authenticator app is wrong during setup.
 INVALID_CODE_MESSAGE = "That code wasn't valid. Check your authenticator app and try again."
+
+# Shown on login and recovery while the account or this client is locked out after too many failed attempts.
+# It doesn't say whose lock it is or how many attempts were counted, so it reveals nothing extra.
+LOCKED_OUT_MESSAGE = "Too many failed attempts. You're locked out for 15 minutes, so please wait before trying again."
 
 
 async def hash_recovery_code(code, device):
@@ -60,9 +68,11 @@ async def verify_recovery_code(device, code):
     """
     Check a recovery code and use it up if it's valid.
 
-    Throttling works the same way as django-otp's static device. Failed attempts count toward
-    the limit, and a successful one resets it. Each code can be used once. The delete is a
-    single query, so two requests can't both use the same code.
+    Each code can be used once. The delete is a single query, so two requests can't both use the same code.
+
+    There is no device-wide throttle. A device-level counter would be shared by every caller, so anyone with a
+    username could lock the real user out of recovery. Limits are per username and client, and per client, through
+    axes instead (see AXES_LOCKOUT_PARAMETERS in settings).
 
     Parameters:
         device (StaticDevice): The confirmed recovery-code device for the user.
@@ -71,19 +81,12 @@ async def verify_recovery_code(device, code):
     Returns:
         bool: True if the code was valid and has now been used up, otherwise False.
     """
-    # If too many recent attempts failed, refuse without checking the code.
-    allowed, _ = await sync_to_async(device.verify_is_allowed, thread_sensitive=True)()
-    if not allowed:
-        return False
-
     hashed = await hash_recovery_code(code, device)
     # Deleting the matching token both checks and uses it. The count tells us whether it matched.
     deleted, _ = await StaticToken.objects.filter(device=device, token=hashed).adelete()
     if not deleted:
-        await sync_to_async(device.throttle_increment, thread_sensitive=True)()
         return False
 
-    await sync_to_async(device.throttle_reset, thread_sensitive=True)()
     await sync_to_async(device.set_last_used_timestamp, thread_sensitive=True)()
     return True
 
@@ -274,6 +277,56 @@ async def confirm_device(device, token):
     device.confirmed = True
     await device.asave(update_fields=["confirmed"])
     return True
+
+
+class AxesLockoutBackend(AxesStandaloneBackend, BaseBackend):
+    """
+    django-axes' lockout backend, with the async entry point that Django 6's aauthenticate() calls.
+
+    AxesStandaloneBackend only defines the synchronous authenticate(). BaseBackend supplies aauthenticate(),
+    which runs authenticate() in a thread. A locked-out login raises AxesBackendPermissionDenied, which
+    Django's authenticate() catches, so the login is refused.
+    """
+
+    def get_user(self, user_id):
+        """
+        Load the logged-in user for a session. This backend is first in AUTHENTICATION_BACKENDS, so Django's
+        force_login() stores it in the session. Without this method, BaseBackend would return None and the
+        user would be logged out on the next request. ModelBackend does the actual lookup.
+        """
+        return ModelBackend().get_user(user_id)
+
+
+async def account_locked(request, username):
+    """
+    Return True if django-axes has locked this client after too many failed attempts.
+
+    The lock is per client, so failures against any account from this IP count toward it.
+
+    Parameters:
+        request (HttpRequest): The current request, which django-axes needs to read the client details.
+        username (str): The username being tried. It doesn't change the lock, since the lock is per client.
+
+    Returns:
+        bool: True while this client is locked out.
+    """
+    return not await sync_to_async(AxesProxyHandler.is_allowed, thread_sensitive=True)(request, {"username": username})
+
+
+async def record_failed_login(request, username):
+    """
+    Count a failed login or recovery attempt from this client, so django-axes can lock the client out after too many.
+
+    Django's authenticate() already reports a wrong password. Use this for failures it can't see, such as a
+    wrong authenticator or recovery code after the password was accepted.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        username (str): The username as stored on the account.
+    """
+    await sync_to_async(user_login_failed.send, thread_sensitive=True)(
+        sender=get_user_model(), credentials={"username": username}, request=request
+    )
 
 
 async def render_async(request, template, context=None, status=200):

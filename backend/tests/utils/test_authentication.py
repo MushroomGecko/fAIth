@@ -8,9 +8,12 @@ from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
 from asgiref.sync import async_to_sync, sync_to_async
+from axes.exceptions import AxesBackendPermissionDenied
+from axes.models import AccessAttempt
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.utils import timezone
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
@@ -21,6 +24,8 @@ from backend.utils.authentication import (
     RECOVERY_CODE_HASH_ITERATIONS,
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
+    AxesLockoutBackend,
+    account_locked,
     clear_unconfirmed_totp,
     confirm_device,
     confirmed_recovery_device,
@@ -29,6 +34,7 @@ from backend.utils.authentication import (
     create_totp_device,
     enrollment_details,
     hash_recovery_code,
+    record_failed_login,
     render_async,
     unconfirmed_totp_by_device_id,
     unconfirmed_totp_by_user,
@@ -153,12 +159,14 @@ class TestVerifyRecoveryCode(TestCase):
 
         assert await StaticToken.objects.filter(device=self.device).acount() == 1
 
-    async def test_wrong_code_counts_as_failed_attempt(self):
-        """A wrong code increments the throttling failure count."""
-        await verify_recovery_code(self.device, "zzzz9999")
+    async def test_wrong_codes_never_lock_the_device(self):
+        """Many wrong codes don't add to the device's throttling count, so they can't lock out the real user."""
+        for _ in range(20):
+            await verify_recovery_code(self.device, "zzzz9999")
 
         await self.device.arefresh_from_db()
-        assert self.device.throttling_failure_count == 1
+        assert self.device.throttling_failure_count == 0
+        assert await verify_recovery_code(self.device, self.code) is True
 
     async def test_code_from_another_device_is_refused(self):
         """A code issued to a different user's device doesn't work on this device."""
@@ -167,18 +175,6 @@ class TestVerifyRecoveryCode(TestCase):
 
         assert await verify_recovery_code(self.device, "other123") is False
         assert await StaticToken.objects.filter(device=other_device).acount() == 1
-
-    async def test_successful_check_resets_failure_count(self):
-        """A valid code clears earlier failed attempts."""
-        await verify_recovery_code(self.device, "zzzz9999")
-        # A failure starts a short lockout. Move its start back so the valid code isn't refused by it.
-        self.device.throttling_failure_timestamp = timezone.now() - timedelta(days=1)
-        await self.device.asave()
-
-        assert await verify_recovery_code(self.device, self.code) is True
-
-        await self.device.arefresh_from_db()
-        assert self.device.throttling_failure_count == 0
 
     async def test_successful_check_records_last_used(self):
         """A valid code sets the device's last-used timestamp."""
@@ -189,19 +185,10 @@ class TestVerifyRecoveryCode(TestCase):
         await self.device.arefresh_from_db()
         assert self.device.last_used_at is not None
 
-    async def test_throttled_device_refuses_even_valid_code(self):
-        """While the device is locked out after repeated failures, even a valid code is refused."""
+    async def test_leftover_throttle_state_does_not_block_valid_code(self):
+        """Old throttling state from before this change can't stop a valid code from working."""
         self.device.throttling_failure_count = 10
         self.device.throttling_failure_timestamp = timezone.now()
-        await self.device.asave()
-
-        assert await verify_recovery_code(self.device, self.code) is False
-        assert await StaticToken.objects.filter(device=self.device).acount() == 1
-
-    async def test_valid_code_accepted_after_lockout_expires(self):
-        """Once the lockout period has passed, a valid code is accepted again."""
-        self.device.throttling_failure_count = 3
-        self.device.throttling_failure_timestamp = timezone.now() - timedelta(days=1)
         await self.device.asave()
 
         assert await verify_recovery_code(self.device, self.code) is True
@@ -642,3 +629,101 @@ class TestRenderAsync(TestCase):
             await render_async(request, "plain.html")
 
         assert mock_render.call_args.args == (request, "plain.html", None)
+
+
+def _client_request(ip="198.51.100.1"):
+    """Return a bare POST request from this client IP, the way the login and recovery views see it."""
+    return RequestFactory().post("/", REMOTE_ADDR=ip)
+
+
+class TestRecordFailedLogin(TestCase):
+    """Tests for record_failed_login, which counts one failed attempt from a client against a username."""
+
+    async def test_counts_one_failure_for_the_username(self):
+        """One call records one failed attempt for that username."""
+        await record_failed_login(_client_request(), "counted-user")
+
+        attempt = await AccessAttempt.objects.aget(username="counted-user")
+        assert attempt.failures_since_start == 1
+
+    async def test_stores_keyed_hash_not_raw_ip(self):
+        """The client is stored as the hashed identifier, never as the raw IP address."""
+        await record_failed_login(_client_request("198.51.100.1"), "hashed-user")
+
+        attempt = await AccessAttempt.objects.aget(username="hashed-user")
+        assert attempt.ip_address != "198.51.100.1"
+        assert attempt.ip_address == settings.AXES_CLIENT_IP_CALLABLE(_client_request("198.51.100.1"))
+
+
+class TestAccountLocked(TestCase):
+    """Tests for account_locked, which asks django-axes whether this client may try an account."""
+
+    async def _fail(self, username, ip, times):
+        """Record failed attempts for this username from one client IP."""
+        for _ in range(times):
+            await record_failed_login(_client_request(ip), username)
+
+    async def test_not_locked_before_any_failures(self):
+        """A username with no failed attempts is not locked."""
+        assert await account_locked(_client_request(), "fresh-user") is False
+
+    async def test_not_locked_below_failure_limit(self):
+        """Four failures, one short of the limit, don't lock the account."""
+        await self._fail("below-limit-user", "198.51.100.1", 4)
+
+        assert await account_locked(_client_request("198.51.100.1"), "below-limit-user") is False
+
+    async def test_locked_after_failure_limit_for_same_client(self):
+        """Five failures from one client lock the account for that client."""
+        await self._fail("limit-user", "198.51.100.1", 5)
+
+        assert await account_locked(_client_request("198.51.100.1"), "limit-user") is True
+
+    async def test_other_client_is_not_locked_out(self):
+        """Failures from one client don't lock the real user on a different connection."""
+        await self._fail("shared-user", "198.51.100.1", 5)
+
+        assert await account_locked(_client_request("203.0.113.9"), "shared-user") is False
+
+    async def test_one_client_cannot_spread_guesses_across_accounts(self):
+        """Five failures spread over five accounts lock that client out of other accounts too."""
+        for index in range(5):
+            await self._fail(f"spread-user-{index}", "198.51.100.1", 1)
+
+        assert await account_locked(_client_request("198.51.100.1"), "untouched-user") is True
+        assert await account_locked(_client_request("203.0.113.9"), "untouched-user") is False
+
+    async def test_lock_lifts_after_cool_off(self):
+        """Once the 15-minute window has passed, the lock ends."""
+        await self._fail("cooloff-user", "198.51.100.1", 5)
+        await AccessAttempt.objects.aupdate(attempt_time=timezone.now() - timedelta(minutes=16))
+
+        assert await account_locked(_client_request("198.51.100.1"), "cooloff-user") is False
+
+
+class TestAxesLockoutBackend(TestCase):
+    """Tests for AxesLockoutBackend through its async entry point, which is what the login view uses."""
+
+    async def test_allowed_login_returns_none_so_next_backend_runs(self):
+        """With no lock, the backend returns None, so Django moves on to ModelBackend for the password check."""
+        result = await AxesLockoutBackend().aauthenticate(
+            _client_request("198.51.100.1"), username="backend-user", password=PASSWORD
+        )
+
+        assert result is None
+
+    async def test_locked_login_raises_permission_denied(self):
+        """A locked account stops the login with AxesBackendPermissionDenied, which Django's authenticate() handles."""
+        for _ in range(5):
+            await record_failed_login(_client_request("198.51.100.1"), "backend-user")
+
+        with self.assertRaises(AxesBackendPermissionDenied):
+            await AxesLockoutBackend().aauthenticate(
+                _client_request("198.51.100.1"), username="backend-user", password=PASSWORD
+            )
+
+    async def test_loads_session_user_so_force_login_sessions_survive(self):
+        """Django's force_login() stores the first backend with get_user. Loading a user must work through this backend."""
+        user = await _acreate_user("session-backend-user")
+
+        assert await AxesLockoutBackend().aget_user(user.pk) == user

@@ -10,9 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import hashlib
+import hmac
+import ipaddress
 import json
 import logging
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import wn
@@ -112,6 +116,8 @@ INSTALLED_APPS = [
     "django_otp",
     "django_otp.plugins.otp_static",
     "django_otp.plugins.otp_totp",
+    # Lockout after repeated failed logins and recovery attempts
+    "axes",
     # fAIth apps
     "ai",
     "backend",
@@ -197,6 +203,64 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+
+# Authentication backends and account lockout (django-axes)
+# https://django-axes.readthedocs.io/en/latest/2_installation.html
+# AxesLockoutBackend must come first. It wraps axes' AxesStandaloneBackend, which refuses locked-out accounts, and ModelBackend then does the password check.
+AUTHENTICATION_BACKENDS = [
+    "backend.utils.authentication.AxesLockoutBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+# Number of reverse proxies between the internet and this app. Set DJANGO_TRUSTED_PROXY_COUNT to match the deployment.
+# Leave it at 0 when there is no proxy, so the client address is taken from REMOTE_ADDR.
+TRUSTED_PROXY_COUNT = int(os.getenv("DJANGO_TRUSTED_PROXY_COUNT", "0"))
+
+
+def axes_ip_identifier(request):
+    """
+    Return the value django-axes counts lockouts by, in place of the client's IP address.
+
+    The IP is replaced by a keyed hash (HMAC with SECRET_KEY), written as an IPv6 address because axes stores
+    it in an IP field. The raw IP is never stored, and the hash can't be reversed without SECRET_KEY.
+
+    Parameters:
+        request (HttpRequest): The request being checked.
+
+    Returns:
+        str: The hashed client identifier.
+    """
+    ip = request.META.get("REMOTE_ADDR", "")
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if TRUSTED_PROXY_COUNT and forwarded:
+        # Each trusted proxy appends the address it received the request from, so the client is that many entries from the end.
+        addresses = [address.strip() for address in forwarded.split(",")]
+        ip = addresses[-min(TRUSTED_PROXY_COUNT, len(addresses))]
+    digest = hmac.new(SECRET_KEY.encode(), ip.encode(), hashlib.sha256).digest()
+    return str(ipaddress.IPv6Address(digest[:16]))
+
+
+# Lockouts apply per client. Failures from one client across all accounts count together, so one client can't spread
+# guesses across many accounts. Clients on other connections are unaffected.
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+# A factor of 0 turns off django-otp's per-device throttle for authenticator codes. That throttle is shared by everyone,
+# so anyone with a user's password could lock out their authenticator. Wrong codes still count through axes, the same
+# as wrong passwords, so the limit is per client instead.
+OTP_TOTP_THROTTLE_FACTOR = 0
+# Failed attempts from one client before it is locked out.
+AXES_FAILURE_LIMIT = 5
+# Attempts are kept for 15 minutes only, so a genuine user locked out by mistake recovers within that time.
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+# A successful login does not clear failed attempts. Clearing them would let someone with their own account reset the
+# count for their IP and keep guessing on another account. Failures expire after the cool-off time instead.
+AXES_RESET_ON_SUCCESS = False
+# Store the keyed hash from axes_ip_identifier instead of the raw IP address.
+AXES_CLIENT_IP_CALLABLE = axes_ip_identifier
+# Don't keep a log of every successful login with its IP address and user agent.
+AXES_DISABLE_ACCESS_LOG = True
+# AxesMiddleware is left out on purpose. It would replace the login page's generic error with axes' own lockout page.
+# Lockouts are still enforced by AxesStandaloneBackend and by the recovery view.
+SILENCED_SYSTEM_CHECKS = ["axes.W002"]
 
 
 # Internationalization

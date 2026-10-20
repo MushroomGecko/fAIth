@@ -1,6 +1,10 @@
 """Tests for the account recovery endpoints in backend.views.accounts.recover."""
 
+import asyncio
+
 from asgiref.sync import async_to_sync
+from axes.models import AccessAttempt
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -8,6 +12,7 @@ from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from backend.utils.authentication import (
+    LOCKED_OUT_MESSAGE,
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
     create_recovery_codes,
@@ -15,6 +20,7 @@ from backend.utils.authentication import (
 )
 from backend.utils.recover import INVALID_RECOVERY_MESSAGE
 from backend.utils.signup import PENDING_DEVICE_SESSION_KEY, SKIP_STEP
+from fAIth.test_helpers.async_client import ServerAsyncClient
 
 User = get_user_model()
 OLD_PASSWORD = "a-long-test-password-123"
@@ -232,6 +238,17 @@ class TestRecoverySuccess(RecoverViewTestBase):
 class TestRecoveryPasswordChecks(RecoverViewTestBase):
     """Tests for the password checks, which run before the recovery code is used."""
 
+    def test_bad_new_passwords_count_toward_the_lockout(self):
+        """Mismatched or weak new passwords count as failed attempts, so repeated typos lock the client out."""
+        for _ in range(5):
+            self._recover(new_password2="different-pass-789")
+
+        response = self._recover()
+
+        assert response.status_code == 429
+        assert response.context["error"] == LOCKED_OUT_MESSAGE
+        assert self._code_still_works(self.codes[0]) is True
+
     def test_bad_passwords_get_generic_error_and_keep_password_and_code(self):
         """Mismatched, reused, or weak new passwords return the generic error with no field errors, and the password and code are both kept."""
         cases = [
@@ -283,3 +300,82 @@ class TestRecoveryCodeChecks(RecoverViewTestBase):
         self._recover(recovery_code="zzzz9999")
 
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
+
+
+class TestRecoveryLockout(RecoverViewTestBase):
+    """Tests for the django-axes lockout on POST /recover/. The lockout is per client and shared with login."""
+
+    OTHER_CLIENT = "203.0.113.9"
+
+    def _lock_account_with_wrong_passwords(self):
+        """Five wrong passwords on login from this client. Passwords don't touch the recovery-code device."""
+        for _ in range(5):
+            self.client.post(reverse("api:login"), {"username": "recover-user", "password": "wrong-password-123"})
+
+    def test_locked_account_refuses_correct_code_and_keeps_it(self):
+        """A locked account gets the lockout message even with a correct code, and that code is not used up."""
+        self._lock_account_with_wrong_passwords()
+
+        response = self._recover()
+
+        assert response.status_code == 429
+        assert response.context["error"] == LOCKED_OUT_MESSAGE
+        assert self._code_still_works(self.codes[0]) is True
+        self.user.refresh_from_db()
+        assert self.user.check_password(OLD_PASSWORD)
+
+    def test_other_client_can_still_recover(self):
+        """Someone else's guesses from another connection don't stop the real user recovering."""
+        self._lock_account_with_wrong_passwords()
+
+        response = self.client.post(
+            self.url,
+            {
+                "username": "recover-user",
+                "recovery_code": self.codes[0],
+                "new_password1": NEW_PASSWORD,
+                "new_password2": NEW_PASSWORD,
+            },
+            REMOTE_ADDR=self.OTHER_CLIENT,
+        )
+
+        assert response.status_code == 200
+        self.assertTemplateUsed(response, "registration/authenticate.html")
+        assert self._code_still_works(self.codes[0]) is False
+
+    def test_each_wrong_code_counts_toward_the_lockout(self):
+        """Every wrong code is counted against the account by axes, so repeated guesses lock that account and client."""
+        for _ in range(5):
+            self._recover(recovery_code="zzzz9999")
+
+        attempt = AccessAttempt.objects.get(username="recover-user")
+        assert attempt.failures_since_start == 5
+
+
+class TestRecoveryConcurrency(RecoverViewTestBase):
+    """Simultaneous wrong recovery codes from one client must not get past the lockout limit."""
+
+    # Enough requests that the lock check and the failure record overlap in at least one run.
+    BATCH_SIZE = 20
+    CLIENT_IP = "198.51.100.8"
+
+    async def test_simultaneous_wrong_codes_respect_the_failure_limit(self):
+        """Fire a batch of wrong recovery codes at once. At most FAILURE_LIMIT of them may get the normal 400 response."""
+
+        async def attempt():
+            """Send one wrong-code recovery attempt with its own client, as a separate browser would."""
+            response = await ServerAsyncClient().post(
+                self.url,
+                {
+                    "username": "recover-user",
+                    "recovery_code": "zzzz9999",
+                    "new_password1": NEW_PASSWORD,
+                    "new_password2": NEW_PASSWORD,
+                },
+                REMOTE_ADDR=self.CLIENT_IP,
+            )
+            return response.status_code
+
+        statuses = await asyncio.gather(*(attempt() for _ in range(self.BATCH_SIZE)))
+
+        assert statuses.count(400) <= settings.AXES_FAILURE_LIMIT, statuses

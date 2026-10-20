@@ -9,11 +9,13 @@ from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
-from backend.utils.authentication import TOTP_DEVICE_NAME
+from backend.utils.authentication import LOCKED_OUT_MESSAGE, TOTP_DEVICE_NAME
 from backend.utils.login import (
     authenticator_device_id,
     canonical_username,
     get_next_url,
+    login_locked,
+    login_refused,
     render_login,
 )
 
@@ -226,4 +228,93 @@ class TestRenderLogin(TestCase):
         ) as mock_render:
             await render_login(request, MagicMock(), "login.html", status=400)
 
+        assert mock_render.call_args.kwargs == {"status": 400}
+
+
+class TestLoginLocked(TestCase):
+    """Tests for login_locked, which shows the lockout message on the login page."""
+
+    async def _render(self):
+        """Call login_locked with a mocked renderer and return the page it rendered and the mock."""
+        request = RequestFactory().post("/login/", {"username": "lock-user", "password": "wrong"})
+        page = HttpResponse("login")
+
+        with patch("backend.utils.login.render_async", new_callable=AsyncMock, return_value=page) as mock_render:
+            response = await login_locked(request, "login.html")
+
+        return response, page, mock_render
+
+    async def test_returns_the_rendered_page(self):
+        """The response is whatever the renderer produces."""
+        response, page, _ = await self._render()
+
+        assert response is page
+
+    async def test_form_carries_the_lockout_message(self):
+        """The lockout message is the form's non-field error, so the login template shows it."""
+        _, _, mock_render = await self._render()
+
+        form = mock_render.call_args.args[2]["form"]
+        assert LOCKED_OUT_MESSAGE in form.non_field_errors()
+
+    async def test_form_is_unbound_so_no_password_is_checked(self):
+        """The form isn't bound to the submitted data, so django-otp never validates the password or code."""
+        _, _, mock_render = await self._render()
+
+        assert mock_render.call_args.args[2]["form"].is_bound is False
+
+    async def test_uses_given_template_and_status_429(self):
+        """The page uses the template the view passes in, with status 429."""
+        _, _, mock_render = await self._render()
+
+        assert mock_render.call_args.args[1] == "login.html"
+        assert mock_render.call_args.kwargs == {"status": 429}
+
+
+class TestLoginRefused(TestCase):
+    """Tests for login_refused, which shows the generic error for a wrong username or password."""
+
+    async def _refuse(self, username="typed-name"):
+        """Call login_refused with a mocked renderer and return the response, the page, and the mock."""
+        request = RequestFactory().post("/login/", {"username": username, "password": "wrong"})
+        page = HttpResponse("login")
+
+        with patch("backend.utils.login.render_async", new_callable=AsyncMock, return_value=page) as mock_render:
+            response = await login_refused(request, "login.html", username)
+
+        return response, page, mock_render
+
+    async def test_returns_the_rendered_page(self):
+        """The response is whatever the renderer produces."""
+        response, page, _ = await self._refuse()
+
+        assert response is page
+
+    async def test_form_carries_the_generic_login_error(self):
+        """The error is Django's generic invalid-login message, so the page doesn't reveal whether the username exists."""
+        _, _, mock_render = await self._refuse()
+
+        form = mock_render.call_args.args[2]["form"]
+        assert any("Please enter a correct" in str(error) for error in form.non_field_errors())
+
+    async def test_form_is_unbound_so_authenticate_is_not_run_again(self):
+        """The form is unbound, so its clean() never calls authenticate(). That call would count the attempt a second time."""
+        with patch("django.contrib.auth.forms.authenticate") as mock_authenticate:
+            _, _, mock_render = await self._refuse()
+
+        mock_authenticate.assert_not_called()
+        assert mock_render.call_args.args[2]["form"].is_bound is False
+
+    async def test_username_is_kept_for_the_user(self):
+        """The username the user typed is filled back in, so they don't have to retype it."""
+        _, _, mock_render = await self._refuse(username="Typed-Name")
+
+        form = mock_render.call_args.args[2]["form"]
+        assert form["username"].value() == "Typed-Name"
+
+    async def test_uses_given_template_and_status_400(self):
+        """The page uses the template the view passes in, with status 400."""
+        _, _, mock_render = await self._refuse()
+
+        assert mock_render.call_args.args[1] == "login.html"
         assert mock_render.call_args.kwargs == {"status": 400}

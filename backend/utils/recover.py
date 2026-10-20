@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 
 from backend.utils.account import PasswordForm, replace_recovery_codes, turn_off_totp
-from backend.utils.authentication import create_totp_device, render_async
+from backend.utils.authentication import LOCKED_OUT_MESSAGE, create_totp_device, render_async
 from backend.utils.signup import store_pending_device
 
 # Shown for every failed recovery attempt, whatever the reason. It never says which field was wrong, whether
@@ -95,4 +95,23 @@ async def recovery_failed(request, template, username, next_url=""):
     form = await recovery_password_form(await blank_recovery_user())
     return await render_recovery_page(
         request, template, form, username=username, error=INVALID_RECOVERY_MESSAGE, status=400, next_url=next_url
+    )
+
+
+async def recovery_locked(request, template, username, next_url=""):
+    """
+    Return the recovery page with the lockout message. Used while this client is locked out.
+
+    Parameters:
+        request (HttpRequest): The current request.
+        template (str): The recovery page template path, passed in by the view.
+        username (str): The username as typed, so the user doesn't have to retype it.
+        next_url (str): The page to return to after login, kept on the page (default: "").
+
+    Returns:
+        HttpResponse: The recovery page with the lockout message, status 429.
+    """
+    form = await recovery_password_form(await blank_recovery_user())
+    return await render_recovery_page(
+        request, template, form, username=username, error=LOCKED_OUT_MESSAGE, status=429, next_url=next_url
     )

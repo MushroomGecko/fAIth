@@ -6,7 +6,9 @@ from django.views.decorators.csrf import csrf_protect
 from ninja import Router
 
 from backend.utils.authentication import (
+    account_locked,
     confirmed_recovery_device,
+    record_failed_login,
     users_matching_username,
     verify_recovery_code,
 )
@@ -14,6 +16,7 @@ from backend.utils.login import get_next_url
 from backend.utils.recover import (
     blank_recovery_user,
     recovery_failed,
+    recovery_locked,
     recovery_password_form,
     render_recovery_page,
     reset_second_factor,
@@ -73,17 +76,27 @@ async def recovery_submit(request):
 
     user = await users_matching_username(username).afirst()
 
+    # Use the stored spelling of the username, so failures are recorded under the same name as the account.
+    account_name = user.get_username() if user is not None else username
+    # A locked client gets the lockout message and nothing else. No password or code is checked.
+    if await account_locked(request, account_name):
+        return await recovery_locked(request, RECOVERY_TEMPLATE, username, next_url=next_url)
+
     # Every failure below returns the same response, with no field-level errors. Otherwise the messages would
     # reveal whether the username exists, whether the code was wrong, or whether the new password matched the
     # current one.
     # Check the new passwords first. Nothing is used up yet, so a password typo doesn't cost the user their code.
     form = await recovery_password_form(user or await blank_recovery_user(), request.POST)
     if not await sync_to_async(form.is_valid, thread_sensitive=True)():
+        # A bad new password counts against this client too, so repeated typos lock it out.
+        await record_failed_login(request, account_name)
         return await recovery_failed(request, RECOVERY_TEMPLATE, username, next_url=next_url)
 
     # Then check the username and recovery code. A valid code is used up here, before the password is saved.
     device = await confirmed_recovery_device(user) if user is not None else None
     if device is None or not await verify_recovery_code(device, code):
+        # A wrong code counts against this client, so repeated guesses lock it out.
+        await record_failed_login(request, account_name)
         return await recovery_failed(request, RECOVERY_TEMPLATE, username, next_url=next_url)
 
     # The password hash changes, so Django's session check signs out any other browser still holding this account.

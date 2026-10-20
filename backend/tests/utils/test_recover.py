@@ -12,6 +12,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from backend.utils.account import PasswordForm
 from backend.utils.authentication import (
+    LOCKED_OUT_MESSAGE,
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
     confirmed_recovery_device,
@@ -20,6 +21,7 @@ from backend.utils.authentication import (
 )
 from backend.utils.recover import (
     blank_recovery_user,
+    recovery_locked,
     recovery_password_form,
     render_recovery_page,
     reset_second_factor,
@@ -261,3 +263,49 @@ class TestRenderRecoveryPage(TestCase):
             await render_recovery_page(MagicMock(), "recover.html", MagicMock(), status=400)
 
         assert mock_render.call_args.kwargs == {"status": 400}
+
+
+class TestRecoveryLocked(TestCase):
+    """Tests for recovery_locked, which shows the lockout message on the recovery page."""
+
+    async def _render(self, next_url=""):
+        """Call recovery_locked with a mocked renderer and return the page it rendered and the mock."""
+        page = HttpResponse("recover")
+
+        with patch("backend.utils.recover.render_async", new_callable=AsyncMock, return_value=page) as mock_render:
+            response = await recovery_locked(MagicMock(), "recover.html", "name", next_url=next_url)
+
+        return response, page, mock_render
+
+    async def test_returns_the_rendered_page(self):
+        """The response is whatever the renderer produces."""
+        response, page, _ = await self._render()
+
+        assert response is page
+
+    async def test_error_is_the_lockout_message(self):
+        """The page shows the lockout message, not the generic recovery error."""
+        _, _, mock_render = await self._render()
+
+        assert mock_render.call_args.args[2]["error"] == LOCKED_OUT_MESSAGE
+
+    async def test_keeps_username_and_next(self):
+        """The typed username and the next page are kept on the page."""
+        _, _, mock_render = await self._render(next_url="/books/")
+
+        context = mock_render.call_args.args[2]
+        assert context["username"] == "name"
+        assert context["next"] == "/books/"
+
+    async def test_form_is_blank_and_unbound(self):
+        """The form is blank, so the locked page never keeps a password or code."""
+        _, _, mock_render = await self._render()
+
+        form = mock_render.call_args.args[2]["form"]
+        assert form.is_bound is False
+
+    async def test_uses_status_429(self):
+        """The page is returned with status 429."""
+        _, _, mock_render = await self._render()
+
+        assert mock_render.call_args.kwargs == {"status": 429}
