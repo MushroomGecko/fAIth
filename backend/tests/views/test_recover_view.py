@@ -1,6 +1,7 @@
 """Tests for the account recovery endpoints in backend.views.accounts.recover."""
 
 import asyncio
+from datetime import timedelta
 
 from asgiref.sync import async_to_sync
 from axes.models import AccessAttempt
@@ -8,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -350,6 +352,19 @@ class TestRecoveryLockout(RecoverViewTestBase):
 
         attempt = AccessAttempt.objects.get(username="recover-user")
         assert attempt.failures_since_start == 5
+
+    def test_lock_lifts_after_cool_off(self):
+        """The lock ends after 15 minutes, so a user who was locked out by mistake can recover with a correct code."""
+        for _ in range(5):
+            self._recover(recovery_code="zzzz9999")
+        assert self._recover().status_code == 429
+        AccessAttempt.objects.update(attempt_time=timezone.now() - timedelta(minutes=16))
+
+        response = self._recover()
+
+        assert response.status_code == 200
+        self.assertTemplateUsed(response, "registration/authenticate.html")
+        assert self._code_still_works(self.codes[0]) is False
 
 
 class TestRecoveryConcurrency(RecoverViewTestBase):

@@ -487,6 +487,19 @@ class TestLoginLockout(LoginViewTestBase):
         assert response.status_code == 302
         assert self._is_logged_in()
 
+    def test_authenticator_login_works_after_lock_expires(self):
+        """After the lock ends, the account with an authenticator logs in with the password and a valid code."""
+        device = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        for _ in range(5):
+            self._post(username="lock-user", password="wrong-password-123", otp_token="000000")
+        assert self._post(username="lock-user", password=PASSWORD, otp_token=_totp_code(device)).status_code == 429
+        AccessAttempt.objects.update(attempt_time=timezone.now() - timedelta(minutes=16))
+
+        response = self._post(username="lock-user", password=PASSWORD, otp_token=_totp_code(device))
+
+        assert response.status_code == 302
+        assert self._is_logged_in()
+
     def test_successful_login_does_not_clear_earlier_failures(self):
         """Four wrong passwords, then a right one, leave the count at four. One more wrong password locks the account.
 

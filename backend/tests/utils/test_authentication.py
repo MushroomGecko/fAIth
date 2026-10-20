@@ -700,6 +700,21 @@ class TestAccountLocked(TestCase):
 
         assert await account_locked(_client_request("198.51.100.1"), "cooloff-user") is False
 
+    async def test_lock_lifts_only_when_the_oldest_failures_age_out(self):
+        """Each account's failures are kept separately, each with its own last-failure time. The lock stays until the oldest group expires."""
+        await self._fail("older-user", "198.51.100.1", 3)
+        await AccessAttempt.objects.filter(username="older-user").aupdate(
+            attempt_time=timezone.now() - timedelta(minutes=14)
+        )
+        await self._fail("newer-user", "198.51.100.1", 2)
+        assert await account_locked(_client_request("198.51.100.1"), "untouched-user") is True
+
+        await AccessAttempt.objects.filter(username="older-user").aupdate(
+            attempt_time=timezone.now() - timedelta(minutes=16)
+        )
+
+        assert await account_locked(_client_request("198.51.100.1"), "untouched-user") is False
+
 
 class TestAxesLockoutBackend(TestCase):
     """Tests for AxesLockoutBackend through its async entry point, which is what the login view uses."""
