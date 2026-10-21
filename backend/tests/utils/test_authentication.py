@@ -636,6 +636,11 @@ def _client_request(ip="198.51.100.1"):
     return RequestFactory().post("/", REMOTE_ADDR=ip)
 
 
+def _stored_username(username):
+    """Return the value django-axes stores in AccessAttempt.username for this account. The plain name is never stored."""
+    return settings.AXES_USERNAME_CALLABLE(RequestFactory().post("/"), {"username": username})
+
+
 class TestRecordFailedLogin(TestCase):
     """Tests for record_failed_login, which counts one failed attempt from a client against a username."""
 
@@ -643,14 +648,14 @@ class TestRecordFailedLogin(TestCase):
         """One call records one failed attempt for that username."""
         await record_failed_login(_client_request(), "counted-user")
 
-        attempt = await AccessAttempt.objects.aget(username="counted-user")
+        attempt = await AccessAttempt.objects.aget(username=_stored_username("counted-user"))
         assert attempt.failures_since_start == 1
 
     async def test_stores_keyed_hash_not_raw_ip(self):
         """The client is stored as the hashed identifier, never as the raw IP address."""
         await record_failed_login(_client_request("198.51.100.1"), "hashed-user")
 
-        attempt = await AccessAttempt.objects.aget(username="hashed-user")
+        attempt = await AccessAttempt.objects.aget(username=_stored_username("hashed-user"))
         assert attempt.ip_address != "198.51.100.1"
         assert attempt.ip_address == settings.AXES_CLIENT_IP_CALLABLE(_client_request("198.51.100.1"))
 
@@ -703,13 +708,13 @@ class TestAccountLocked(TestCase):
     async def test_lock_lifts_only_when_the_oldest_failures_age_out(self):
         """Each account's failures are kept separately, each with its own last-failure time. The lock stays until the oldest group expires."""
         await self._fail("older-user", "198.51.100.1", 3)
-        await AccessAttempt.objects.filter(username="older-user").aupdate(
+        await AccessAttempt.objects.filter(username=_stored_username("older-user")).aupdate(
             attempt_time=timezone.now() - timedelta(minutes=14)
         )
         await self._fail("newer-user", "198.51.100.1", 2)
         assert await account_locked(_client_request("198.51.100.1"), "untouched-user") is True
 
-        await AccessAttempt.objects.filter(username="older-user").aupdate(
+        await AccessAttempt.objects.filter(username=_stored_username("older-user")).aupdate(
             attempt_time=timezone.now() - timedelta(minutes=16)
         )
 

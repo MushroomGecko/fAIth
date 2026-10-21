@@ -350,7 +350,9 @@ class TestRecoveryLockout(RecoverViewTestBase):
         for _ in range(5):
             self._recover(recovery_code="zzzz9999")
 
-        attempt = AccessAttempt.objects.get(username="recover-user")
+        attempt = AccessAttempt.objects.get(
+            username=settings.AXES_USERNAME_CALLABLE(None, {"username": "recover-user"})
+        )
         assert attempt.failures_since_start == 5
 
     def test_lock_lifts_after_cool_off(self):

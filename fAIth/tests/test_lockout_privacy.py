@@ -6,11 +6,17 @@ from unittest.mock import patch
 from axes.models import AccessAttempt, AccessLog
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
+
+
+def _username_identifier(username):
+    """Return the value django-axes stores for this username on a failed attempt. None means nothing is stored."""
+    credentials = {"username": username} if username is not None else None
+    return settings.AXES_USERNAME_CALLABLE(RequestFactory().post("/"), credentials)
 
 
 def _identifier(ip, forwarded=None):
@@ -85,3 +91,40 @@ class TestRawIpIsNeverStored(TestCase):
         Client().post(self.url, {"username": "privacy-user", "password": PASSWORD}, REMOTE_ADDR="198.51.100.1")
 
         assert AccessLog.objects.count() == 0
+
+    def test_failed_login_stores_hashed_username_not_plain_text(self):
+        """The plain username never reaches the failed-attempt table, and the stored value is the keyed hash."""
+        Client().post(
+            self.url, {"username": "privacy-user", "password": "wrong-password-123"}, REMOTE_ADDR="198.51.100.1"
+        )
+
+        stored = list(AccessAttempt.objects.values_list("username", flat=True))
+        assert stored == [_username_identifier("privacy-user")]
+        assert "privacy-user" not in stored
+        assert "privacy-user" not in str(AccessAttempt.objects.values_list("post_data", flat=True))
+
+
+class TestAxesUsernameIdentifier(SimpleTestCase):
+    """Tests for the keyed hash that replaces the username in django-axes records."""
+
+    def test_same_username_gives_same_identifier(self):
+        """The identifier is stable, so repeated failures for one username are recorded together."""
+        assert _username_identifier("Alice") == _username_identifier("Alice")
+
+    def test_username_case_does_not_change_identifier(self):
+        """Signup treats usernames that differ only by case as the same, so the hash does too."""
+        assert _username_identifier("Alice") == _username_identifier("alice")
+
+    def test_identifier_is_not_the_plain_username(self):
+        """The plain username never appears in the identifier."""
+        assert "alice" not in _username_identifier("alice")
+
+    def test_identifier_depends_on_secret_key(self):
+        """Without the secret key the identifier can't be recomputed from a known username."""
+        before = _username_identifier("alice")
+        with patch.object(_settings_module(), "SECRET_KEY", "a-different-secret-key"):
+            assert _username_identifier("alice") != before
+
+    def test_no_username_gives_none(self):
+        """With no username in the credentials or the form, nothing is stored."""
+        assert _username_identifier(None) is None

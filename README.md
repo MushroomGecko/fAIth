@@ -49,6 +49,83 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 11. Start fAIth by running `docker compose up -d`. You may want to use this time to grab a coffee and/or read your Bible. This step may take a while. This step involves downloading all of the required Docker containers, downloading the AI models, and loading the vector database. After these steps complete, fAIth should automatically run via uvicorn.
 12. Visit `http://localhost:8000` to access fAIth
 
+## Privacy and Security
+fAIth is a Bible study app, and some of its users may live in countries where Christianity is persecuted. There, an account and the study activity connected to it could be used against the person who owns them. We want every account and every piece of data to be protected at all cost. That is why the security and privacy measures below go further than a typical app needs. The same measures make fAIth more resilient against attackers and hostile actors in general, which helps protect our users' safety beyond their accounts.
+
+### Django Defaults
+These protections come from Django itself and are on without any fAIth configuration. The [Django security documentation](https://docs.djangoproject.com/en/6.0/topics/security/) describes the threats they address.
+- **Password hashing:** Passwords are never stored in plain text. Django's first password hasher is PBKDF2-SHA256, so new passwords are hashed with it before saving.
+- **Session invalidation on password change:** Changing a user's password logs out all of their sessions.
+- **Clickjacking protection:** `X_FRAME_OPTIONS` defaults to `DENY`, which sends `X-Frame-Options: DENY` through `XFrameOptionsMiddleware`, so other sites can't embed pages in a frame.
+- **MIME sniffing protection:** `SECURE_CONTENT_TYPE_NOSNIFF` defaults to `True`, which sends `X-Content-Type-Options: nosniff` through `SecurityMiddleware`, so browsers don't reinterpret files as a different type.
+- **Referrer policy:** `SECURE_REFERRER_POLICY` defaults to `same-origin`, so other sites don't receive full page URLs in the `Referer` header.
+- **Cross-origin isolation:** `SECURE_CROSS_ORIGIN_OPENER_POLICY` defaults to `same-origin`, which stops other sites from holding a live reference to fAIth's window.
+- **Session cookies:** `SESSION_COOKIE_HTTPONLY` defaults to `True`, which hides the cookie from JavaScript. `SESSION_COOKIE_SAMESITE` defaults to `Lax`, which stops the cookie being sent on most cross-site requests. `SESSION_COOKIE_AGE` defaults to two weeks.
+- **Server-side sessions:** `SESSION_ENGINE` defaults to the database backend, so session data is stored on the server and the browser only holds a session ID.
+- **Template escaping:** Template autoescaping defaults to `True`, which blocks most cross-site scripting (XSS).
+- **Database queries:** Django's ORM passes query values as parameters, which protects against SQL injection.
+
+### Account Passwords
+- New passwords must pass the project's password validators: they can't be too similar to the username, must meet a minimum length, can't be a common password, and can't be all numeric.
+- Changing a password requires the current password and must be different from the old one. The user's current session stays signed in, so only their other sessions are signed out.
+
+### Two-Factor Authentication (Authenticator Apps)
+- Users can add an authenticator app (TOTP) at signup or later in their profile. Once enabled, login asks for a 6-digit code after the password.
+- TOTP secrets are encrypted before they are stored, using Fernet (AES-128-CBC with HMAC-SHA256) and a dedicated `TOTP_ENCRYPTION_KEY`.
+- The QR code is drawn on the server as inline SVG, so the secret is never sent to a third-party service.
+- Authenticator secrets are generated from the operating system's secure random source (`os.urandom`).
+
+### Recovery Codes
+- Each account gets 10 recovery codes. Each code is 128 random bits from Python's `secrets` module.
+- Codes are shown once and never stored in plain text. Only PBKDF2-SHA256 hashes are kept (100,000 iterations, salted per device).
+- Each code works once. It is deleted on use in a single database query, so two requests can't both spend it.
+- During signup and recovery, the codes waiting in the session are encrypted with a separate `RECOVERY_CODE_ENCRYPTION_KEY`.
+- The pages that show recovery codes are never cached by browsers or proxies.
+
+### Brute-Force Protection and Lockouts
+- Failed logins and recovery attempts are counted per client with django-axes. After 5 failures, the client is locked out for 15 minutes.
+- Counting is per client, not per account. One client can't spread guesses across many accounts without being locked out.
+- A successful login does not reset the failure count, so a user can't clear their own failures and keep guessing on another account.
+- The authenticator app's built-in throttle is turned off. That throttle is shared by everyone, so anyone who knows a user's password could lock them out of their authenticator. Wrong codes still count toward the per-client lockout instead.
+- Login and recovery responses don't reveal whether a username exists. The lockout message doesn't say whose account is locked or how many attempts were counted.
+
+### Privacy and Data Minimisation
+- **Client identifiers are hashed before storage.** IP addresses and usernames are stored only as HMAC-SHA256 hashes keyed with `DJANGO_SECRET_KEY`, so they can't be recovered without that key. Usernames are normalised to lowercase before hashing, and the plain username is masked in stored request data. This follows GDPR's data-minimisation principle.
+- **Failed-attempt records are short-lived.** Each record includes the client's user agent and requested path, and is removed once its 15-minute lockout window has passed, during cleanup on a later failed login.
+- **Successful logins are not logged.** django-axes' access log, which would store the IP and user agent for every login, is disabled.
+- **Proxy headers are only trusted when configured.** `X-Forwarded-For` is read only when `DJANGO_TRUSTED_PROXY_COUNT` matches the deployment. Otherwise a client could spoof its address to evade lockouts.
+- **No third-party scripts or CDN assets.** The templates don't load external JavaScript or CSS.
+- **Web searches go through a self-hosted SearXNG instance** that is not reachable from outside the Docker network.
+- **Only the web app's port is published to the host.** The database, vector database, and model services are not exposed outside Docker.
+- **Account deletion** requires the password (and an authenticator code, if enabled), then removes the user and their linked authentication devices and recovery codes.
+
+### Encryption and Secrets
+- Authenticator secrets are encrypted at rest with Fernet, and recovery codes in the session are encrypted with a second Fernet key. The two keys are separate, so one can be rotated without breaking the other.
+- The app refuses to start if `DJANGO_SECRET_KEY`, `RECOVERY_CODE_ENCRYPTION_KEY`, or `TOTP_ENCRYPTION_KEY` is missing, left at the template default, or not a valid key.
+- The `.env` file is ignored by git, so secrets are not committed. `.env_template` contains only placeholders.
+
+### Dependencies
+- Every Python dependency is pinned to an exact version in `requirements.txt`, so each install uses the same libraries and an update can't change them unnoticed.
+
+### Web Application Protections
+- **CSRF protection:** Every form POST, including login, signup, recovery, profile changes, logout, and AI requests, requires Django's CSRF token. Tests check that a POST without a valid token is refused.
+- **Safe redirects:** The `next` parameter after login or logout is only followed when it's a local path on the same host, so attackers can't use fAIth to redirect users to other sites.
+- **Sensitive pages are never cached:** Signup, recovery, and profile pages that show codes or account data use `never_cache`.
+- **Host header validation:** Only hosts listed in `DJANGO_ALLOWED_HOSTS` are accepted.
+- **HTTPS mode (`DJANGO_HTTPS`):** When turned on, cookies are sent only over HTTPS, HTTP is redirected to HTTPS, and HSTS is enabled. It is off by default so local HTTP testing still works.
+- **Signup races:** Signup takes a database lock on the username, so two requests can't create accounts whose names differ only by letter case.
+
+### Offline Operation
+- Once setup is complete, the app is designed to run without internet access and to be reached over a local network. Authentication, two-factor checks, recovery codes, sessions, and lockouts are all handled by the app and its local Postgres database, with no outside service involved. Setup itself needs internet access to pull Docker images, download language models from Hugging Face (`HF_TOKEN`), and download WordNet data (`WORDNET_DOWNLOAD_VERSION`).
+- Not available offline: web, image, and map search through SearXNG, and any external LLM or embedding endpoint set in `BASE_LLM_URL` or `BASE_EMBEDDING_URL`.
+- User data is stored in the local Postgres database: account details, authenticator devices, recovery codes, sessions, and lockout records.
+- When a local model runner is configured (llama.cpp, vLLM, Ollama, or SGLang), the language model and embedding model run in local containers, so study requests stay on the host.
+- Front-end libraries (Bootstrap, htmx, Popper, and Bootstrap Icons) ship with the app, so pages don't load scripts or styles from a CDN.
+
+### Testing
+- Automated tests check CSRF enforcement on every POST route, confirm that raw IP addresses never reach the lockout tables, and confirm that the lockout identifier changes with the secret key and the proxy setting.
+- The Django CI workflow runs a system check with test keys, so a misconfigured settings file fails the build.
+
 ## Credits
 ### Applications
 - Docker
@@ -101,12 +178,18 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 - Valkey (Cache / rate limiter)
    - Valkey. (2024). valkey. GitHub. Retrieved August 30, 2026, from https://github.com/valkey-io/valkey
 ### Python Libraries
+- cryptography (Cryptographic recipes and primitives)
+   - Python Cryptographic Authority. (2014). cryptography. GitHub. Retrieved October 20, 2026, from https://github.com/pyca/cryptography
 - Django
    - Django. (2012). django. GitHub. Retrieved August 30, 2026, from https://github.com/django/django
 - Django ASGI Lifespan (Django ASGI Handler with Lifespan protocol support)
    - Dohnal, V. (2022). django-asgi-lifespan. GitHub. Retrieved August 30, 2026, from https://github.com/illagrenan/django-asgi-lifespan
+- django-axes (Login attempt rate limiting and lockout)
+   - Jazzband. (2008). django-axes. GitHub. Retrieved October 20, 2026, from https://github.com/jazzband/django-axes
 - Django Ninja (REST Framework)
    - Kucheryaviy, V. (2020). django-ninja. GitHub. Retrieved August 30, 2026, from https://github.com/vitalik/django-ninja
+- django-otp (One-time password (TOTP/HOTP) support)
+   - Sagerson, P. (2012). django-otp. GitHub. Retrieved October 20, 2026, from https://github.com/django-otp/django-otp
 - HTTPX (Async HTTP client)
    - Encode. (2019). httpx. GitHub. Retrieved August 30, 2026, from https://github.com/encode/httpx
 - psycopg (Postgres API Library)
@@ -122,6 +205,8 @@ sudo nvidia-ctk config --in-place --set nvidia-container-runtime.mode=cdi && sud
 - Python WordNet (Python Interface for Open English WordNet)
    - Goodman, M. W., & Bond, F. (2021). Intrinsically Interlingual: The Wn Python Library for Wordnets [Conference paper]. 100–107. https://aclanthology.org/2021.gwc-1.12/
    - Goodman, M. W. & Bond, F. (n.d.). Wn. GitHub. Retrieved August 30, 2026, from https://github.com/goodmami/wn/
+- segno (QR code generator)
+   - Heuer, L. (2016). segno. GitHub. Retrieved October 20, 2026, from https://github.com/heuer/segno
 - Uvicorn (ASGI Runner) - https://github.com/Kludex/uvicorn
    - Trylesinski, M., & Christie, T. Uvicorn [Computer software]. https://github.com/Kludex/uvicorn
 - WhiteNoise (Static file serving)

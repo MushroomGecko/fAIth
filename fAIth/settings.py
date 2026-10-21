@@ -251,6 +251,27 @@ def axes_ip_identifier(request):
     return str(ipaddress.IPv6Address(digest[:16]))
 
 
+def axes_username_identifier(request, credentials):
+    """
+    Return the value django-axes stores in place of the username on failed attempts.
+
+    The username is replaced by a keyed hash (HMAC with SECRET_KEY) of its lowercase form, so the stored
+    value can't be reversed and matches signup's case-insensitive rule. Lockouts don't use the username,
+    so this changes only what is recorded.
+
+    Parameters:
+        request (HttpRequest): The request being checked.
+        credentials (dict | None): The credentials passed to the failed login, with "username" if known.
+
+    Returns:
+        str | None: The hashed username as hex, or None if there is no username.
+    """
+    username = (credentials or {}).get("username") or request.POST.get("username")
+    if not username:
+        return None
+    return hmac.new(SECRET_KEY.encode(), username.strip().lower().encode(), hashlib.sha256).hexdigest()
+
+
 # Lockouts apply per client. Failures from one client across all accounts count together, so one client can't spread
 # guesses across many accounts. Clients on other connections are unaffected.
 AXES_LOCKOUT_PARAMETERS = ["ip_address"]
@@ -267,6 +288,8 @@ AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_RESET_ON_SUCCESS = False
 # Store the keyed hash from axes_ip_identifier instead of the raw IP address.
 AXES_CLIENT_IP_CALLABLE = axes_ip_identifier
+# Store the keyed hash from axes_username_identifier instead of the username on failed attempts.
+AXES_USERNAME_CALLABLE = axes_username_identifier
 # Don't keep a log of every successful login with its IP address and user agent.
 AXES_DISABLE_ACCESS_LOG = True
 # AxesMiddleware is left out on purpose. It would replace the login page's generic error with axes' own lockout page.

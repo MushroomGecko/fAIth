@@ -15,3 +15,8 @@ os.environ.setdefault("POSTGRES_PASSWORD", "test-only-postgres-password-not-for-
 os.environ.setdefault("MILVUS_PASSWORD", "test-only-milvus-password-not-for-production")
 
 from fAIth.settings import *  # noqa: F401, F403, E402
+from fAIth.test_helpers.test_database import SQLITE_TEST_DATABASES, assert_sqlite  # noqa: E402
+
+# Tests never touch the real database. Every test uses an in-memory SQLite database.
+DATABASES = SQLITE_TEST_DATABASES
+assert_sqlite(DATABASES)
