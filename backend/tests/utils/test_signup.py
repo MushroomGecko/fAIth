@@ -13,8 +13,8 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import (
     INVALID_CODE_MESSAGE,
     RECOVERY_DEVICE_NAME,
@@ -172,7 +172,7 @@ class TestCreateUserAndDevices(TestCase):
 
         totp, _ = await create_user_and_devices(form)
 
-        assert await TOTPDevice.objects.filter(pk=totp.pk, confirmed=False).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=totp.pk, confirmed=False).aexists()
 
 
 class TestPendingDevice(TestCase):
@@ -394,7 +394,7 @@ class TestSkipEnrollment(TestCase):
 
         await skip_enrollment(request)
 
-        assert not await TOTPDevice.objects.filter(pk=totp.pk).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(pk=totp.pk).aexists()
 
     async def test_keeps_recovery_codes(self):
         """Skipping keeps the recovery codes on the account."""
@@ -418,12 +418,12 @@ class TestSkipEnrollment(TestCase):
     async def test_keeps_confirmed_authenticator_device(self):
         """A confirmed authenticator on the same account is not deleted by skipping."""
         totp, _, session = await _start_enrollment("skip-confirmed-user")
-        confirmed = await TOTPDevice.objects.acreate(user=totp.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        confirmed = await EncryptedTOTPDevice.objects.acreate(user=totp.user, name=TOTP_DEVICE_NAME, confirmed=True)
         request = _request_with_session(session)
 
         await skip_enrollment(request)
 
-        assert await TOTPDevice.objects.filter(pk=confirmed.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=confirmed.pk).aexists()
 
     async def test_clears_pending_session(self):
         """Skipping forgets the pending enrollment and its recovery codes."""
@@ -455,7 +455,7 @@ class TestAbandonPendingEnrollment(TestCase):
 
         await abandon_pending_enrollment(session)
 
-        assert not await TOTPDevice.objects.filter(pk=totp.pk).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(pk=totp.pk).aexists()
 
     async def test_keeps_recovery_codes(self):
         """Abandoning keeps the recovery codes on the account."""

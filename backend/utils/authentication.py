@@ -13,7 +13,8 @@ from django.contrib.auth.backends import BaseBackend, ModelBackend
 from django.contrib.auth.signals import user_login_failed
 from django.shortcuts import render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
+
+from backend.models import EncryptedTOTPDevice
 
 # How many PBKDF2 iterations to run on each recovery code.
 RECOVERY_CODE_HASH_ITERATIONS = 100000
@@ -131,9 +132,9 @@ async def create_totp_device(user):
         user (User): The user the device belongs to.
 
     Returns:
-        TOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
+        EncryptedTOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
     """
-    return await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+    return await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
 
 async def confirmed_totp_device(user):
@@ -144,9 +145,9 @@ async def confirmed_totp_device(user):
         user (User): The user to look up.
 
     Returns:
-        TOTPDevice | None: The oldest confirmed device, if any.
+        EncryptedTOTPDevice | None: The oldest confirmed device, if any.
     """
-    return await TOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").afirst()
+    return await EncryptedTOTPDevice.objects.filter(user=user, confirmed=True).order_by("id").afirst()
 
 
 async def confirmed_recovery_device(user):
@@ -171,7 +172,7 @@ async def _unconfirmed_totp_devices():
     Returns:
         QuerySet: Unconfirmed TOTP devices, oldest first, with the user loaded.
     """
-    return TOTPDevice.objects.filter(confirmed=False).select_related("user").order_by("id")
+    return EncryptedTOTPDevice.objects.filter(confirmed=False).select_related("user").order_by("id")
 
 
 async def unconfirmed_totp_by_user(user):
@@ -184,7 +185,7 @@ async def unconfirmed_totp_by_user(user):
         user (User): The logged-in user to look up.
 
     Returns:
-        TOTPDevice | None: The oldest unconfirmed device, if any.
+        EncryptedTOTPDevice | None: The oldest unconfirmed device, if any.
     """
     return await (await _unconfirmed_totp_devices()).filter(user=user).afirst()
 
@@ -200,7 +201,7 @@ async def unconfirmed_totp_by_device_id(device_id):
         device_id (int | None): The device ID from the session.
 
     Returns:
-        TOTPDevice | None: The unconfirmed device, or None if the ID is missing or not unconfirmed.
+        EncryptedTOTPDevice | None: The unconfirmed device, or None if the ID is missing or not unconfirmed.
     """
     if device_id is None:
         return None
@@ -231,7 +232,7 @@ async def clear_unconfirmed_totp(user):
     Parameters:
         user (User): The user whose unfinished setup should be cleared.
     """
-    await TOTPDevice.objects.filter(user=user, confirmed=False).adelete()
+    await EncryptedTOTPDevice.objects.filter(user=user, confirmed=False).adelete()
 
 
 async def enrollment_details(device):
@@ -242,7 +243,7 @@ async def enrollment_details(device):
     thread, since it is CPU-bound work.
 
     Parameters:
-        device (TOTPDevice): The TOTP device to enroll.
+        device (EncryptedTOTPDevice): The TOTP device to enroll.
 
     Returns:
         dict[str, str]: The inline SVG under "svg" and the base32 secret under "secret".
@@ -264,7 +265,7 @@ async def confirm_device(device, token):
     Used by both signup and the account page.
 
     Parameters:
-        device (TOTPDevice): The unconfirmed TOTP device to check the token against.
+        device (EncryptedTOTPDevice): The unconfirmed TOTP device to check the token against.
         token (str): The 6-digit code from the user's authenticator app.
 
     Returns:

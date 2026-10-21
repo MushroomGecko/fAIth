@@ -7,8 +7,8 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import LOCKED_OUT_MESSAGE, TOTP_DEVICE_NAME
 from backend.utils.login import (
     authenticator_device_id,
@@ -147,14 +147,14 @@ class TestAuthenticatorDeviceId(TestCase):
     async def test_returns_none_for_unconfirmed_authenticator(self):
         """An unfinished setup can't be used to log in, so it has no device ID."""
         user = await _acreate_user("unconfirmed-totp-user")
-        await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+        await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         assert await authenticator_device_id(user) is None
 
     async def test_returns_persistent_id_of_confirmed_device(self):
         """A confirmed authenticator returns its persistent ID, which the login form uses."""
         user = await _acreate_user("confirmed-totp-user")
-        device = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         result = await authenticator_device_id(user)
 
@@ -163,8 +163,8 @@ class TestAuthenticatorDeviceId(TestCase):
     async def test_returns_oldest_confirmed_device_when_several(self):
         """When several confirmed authenticators exist, the oldest one's ID is returned."""
         user = await _acreate_user("several-totp-user")
-        first = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
-        await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        first = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         result = await authenticator_device_id(user)
 
@@ -174,7 +174,7 @@ class TestAuthenticatorDeviceId(TestCase):
         """Another user's authenticator is never returned."""
         user = await _acreate_user("lookup-user")
         other = await _acreate_user("other-totp-owner")
-        await TOTPDevice.objects.acreate(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
 
         assert await authenticator_device_id(user) is None
 

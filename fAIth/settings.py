@@ -50,6 +50,17 @@ try:
 except ValueError as error:
     raise ValueError("RECOVERY_CODE_ENCRYPTION_KEY must be a valid Fernet key") from error
 
+# Fernet key that encrypts each TOTP (authenticator app) secret before it is stored. Kept separate from
+# RECOVERY_CODE_ENCRYPTION_KEY so either one can be rotated without breaking the other.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+TOTP_ENCRYPTION_KEY = os.getenv("TOTP_ENCRYPTION_KEY")
+if not TOTP_ENCRYPTION_KEY or TOTP_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("TOTP_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(TOTP_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("TOTP_ENCRYPTION_KEY must be a valid Fernet key") from error
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 

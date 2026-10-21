@@ -9,8 +9,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import INVALID_CODE_MESSAGE, RECOVERY_DEVICE_NAME, TOTP_DEVICE_NAME
 from backend.utils.signup import (
     ENROLLMENT_STEP,
@@ -51,7 +51,7 @@ class SignupViewTestBase(TestCase):
 
     def _pending_totp(self, username="new-signup-user"):
         """Return the unconfirmed authenticator device created for this signup."""
-        return TOTPDevice.objects.get(user__username=username, confirmed=False)
+        return EncryptedTOTPDevice.objects.get(user__username=username, confirmed=False)
 
 
 # (name, next value sent, next value the page should keep)
@@ -164,7 +164,7 @@ class TestSignupPage(SignupViewTestBase):
 
         self.client.get(self.url)
 
-        assert not TOTPDevice.objects.filter(user__username="new-signup-user", confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user__username="new-signup-user", confirmed=False).exists()
         assert User.objects.filter(username="new-signup-user").exists()
         assert StaticDevice.objects.filter(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME).exists()
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
@@ -301,7 +301,7 @@ class TestConfirmAuthenticator(SignupViewTestBase):
         """Confirming turns on the authenticator and the recovery codes created with it."""
         self._post(step=ENROLLMENT_STEP, otp_token=_totp_code(self._pending_totp()))
 
-        assert TOTPDevice.objects.get(user__username="new-signup-user").confirmed is True
+        assert EncryptedTOTPDevice.objects.get(user__username="new-signup-user").confirmed is True
         assert StaticDevice.objects.get(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME).confirmed is True
 
     def test_correct_code_clears_pending_session(self):
@@ -354,7 +354,7 @@ class TestSkipAuthenticator(SignupViewTestBase):
         and forgets the pending enrollment."""
         self._post(step=SKIP_STEP)
 
-        assert not TOTPDevice.objects.filter(user__username="new-signup-user").exists()
+        assert not EncryptedTOTPDevice.objects.filter(user__username="new-signup-user").exists()
         assert User.objects.filter(username="new-signup-user").exists()
         assert StaticDevice.objects.filter(
             user__username="new-signup-user", name=RECOVERY_DEVICE_NAME, confirmed=True

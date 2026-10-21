@@ -6,8 +6,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django_otp import DEVICE_ID_SESSION_KEY
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import TOTP_DEVICE_NAME
 
 User = get_user_model()
@@ -30,7 +30,7 @@ class TestLogoutView(TestCase):
     def test_clears_whole_session(self):
         """Logout flushes the session, so the OTP device marker is removed too."""
         session = self.client.session
-        session[DEVICE_ID_SESSION_KEY] = "otp_totp.totpdevice/1"
+        session[DEVICE_ID_SESSION_KEY] = "backend.encryptedtotpdevice/1"
         session.save()
 
         self.client.post(self.url)
@@ -82,11 +82,11 @@ class TestLogoutView(TestCase):
 
     def test_does_not_delete_authenticator_device(self):
         """Logging out keeps the account's authenticator app."""
-        device = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         self.client.post(self.url)
 
-        assert TOTPDevice.objects.filter(pk=device.pk).exists()
+        assert EncryptedTOTPDevice.objects.filter(pk=device.pk).exists()
 
 
 class TestLogoutCallsAlogout(TestCase):

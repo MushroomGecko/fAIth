@@ -13,8 +13,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import (
     LOCKED_OUT_MESSAGE,
     RECOVERY_DEVICE_NAME,
@@ -186,15 +186,15 @@ class TestLoginPasswordOnly(LoginViewTestBase):
 
     def test_unfinished_authenticator_setup_is_cleared_on_login(self):
         """A password-only login ends any unfinished authenticator setup for that account."""
-        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         self._post(username="plain-user", password=PASSWORD)
 
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
 
     def test_unfinished_setup_does_not_block_password_login(self):
         """An unconfirmed authenticator doesn't stop a password-only login."""
-        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         response = self._post(username="plain-user", password=PASSWORD)
 
@@ -208,7 +208,7 @@ class TestLoginWithAuthenticator(LoginViewTestBase):
     def setUp(self):
         super().setUp()
         self.user = User.objects.create_user(username="totp-user", password=PASSWORD)
-        self.device = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        self.device = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
     def test_password_with_correct_code_logs_in(self):
         """A correct password and a valid authenticator code log the user in."""
@@ -260,7 +260,7 @@ class TestLoginWithAuthenticator(LoginViewTestBase):
         for name, sent, expected in cases:
             with self.subTest(case=name):
                 # django-otp refuses a code it has already accepted in this time window. Reset it so each case can log in.
-                TOTPDevice.objects.filter(pk=self.device.pk).update(last_t=-1)
+                EncryptedTOTPDevice.objects.filter(pk=self.device.pk).update(last_t=-1)
                 self.client.logout()
 
                 response = self._post(
@@ -293,20 +293,20 @@ class TestLoginWithAuthenticator(LoginViewTestBase):
 
     def test_correct_code_clears_unfinished_setup(self):
         """Logging in with a code also ends any unfinished authenticator setup."""
-        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         self._post(username="totp-user", password=PASSWORD, otp_token=_totp_code(self.device))
 
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
-        assert TOTPDevice.objects.filter(pk=self.device.pk, confirmed=True).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert EncryptedTOTPDevice.objects.filter(pk=self.device.pk, confirmed=True).exists()
 
     def test_wrong_code_keeps_unfinished_setup(self):
         """A failed login doesn't touch an unfinished authenticator setup."""
-        pending = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        pending = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         self._post(username="totp-user", password=PASSWORD, otp_token="000000")
 
-        assert TOTPDevice.objects.filter(pk=pending.pk).exists()
+        assert EncryptedTOTPDevice.objects.filter(pk=pending.pk).exists()
 
     def test_error_is_shown_on_wrong_code(self):
         """A wrong code shows the login page again with a form error."""
@@ -323,7 +323,7 @@ class TestLoginCallsAlogin(LoginViewTestBase):
     def setUp(self):
         super().setUp()
         self.user = User.objects.create_user(username="alogin-user", password=PASSWORD)
-        self.device = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        self.device = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
     def test_password_only_login_calls_alogin_with_user(self):
         """A successful password-only login calls alogin once, with the request and the logged-in user."""
@@ -391,8 +391,8 @@ class TestLoginClearsPendingRecoveryCodes(LoginViewTestBase):
 
     def test_authenticator_login_clears_pending_codes(self):
         """Logging in with a code also drops the pending recovery codes."""
-        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
-        device = TOTPDevice.objects.get(user=self.user)
+        EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = EncryptedTOTPDevice.objects.get(user=self.user)
         self._store_pending_codes()
 
         self._post(username="pending-user", password=PASSWORD, otp_token=_totp_code(device))
@@ -489,7 +489,7 @@ class TestLoginLockout(LoginViewTestBase):
 
     def test_authenticator_login_works_after_lock_expires(self):
         """After the lock ends, the account with an authenticator logs in with the password and a valid code."""
-        device = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
         for _ in range(5):
             self._post(username="lock-user", password="wrong-password-123", otp_token="000000")
         assert self._post(username="lock-user", password=PASSWORD, otp_token=_totp_code(device)).status_code == 429

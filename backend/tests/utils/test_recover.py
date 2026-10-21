@@ -8,8 +8,8 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.http import HttpResponse
 from django.test import TestCase
 from django_otp.plugins.otp_static.models import StaticDevice
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.account import PasswordForm
 from backend.utils.authentication import (
     LOCKED_OUT_MESSAGE,
@@ -132,11 +132,11 @@ class TestResetSecondFactor(TestCase):
     async def test_removes_existing_authenticator_device(self):
         """The confirmed authenticator app is turned off."""
         user = await _acreate_user("reset-totp-user")
-        old = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        old = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         await reset_second_factor(user, SessionStore())
 
-        assert not await TOTPDevice.objects.filter(pk=old.pk).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(pk=old.pk).aexists()
 
     async def test_replaces_recovery_codes(self):
         """The old recovery-code device and its tokens are deleted, and a new one is created."""
@@ -192,7 +192,7 @@ class TestResetSecondFactor(TestCase):
         assert totp.user_id == user.pk
         assert totp.name == TOTP_DEVICE_NAME
         assert totp.confirmed is False
-        assert await TOTPDevice.objects.filter(pk=totp.pk, confirmed=False).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=totp.pk, confirmed=False).aexists()
 
     async def test_stores_new_device_as_pending_enrollment(self):
         """The new authenticator device is stored in the session so the setup step can confirm or skip it."""
@@ -217,13 +217,13 @@ class TestResetSecondFactor(TestCase):
         """Another user's authenticator and recovery codes are not touched."""
         user = await _acreate_user("reset-owner-user")
         other = await _acreate_user("reset-other-user")
-        other_totp = await TOTPDevice.objects.acreate(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
+        other_totp = await EncryptedTOTPDevice.objects.acreate(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
         await create_recovery_codes(other, confirmed=True)
         other_recovery = await confirmed_recovery_device(other)
 
         await reset_second_factor(user, SessionStore())
 
-        assert await TOTPDevice.objects.filter(pk=other_totp.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=other_totp.pk).aexists()
         assert await StaticDevice.objects.filter(pk=other_recovery.pk).aexists()
 
 

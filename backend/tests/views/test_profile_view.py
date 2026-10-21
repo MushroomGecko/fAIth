@@ -7,8 +7,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import (
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
@@ -47,7 +47,7 @@ class ProfileViewTestBase(TestCase):
 
     def _add_confirmed_totp(self):
         """Turn on an authenticator app for the user and return it."""
-        return TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        return EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
     def _code_still_works(self, code):
         """Return True if this recovery code's token still exists on the original device."""
@@ -105,11 +105,11 @@ class TestProfilePage(ProfileViewTestBase):
 
     def test_opening_profile_clears_unfinished_setup(self):
         """Opening the profile drops any unfinished authenticator setup."""
-        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         self._get("api:profile")
 
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
 
     def test_opening_profile_keeps_confirmed_authenticator(self):
         """A confirmed authenticator survives opening the profile."""
@@ -117,7 +117,7 @@ class TestProfilePage(ProfileViewTestBase):
 
         self._get("api:profile")
 
-        assert TOTPDevice.objects.filter(pk=device.pk).exists()
+        assert EncryptedTOTPDevice.objects.filter(pk=device.pk).exists()
 
 
 class TestAccountSection(ProfileViewTestBase):
@@ -140,11 +140,11 @@ class TestAccountSection(ProfileViewTestBase):
 
     def test_opening_section_clears_unfinished_setup(self):
         """Clicking Account drops any unfinished authenticator setup."""
-        TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         self._get("api:profile_account")
 
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
 
 
 class TestChangeUsername(ProfileViewTestBase):
@@ -357,7 +357,7 @@ class TestSecuritySection(ProfileViewTestBase):
 
     def test_shows_pending_setup_qr_when_unfinished(self):
         """An unfinished setup is shown again with its QR code and secret."""
-        pending = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
+        pending = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         response = self._get("api:profile_security")
 
@@ -565,8 +565,8 @@ class TestEnableTotp(ProfileViewTestBase):
         response = self._post("api:profile_totp_enable", password=PASSWORD)
 
         assert response.status_code == 200
-        assert TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=True).exists()
+        assert EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=True).exists()
         assert "<svg" in response.context["svg"]
 
     def test_wrong_password_creates_no_setup(self):
@@ -574,7 +574,7 @@ class TestEnableTotp(ProfileViewTestBase):
         response = self._post("api:profile_totp_enable", password="wrong-password-123")
 
         assert response.status_code == 400
-        assert not TOTPDevice.objects.filter(user=self.user).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user).exists()
         assert response.context["totp_enable_error"] == "That password is not correct."
 
     def test_already_on_is_refused(self):
@@ -585,14 +585,14 @@ class TestEnableTotp(ProfileViewTestBase):
 
         assert response.status_code == 400
         assert response.context["totp_enable_error"] == "Two-factor authentication is already on."
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
 
     def test_new_setup_replaces_earlier_unfinished_setup(self):
         """Starting again leaves only one unfinished setup."""
         self._post("api:profile_totp_enable", password=PASSWORD)
         self._post("api:profile_totp_enable", password=PASSWORD)
 
-        assert TOTPDevice.objects.filter(user=self.user, confirmed=False).count() == 1
+        assert EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).count() == 1
 
 
 class TestConfirmTotp(ProfileViewTestBase):
@@ -601,7 +601,7 @@ class TestConfirmTotp(ProfileViewTestBase):
     def setUp(self):
         super().setUp()
         self._post("api:profile_totp_enable", password=PASSWORD)
-        self.pending = TOTPDevice.objects.get(user=self.user, confirmed=False)
+        self.pending = EncryptedTOTPDevice.objects.get(user=self.user, confirmed=False)
 
     def test_correct_code_turns_on_authenticator(self):
         """A correct code confirms the setup and shows the app as on."""
@@ -648,7 +648,7 @@ class TestCancelTotp(ProfileViewTestBase):
         response = self._post("api:profile_totp_cancel")
 
         assert response.status_code == 200
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=False).exists()
 
     def test_keeps_confirmed_authenticator(self):
         """Cancelling never removes an authenticator that is on."""
@@ -657,7 +657,7 @@ class TestCancelTotp(ProfileViewTestBase):
 
         self._post("api:profile_totp_cancel")
 
-        assert TOTPDevice.objects.filter(pk=device.pk, confirmed=True).exists()
+        assert EncryptedTOTPDevice.objects.filter(pk=device.pk, confirmed=True).exists()
 
 
 class TestDisableTotp(ProfileViewTestBase):
@@ -696,7 +696,7 @@ class TestDisableTotp(ProfileViewTestBase):
 
                 assert response.status_code == 400
                 assert response.context["totp_disable_error"] == error
-                assert TOTPDevice.objects.filter(pk=device.pk).exists()
+                assert EncryptedTOTPDevice.objects.filter(pk=device.pk).exists()
 
     def test_password_and_code_turn_off_authenticator(self):
         """The right password and a valid code turn the authenticator off."""
@@ -706,7 +706,7 @@ class TestDisableTotp(ProfileViewTestBase):
 
         assert response.status_code == 200
         assert response.context["totp_message"] == "Two-factor authentication is off."
-        assert not TOTPDevice.objects.filter(pk=device.pk).exists()
+        assert not EncryptedTOTPDevice.objects.filter(pk=device.pk).exists()
 
     def test_recovery_code_alone_turns_off_authenticator(self):
         """A recovery code on its own turns the authenticator off, and the code is used up."""
@@ -715,7 +715,7 @@ class TestDisableTotp(ProfileViewTestBase):
         response = self._post("api:profile_totp_disable", recovery_code=self.codes[0])
 
         assert response.status_code == 200
-        assert not TOTPDevice.objects.filter(pk=device.pk).exists()
+        assert not EncryptedTOTPDevice.objects.filter(pk=device.pk).exists()
         assert self._code_still_works(self.codes[0]) is False
 
     def test_recovery_code_combined_with_another_factor_is_refused(self):
@@ -731,5 +731,5 @@ class TestDisableTotp(ProfileViewTestBase):
 
                 assert response.status_code == 400
                 assert response.context["totp_disable_error"] == COMBINATION_ERROR
-                assert TOTPDevice.objects.filter(pk=device.pk).exists()
+                assert EncryptedTOTPDevice.objects.filter(pk=device.pk).exists()
                 assert self._code_still_works(self.codes[0]) is True

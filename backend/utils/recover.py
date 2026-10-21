@@ -50,7 +50,7 @@ async def reset_second_factor(user, session):
         session (SessionBase): The request's session, where the pending enrollment is kept.
 
     Returns:
-        tuple[TOTPDevice, list[str]]: The new unconfirmed authenticator device and the new plain-text recovery codes.
+        tuple[EncryptedTOTPDevice, list[str]]: The new unconfirmed authenticator device and the new plain-text recovery codes.
     """
     await turn_off_totp(user)
     codes = await replace_recovery_codes(user)

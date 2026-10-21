@@ -4,8 +4,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django_otp.plugins.otp_static.models import StaticDevice
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import (
     clear_unconfirmed_totp,
     confirmed_recovery_device,
@@ -129,7 +129,7 @@ async def start_totp_setup(user):
         user (User): The user turning on two-factor authentication.
 
     Returns:
-        TOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
+        EncryptedTOTPDevice: The new unconfirmed device, to be confirmed with a code from the user's app.
     """
     await clear_unconfirmed_totp(user)
     return await create_totp_device(user)
@@ -144,7 +144,7 @@ async def turn_off_totp(user):
     Parameters:
         user (User): The user turning off two-factor authentication.
     """
-    await TOTPDevice.objects.filter(user=user).adelete()
+    await EncryptedTOTPDevice.objects.filter(user=user).adelete()
 
 
 async def replace_recovery_codes(user):

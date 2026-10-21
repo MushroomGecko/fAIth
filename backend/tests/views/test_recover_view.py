@@ -11,8 +11,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import (
     LOCKED_OUT_MESSAGE,
     RECOVERY_DEVICE_NAME,
@@ -198,18 +198,18 @@ class TestRecoverySuccess(RecoverViewTestBase):
 
     def test_success_turns_off_authenticator(self):
         """A confirmed authenticator app is turned off after recovery."""
-        old = TOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        old = EncryptedTOTPDevice.objects.create(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         self._recover()
 
-        assert not TOTPDevice.objects.filter(pk=old.pk).exists()
-        assert not TOTPDevice.objects.filter(user=self.user, confirmed=True).exists()
+        assert not EncryptedTOTPDevice.objects.filter(pk=old.pk).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user=self.user, confirmed=True).exists()
 
     def test_success_offers_new_authenticator_setup(self):
         """An unconfirmed authenticator is created so the user can set it up again, and it's pending in the session."""
         self._recover()
 
-        pending = TOTPDevice.objects.get(user=self.user, confirmed=False)
+        pending = EncryptedTOTPDevice.objects.get(user=self.user, confirmed=False)
         assert self.client.session[PENDING_DEVICE_SESSION_KEY] == pending.pk
 
     def test_success_with_uppercase_username(self):

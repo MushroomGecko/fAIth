@@ -17,8 +17,8 @@ from django.test import RequestFactory, TestCase
 from django.utils import timezone
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import (
     RECOVERY_CODE_COUNT,
     RECOVERY_CODE_HASH_ITERATIONS,
@@ -280,7 +280,7 @@ class TestCreateTotpDevice(TestCase):
         device = await create_totp_device(self.user)
 
         assert device.name == TOTP_DEVICE_NAME
-        assert await TOTPDevice.objects.filter(pk=device.pk, name=TOTP_DEVICE_NAME).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=device.pk, name=TOTP_DEVICE_NAME).aexists()
 
 
 class TestConfirmedTotpDevice(TestCase):
@@ -301,7 +301,7 @@ class TestConfirmedTotpDevice(TestCase):
 
     async def test_returns_confirmed_device(self):
         """Returns the user's confirmed device."""
-        device = await TOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = await EncryptedTOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         found = await confirmed_totp_device(self.user)
 
@@ -310,8 +310,8 @@ class TestConfirmedTotpDevice(TestCase):
 
     async def test_returns_oldest_when_several_are_confirmed(self):
         """When several confirmed devices exist, the oldest one is returned."""
-        first = await TOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
-        await TOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        first = await EncryptedTOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         found = await confirmed_totp_device(self.user)
 
@@ -320,7 +320,7 @@ class TestConfirmedTotpDevice(TestCase):
     async def test_ignores_other_users_devices(self):
         """Another user's confirmed device is never returned."""
         other_user = await _acreate_user("someone-else")
-        await TOTPDevice.objects.acreate(user=other_user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=other_user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         assert await confirmed_totp_device(self.user) is None
 
@@ -379,7 +379,7 @@ class TestUnconfirmedTotpLookups(TestCase):
 
     async def test_by_user_ignores_confirmed_device(self):
         """A confirmed device is not an unfinished setup."""
-        await TOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         assert await unconfirmed_totp_by_user(self.user) is None
 
@@ -415,7 +415,7 @@ class TestUnconfirmedTotpLookups(TestCase):
 
     async def test_by_device_id_for_confirmed_device_returns_none(self):
         """A confirmed device can't be fetched as an unfinished setup, even with its ID."""
-        device = await TOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = await EncryptedTOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         assert await unconfirmed_totp_by_device_id(device.pk) is None
 
@@ -457,17 +457,17 @@ class TestClearUnconfirmedTotp(TestCase):
 
         await clear_unconfirmed_totp(self.user)
 
-        assert not await TOTPDevice.objects.filter(user=self.user).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(user=self.user).aexists()
 
     async def test_keeps_confirmed_device(self):
         """A confirmed authenticator device is not touched."""
-        confirmed = await TOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
+        confirmed = await EncryptedTOTPDevice.objects.acreate(user=self.user, name=TOTP_DEVICE_NAME, confirmed=True)
         await create_totp_device(self.user)
 
         await clear_unconfirmed_totp(self.user)
 
-        assert await TOTPDevice.objects.filter(pk=confirmed.pk).aexists()
-        assert await TOTPDevice.objects.filter(user=self.user).acount() == 1
+        assert await EncryptedTOTPDevice.objects.filter(pk=confirmed.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(user=self.user).acount() == 1
 
     async def test_keeps_recovery_codes(self):
         """Recovery-code devices are not touched, even unconfirmed ones."""
@@ -485,13 +485,13 @@ class TestClearUnconfirmedTotp(TestCase):
 
         await clear_unconfirmed_totp(self.user)
 
-        assert await TOTPDevice.objects.filter(pk=other.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=other.pk).aexists()
 
     async def test_no_error_when_nothing_to_clear(self):
         """Calling it with nothing pending is a harmless no-op."""
         await clear_unconfirmed_totp(self.user)
 
-        assert not await TOTPDevice.objects.filter(user=self.user).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(user=self.user).aexists()
 
 
 class TestEnrollmentDetails(TestCase):

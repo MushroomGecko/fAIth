@@ -8,8 +8,8 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
 from django_otp.oath import TOTP
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
-from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from backend.models import EncryptedTOTPDevice
 from backend.utils.account import (
     PasswordForm,
     UsernameForm,
@@ -165,27 +165,27 @@ class TestStartTotpSetup(TestCase):
 
         assert device.confirmed is False
         assert device.name == TOTP_DEVICE_NAME
-        assert await TOTPDevice.objects.filter(pk=device.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=device.pk).aexists()
 
     async def test_replaces_earlier_unfinished_setup(self):
         """An older unfinished setup is removed, leaving only the new one."""
         user = await _acreate_user("setup-replace-user")
-        old = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+        old = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         new = await start_totp_setup(user)
 
-        assert not await TOTPDevice.objects.filter(pk=old.pk).aexists()
-        assert await TOTPDevice.objects.filter(user=user, confirmed=False).acount() == 1
+        assert not await EncryptedTOTPDevice.objects.filter(pk=old.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(user=user, confirmed=False).acount() == 1
         assert new.pk != old.pk
 
     async def test_keeps_confirmed_authenticator(self):
         """An active authenticator is not removed when a new setup starts."""
         user = await _acreate_user("setup-keep-user")
-        confirmed = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        confirmed = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         await start_totp_setup(user)
 
-        assert await TOTPDevice.objects.filter(pk=confirmed.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=confirmed.pk).aexists()
 
 
 class TestTurnOffTotp(TestCase):
@@ -194,26 +194,26 @@ class TestTurnOffTotp(TestCase):
     async def test_removes_confirmed_authenticator(self):
         """The active authenticator is removed."""
         user = await _acreate_user("off-confirmed-user")
-        device = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         await turn_off_totp(user)
 
-        assert not await TOTPDevice.objects.filter(pk=device.pk).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(pk=device.pk).aexists()
 
     async def test_removes_unconfirmed_authenticator(self):
         """An unfinished setup is removed too."""
         user = await _acreate_user("off-unconfirmed-user")
-        device = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+        device = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         await turn_off_totp(user)
 
-        assert not await TOTPDevice.objects.filter(pk=device.pk).aexists()
+        assert not await EncryptedTOTPDevice.objects.filter(pk=device.pk).aexists()
 
     async def test_keeps_recovery_codes(self):
         """Recovery codes stay on the account when the authenticator is turned off."""
         user = await _acreate_user("off-recovery-user")
         await create_recovery_codes(user, confirmed=True)
-        await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         await turn_off_totp(user)
 
@@ -223,11 +223,11 @@ class TestTurnOffTotp(TestCase):
         """Another user's authenticator is not affected."""
         user = await _acreate_user("off-owner-user")
         other = await _acreate_user("off-other-user")
-        other_device = await TOTPDevice.objects.acreate(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
+        other_device = await EncryptedTOTPDevice.objects.acreate(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
 
         await turn_off_totp(user)
 
-        assert await TOTPDevice.objects.filter(pk=other_device.pk).aexists()
+        assert await EncryptedTOTPDevice.objects.filter(pk=other_device.pk).aexists()
 
 
 class TestReplaceRecoveryCodes(TestCase):
@@ -305,14 +305,14 @@ class TestHasTotp(TestCase):
     async def test_false_for_unconfirmed_authenticator(self):
         """An unfinished setup doesn't count as having TOTP."""
         user = await _acreate_user("has-unconfirmed-user")
-        await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+        await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         assert await has_totp(user) is False
 
     async def test_true_for_confirmed_authenticator(self):
         """A confirmed authenticator means TOTP is on."""
         user = await _acreate_user("has-confirmed-user")
-        await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         assert await has_totp(user) is True
 
@@ -323,7 +323,7 @@ class TestCheckReauth(TestCase):
     async def _user_with_totp(self, username):
         """Create a user with a confirmed authenticator app and return the user and the device."""
         user = await _acreate_user(username)
-        device = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        device = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
         return user, device
 
     async def _user_with_recovery(self, username):
@@ -517,7 +517,7 @@ class TestSectionContext(TestCase):
     async def test_has_totp_true_when_authenticator_on(self):
         """has_totp reflects a confirmed authenticator app."""
         user = await _acreate_user("section-totp-user")
-        await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
+        await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=True)
 
         context = await section_context(_request_for(user))
 
@@ -559,7 +559,7 @@ class TestSecurityContext(TestCase):
     async def test_pending_setup_includes_qr_and_secret(self):
         """An unfinished setup adds its device, QR code, and manual secret to the context."""
         user = await _acreate_user("security-pending-user")
-        device = await TOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
+        device = await EncryptedTOTPDevice.objects.acreate(user=user, name=TOTP_DEVICE_NAME, confirmed=False)
 
         context = await security_context(_request_for(user))
 

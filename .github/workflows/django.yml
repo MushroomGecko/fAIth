@@ -29,6 +29,7 @@ jobs:
       env:
         DJANGO_SECRET_KEY: "secret_key"
         RECOVERY_CODE_ENCRYPTION_KEY: "wJTODaOVKgVGXU2Ybv6m7fNJ55y_5Mh7MLp15O8dbqs="
+        TOTP_ENCRYPTION_KEY: "39B7b5GuvdS0NYJUksTx8XCZwIszRGHzRXNry9oFQo8="
         POSTGRES_PASSWORD: "password"
         MILVUS_PASSWORD: "password"
       run: |

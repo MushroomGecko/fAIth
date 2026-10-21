@@ -1,9 +1,7 @@
-import json
 from urllib.parse import urlencode
 
 from asgiref.sync import sync_to_async
-from cryptography.fernet import Fernet, InvalidToken
-from django.conf import settings
+from cryptography.fernet import InvalidToken
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
@@ -21,6 +19,7 @@ from backend.utils.authentication import (
     unconfirmed_totp_by_device_id,
     users_matching_username,
 )
+from backend.utils.encryption import decrypt_recovery_codes, encrypt_recovery_codes
 from backend.utils.login import get_next_url
 
 # Session keys for the signup enrollment that is waiting for the user to confirm their authenticator app.
@@ -94,7 +93,7 @@ async def create_user_and_devices(form):
         form (UserCreationForm): The validated signup form.
 
     Returns:
-        tuple[TOTPDevice, list[str]]: The new TOTP device and the plain-text recovery codes.
+        tuple[EncryptedTOTPDevice, list[str]]: The new TOTP device and the plain-text recovery codes.
     """
     # Save under the username lock. The database calls are blocking, so this runs in a thread.
     user = await sync_to_async(save_user_with_username_lock, thread_sensitive=True)(form)
@@ -112,7 +111,7 @@ async def pending_device(device_id):
         device_id (int | None): The ID of the pending TOTP device, from the session.
 
     Returns:
-        TOTPDevice | None: The unconfirmed device, or None if there is none.
+        EncryptedTOTPDevice | None: The unconfirmed device, or None if there is none.
     """
     # Only unconfirmed devices count as pending. A confirmed device has already finished enrollment.
     return await unconfirmed_totp_by_device_id(device_id)
@@ -129,7 +128,7 @@ async def store_pending_device(session, device_id, codes):
     """
     # Store the pending device, and the codes encrypted, so the enrollment page still works after a page reload.
     await session.aset(PENDING_DEVICE_SESSION_KEY, device_id)
-    await session.aset(PENDING_CODES_SESSION_KEY, _session_cipher().encrypt(json.dumps(codes).encode()).decode("ascii"))
+    await session.aset(PENDING_CODES_SESSION_KEY, encrypt_recovery_codes(codes))
 
 
 async def read_pending_device_id(session):
@@ -143,11 +142,6 @@ async def read_pending_device_id(session):
         int | None: The pending device ID, or None if there is no pending enrollment.
     """
     return await session.aget(PENDING_DEVICE_SESSION_KEY)
-
-
-def _session_cipher():
-    """Return the Fernet cipher for the recovery codes kept in the session, built from RECOVERY_CODE_ENCRYPTION_KEY."""
-    return Fernet(settings.RECOVERY_CODE_ENCRYPTION_KEY)
 
 
 async def read_pending_codes(session):
@@ -164,7 +158,7 @@ async def read_pending_codes(session):
     if not token:
         return []
     try:
-        return json.loads(_session_cipher().decrypt(token.encode("ascii")))
+        return decrypt_recovery_codes(token)
     except InvalidToken:
         # The key was changed, or the stored value was damaged. The codes can't be read, so treat them as gone.
         return []
@@ -178,7 +172,7 @@ async def load_pending_enrollment(session):
         session (SessionBase): The request's session.
 
     Returns:
-        tuple[TOTPDevice | None, list[str]]: The pending device (or None) and its recovery codes.
+        tuple[EncryptedTOTPDevice | None, list[str]]: The pending device (or None) and its recovery codes.
     """
     device = await pending_device(await read_pending_device_id(session))
     return device, await read_pending_codes(session)
@@ -216,7 +210,7 @@ async def render_authenticate(request, device, codes, template, status=200, erro
 
     Parameters:
         request (HttpRequest): The current request.
-        device (TOTPDevice): The unconfirmed TOTP device to enroll.
+        device (EncryptedTOTPDevice): The unconfirmed TOTP device to enroll.
         codes (list[str] | None): The recovery codes to display, or None once they're no longer shown.
         template (str): The authenticator setup page template path, passed in by the view.
         status (int): The HTTP status code for the response (default: 200).
