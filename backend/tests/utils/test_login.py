@@ -11,6 +11,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import LOCKED_OUT_MESSAGE, TOTP_DEVICE_NAME
 from backend.utils.login import (
+    INVALID_LOGIN_MESSAGE,
     authenticator_device_id,
     canonical_username,
     get_next_url,
@@ -295,7 +296,7 @@ class TestLoginRefused(TestCase):
         _, _, mock_render = await self._refuse()
 
         form = mock_render.call_args.args[2]["form"]
-        assert any("Please enter a correct" in str(error) for error in form.non_field_errors())
+        assert INVALID_LOGIN_MESSAGE in form.non_field_errors()
 
     async def test_form_is_unbound_so_authenticate_is_not_run_again(self):
         """The form is unbound, so its clean() never calls authenticate(). That call would count the attempt a second time."""

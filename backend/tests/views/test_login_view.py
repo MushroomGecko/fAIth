@@ -21,12 +21,12 @@ from backend.utils.authentication import (
     TOTP_DEVICE_NAME,
     create_recovery_codes,
 )
+from backend.utils.login import INVALID_LOGIN_MESSAGE
 from backend.utils.signup import PENDING_CODES_SESSION_KEY, PENDING_DEVICE_SESSION_KEY
 from fAIth.test_helpers.async_client import ServerAsyncClient
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
-LOGIN_ERROR = "TOTP not set up or wrong code entered."
 
 
 def _totp_code(device):
@@ -175,7 +175,41 @@ class TestLoginPasswordOnly(LoginViewTestBase):
 
         assert response.status_code == 400
         assert not self._is_logged_in()
-        assert LOGIN_ERROR in response.context["form"].non_field_errors()
+        assert INVALID_LOGIN_MESSAGE in response.context["form"].non_field_errors()
+
+    def test_failures_return_the_same_generic_error(self):
+        """A wrong password, a code sent to an account without an authenticator, and a blank or wrong code on an
+        account with one all give the same status and the same generic error. None of them reveal whether the account
+        has an authenticator app."""
+        other = User.objects.create_user(username="other-totp", password=PASSWORD)
+        EncryptedTOTPDevice.objects.create(user=other, name=TOTP_DEVICE_NAME, confirmed=True)
+        cases = [
+            ("wrong password", {"username": "plain-user", "password": "wrong-password-123"}),
+            ("code on plain account", {"username": "plain-user", "password": PASSWORD, "otp_token": "123456"}),
+            ("blank code on authenticator account", {"username": "other-totp", "password": PASSWORD}),
+            (
+                "wrong code on authenticator account",
+                {"username": "other-totp", "password": PASSWORD, "otp_token": "000000"},
+            ),
+        ]
+        results = []
+        for name, data in cases:
+            with self.subTest(case=name):
+                response = self._post(**data)
+                results.append(
+                    (
+                        name,
+                        response.status_code,
+                        list(response.context["form"].non_field_errors()),
+                        dict(response.context["form"].errors),
+                    )
+                )
+        statuses = {status for _, status, _, _ in results}
+        errors = {tuple(non_field) for _, _, non_field, _ in results}
+        assert statuses == {400}
+        assert errors == {(INVALID_LOGIN_MESSAGE,)}
+        assert all(form_errors == {"__all__": [INVALID_LOGIN_MESSAGE]} for _, _, _, form_errors in results)
+        assert not self._is_logged_in()
 
     def test_wrong_password_with_code_on_plain_account_is_refused(self):
         """A wrong password plus a code is refused and does not log in."""

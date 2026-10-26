@@ -72,15 +72,11 @@ async def login(request):
     # Unconfirmed devices from an unfinished signup are ignored.
     if user is not None and not await authenticator_device_id(user):
         if request.POST.get("otp_token", "").strip():
-            # The password is right, but this account has no authenticator, so any code is an error.
-            form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, data)
-            await sync_to_async(form.is_valid, thread_sensitive=True)()
-            # The form adds "Please select a device." here because this user has no device. Replace it with our message.
-            form.errors.clear()
-            form.add_error(None, "TOTP not set up or wrong code entered.")
-            # The password was right, so this wrong code counts against the account.
+            # The password is right, but this account has no authenticator, so any code is an error. It gets the same
+            # generic error as a wrong password, so the response doesn't reveal whether the account uses an authenticator.
+            # The password was right, so this counts against the account.
             await record_failed_login(request, user.username)
-            return await render_login(request, form, LOGIN_TEMPLATE, status=400)
+            return await login_refused(request, LOGIN_TEMPLATE, data["username"])
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await clear_unconfirmed_totp(user)
         # The pending recovery codes are plain text in the session. Drop them before alogin keeps the session.
@@ -109,6 +105,8 @@ async def login(request):
         # clean_otp() sets user.otp_device, and django-otp's login signal marks the session as verified.
         await alogin(request, logged_in_user)
         return redirect(await get_next_url(request))
-    # The password was right, so a wrong code is the only failure left to count against the account.
+    # The password was right, but the code is missing or wrong. Count it against the account, then return the same
+    # generic error as a wrong password. Field-level errors from the form are not shown, since they would reveal
+    # that the account has an authenticator app.
     await record_failed_login(request, user.username)
-    return await render_login(request, form, LOGIN_TEMPLATE, status=400)
+    return await login_refused(request, LOGIN_TEMPLATE, data["username"])

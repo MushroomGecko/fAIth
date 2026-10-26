@@ -10,6 +10,14 @@ from backend.utils.authentication import (
     users_matching_username,
 )
 
+# Shown for every failed login after the username is known: a wrong username or password, a wrong or
+# missing authenticator code, and a code sent to an account without one. Because it is the same for all of
+# them, it doesn't reveal whether the account exists or has an authenticator app.
+INVALID_LOGIN_MESSAGE = (
+    "The username, password, or authenticator code is incorrect. Usernames and passwords may be case-sensitive. "
+    "If you use an authenticator app, check that the code is current and that it is set up on your account."
+)
+
 
 async def get_next_url(request, default=None):
     """
@@ -118,5 +126,5 @@ async def login_refused(request, template, username):
     """
     form = await sync_to_async(OTPAuthenticationForm, thread_sensitive=True)(request, initial={"username": username})
     form.cleaned_data = {}
-    form.add_error(None, form.get_invalid_login_error())
+    form.add_error(None, INVALID_LOGIN_MESSAGE)
     return await render_login(request, form, template, status=400)
