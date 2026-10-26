@@ -42,11 +42,11 @@ class TestBlankRecoveryUser(TestCase):
     """Tests for blank_recovery_user."""
 
     async def test_returns_unsaved_user(self):
-        """The stand-in user has no primary key, so it's never saved."""
+        """The stand-in user has not been saved yet, even though its UUID primary key is already set."""
         user = await blank_recovery_user()
 
         assert isinstance(user, User)
-        assert user.pk is None
+        assert user._state.adding
 
     async def test_has_no_username_and_matches_no_password(self):
         """The stand-in has no username, and no password matches it."""

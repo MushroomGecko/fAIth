@@ -216,6 +216,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Custom user model with a UUID primary key. See backend/models/user.py.
+AUTH_USER_MODEL = "backend.User"
+
 # Authentication backends and account lockout (django-axes)
 # https://django-axes.readthedocs.io/en/latest/2_installation.html
 # AxesLockoutBackend must come first. It wraps axes' AxesStandaloneBackend, which refuses locked-out accounts, and ModelBackend then does the password check.

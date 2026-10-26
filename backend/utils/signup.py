@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from asgiref.sync import sync_to_async
 from cryptography.fernet import InvalidToken
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
@@ -37,6 +38,10 @@ class SignupForm(UserCreationForm):
     """
     The account creation form. A username that differs from an existing one only in letter case is taken.
     """
+
+    class Meta(UserCreationForm.Meta):
+        # UserCreationForm points at django.contrib.auth.models.User, which is swapped out for backend.User.
+        model = get_user_model()
 
     def clean_username(self):
         """
