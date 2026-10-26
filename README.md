@@ -87,12 +87,14 @@ These protections come from Django itself and are on without any fAIth configura
 - Counting is per client, not per account. One client can't spread guesses across many accounts without being locked out.
 - A successful login does not reset the failure count, so a user can't clear their own failures and keep guessing on another account.
 - The authenticator app's built-in throttle is turned off. That throttle is shared by everyone, so anyone who knows a user's password could lock them out of their authenticator. Wrong codes still count toward the per-client lockout instead.
-- Login and recovery responses don't reveal whether a username exists. The lockout message doesn't say whose account is locked or how many attempts were counted.
+- Every failed login returns the same message, whether the username, password, or authenticator code was wrong or missing. The message doesn't reveal whether an account exists or whether it has an authenticator app.
+- Recovery responses don't reveal whether a username exists. The lockout message doesn't say whose account is locked or how many attempts were counted.
 
 ### Privacy and Data Minimisation
 - **Client identifiers are hashed before storage.** IP addresses and usernames are stored only as HMAC-SHA256 hashes keyed with `DJANGO_SECRET_KEY`, so they can't be recovered without that key. Usernames are normalised to lowercase before hashing, and the plain username is masked in stored request data. This follows GDPR's data-minimisation principle.
 - **Failed-attempt records are short-lived.** Each record includes the client's user agent and requested path, and is removed once its 15-minute lockout window has passed, during cleanup on a later failed login.
 - **Successful logins are not logged.** django-axes' access log, which would store the IP and user agent for every login, is disabled.
+- **Account IDs are random.** User IDs are random UUIDv4 values rather than sequential numbers, so an ID reveals neither account order nor how many accounts exist.
 - **Proxy headers are only trusted when configured.** `X-Forwarded-For` is read only when `DJANGO_TRUSTED_PROXY_COUNT` matches the deployment. Otherwise a client could spoof its address to evade lockouts.
 - **No third-party scripts or CDN assets.** The templates don't load external JavaScript or CSS.
 - **Web searches go through a self-hosted SearXNG instance** that is not reachable from outside the Docker network.
@@ -123,6 +125,7 @@ These protections come from Django itself and are on without any fAIth configura
 - Front-end libraries (Bootstrap, htmx, Popper, and Bootstrap Icons) ship with the app, so pages don't load scripts or styles from a CDN.
 
 ### Testing
+- Automated tests run on an in-memory SQLite database, set globally in `fAIth/test_settings.py`, so test data never reaches the Postgres database.
 - Automated tests check CSRF enforcement on every POST route, confirm that raw IP addresses never reach the lockout tables, and confirm that the lockout identifier changes with the secret key and the proxy setting.
 - The Django CI workflow runs a system check with test keys, so a misconfigured settings file fails the build.
 
