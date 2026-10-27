@@ -62,13 +62,10 @@ class SignupForm(UserCreationForm):
         return username
 
 
-def save_user_with_username_lock(form):
+def _save_user_with_lock_sync(form):
     """
-    Save the user while holding a PostgreSQL advisory lock on the lowercased username.
-
-    The lock is taken inside a transaction and released when it commits. A signup for a name that differs
-    only in letter case waits at the lock, then finds this user in the re-check. The lock is held by the
-    database, so it works across processes, including when the app runs more than one worker.
+    Synchronous body of save_user_with_username_lock. It must run synchronously, because the advisory lock and
+    the transaction live on one database connection.
 
     Parameters:
         form (SignupForm): The validated signup form.
@@ -90,6 +87,27 @@ def save_user_with_username_lock(form):
         return form.save()
 
 
+async def save_user_with_username_lock(form):
+    """
+    Save the user while holding a PostgreSQL advisory lock on the lowercased username.
+
+    The lock is taken inside a transaction and released when it commits. A signup for a name that differs
+    only in letter case waits at the lock, then finds this user in the re-check. The lock is held by the
+    database, so it works across processes, including when the app runs more than one worker.
+
+    Parameters:
+        form (SignupForm): The validated signup form.
+
+    Returns:
+        User: The saved user.
+
+    Raises:
+        ValidationError: If an account with the same name in any letter case exists once the lock is held.
+    """
+    # The database work is blocking, so it runs in a thread with its own synchronous transaction.
+    return await sync_to_async(_save_user_with_lock_sync, thread_sensitive=True)(form)
+
+
 async def create_user_and_devices(form):
     """
     Save the user, create an unconfirmed TOTP device, and create a confirmed recovery-code device.
@@ -100,8 +118,8 @@ async def create_user_and_devices(form):
     Returns:
         tuple[EncryptedTOTPDevice, list[str]]: The new TOTP device and the plain-text recovery codes.
     """
-    # Save under the username lock. The database calls are blocking, so this runs in a thread.
-    user = await sync_to_async(save_user_with_username_lock, thread_sensitive=True)(form)
+    # Save under the username lock.
+    user = await save_user_with_username_lock(form)
     totp = await create_totp_device(user)
     # Recovery codes are confirmed right away. Only the authenticator app waits for confirmation.
     codes = await create_recovery_codes(user, confirmed=True)
@@ -133,7 +151,7 @@ async def store_pending_device(session, device_id, codes):
     """
     # Store the pending device, and the codes encrypted, so the enrollment page still works after a page reload.
     await session.aset(PENDING_DEVICE_SESSION_KEY, device_id)
-    await session.aset(PENDING_CODES_SESSION_KEY, encrypt_recovery_codes(codes))
+    await session.aset(PENDING_CODES_SESSION_KEY, await encrypt_recovery_codes(codes))
 
 
 async def read_pending_device_id(session):
@@ -163,7 +181,7 @@ async def read_pending_codes(session):
     if not token:
         return []
     try:
-        return decrypt_recovery_codes(token)
+        return await decrypt_recovery_codes(token)
     except InvalidToken:
         # The key was changed, or the stored value was damaged. The codes can't be read, so treat them as gone.
         return []
@@ -195,7 +213,7 @@ async def clear_pending_device(session):
     await session.apop(PENDING_CODES_SESSION_KEY, None)
 
 
-def login_url_for(next_url):
+async def login_url_for(next_url):
     """
     Return the login page URL, keeping the page the user was trying to reach.
 
@@ -254,7 +272,7 @@ async def confirm_enrollment(request, template):
     if await confirm_device(device, token):
         # Enrollment is finished, so the recovery codes shouldn't stay in the session.
         await clear_pending_device(request.session)
-        return redirect(login_url_for(next_url))
+        return redirect(await login_url_for(next_url))
 
     return await render_authenticate(
         request, device, codes, template, status=400, error=INVALID_CODE_MESSAGE, next_url=next_url
@@ -282,7 +300,7 @@ async def skip_enrollment(request):
     await clear_unconfirmed_totp(device.user)
     # Forget the pending enrollment, so the recovery codes don't stay in the session.
     await clear_pending_device(request.session)
-    return redirect(login_url_for(await get_next_url(request, default="")))
+    return redirect(await login_url_for(await get_next_url(request, default="")))
 
 
 async def abandon_pending_enrollment(session):

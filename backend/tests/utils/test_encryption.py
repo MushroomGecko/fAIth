@@ -102,36 +102,36 @@ class TestEncryptTotpKey(TestCase):
 class TestEncryptRecoveryCodes(TestCase):
     """Tests for encrypt_recovery_codes and decrypt_recovery_codes."""
 
-    def test_round_trip_returns_original_codes(self):
+    async def test_round_trip_returns_original_codes(self):
         """Decrypting the encrypted codes gives back the same list, in the same order."""
-        token = encrypt_recovery_codes(RECOVERY_CODES)
+        token = await encrypt_recovery_codes(RECOVERY_CODES)
 
-        assert decrypt_recovery_codes(token) == RECOVERY_CODES
+        assert await decrypt_recovery_codes(token) == RECOVERY_CODES
 
-    def test_encrypted_value_is_text_and_hides_codes(self):
+    async def test_encrypted_value_is_text_and_hides_codes(self):
         """The stored value is a str and doesn't contain any plain recovery code."""
-        token = encrypt_recovery_codes(RECOVERY_CODES)
+        token = await encrypt_recovery_codes(RECOVERY_CODES)
 
         assert isinstance(token, str)
         for code in RECOVERY_CODES:
             assert code not in token
 
-    def test_wrong_key_is_refused(self):
+    async def test_wrong_key_is_refused(self):
         """Codes encrypted with one recovery key raise InvalidToken under another, so they can't be read silently."""
-        token = encrypt_recovery_codes(RECOVERY_CODES)
+        token = await encrypt_recovery_codes(RECOVERY_CODES)
 
         with override_settings(RECOVERY_CODE_ENCRYPTION_KEY=OTHER_KEY):
             with self.assertRaises(InvalidToken):
-                decrypt_recovery_codes(token)
+                await decrypt_recovery_codes(token)
 
-    def test_garbage_token_is_refused(self):
+    async def test_garbage_token_is_refused(self):
         """A value that isn't a Fernet token raises InvalidToken."""
         with self.assertRaises(InvalidToken):
-            decrypt_recovery_codes("not-a-fernet-token")
+            await decrypt_recovery_codes("not-a-fernet-token")
 
-    def test_totp_key_token_is_refused(self):
+    async def test_totp_key_token_is_refused(self):
         """A token made with the TOTP key is refused, so the two kinds of secret can't be swapped."""
         token = encrypt_totp_key(HEX_SECRET)
 
         with self.assertRaises(InvalidToken):
-            decrypt_recovery_codes(token)
+            await decrypt_recovery_codes(token)

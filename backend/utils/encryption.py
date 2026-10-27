@@ -53,7 +53,7 @@ def decrypt_totp_key(token):
     return totp_key_cipher().decrypt(token.encode("ascii")).decode("ascii")
 
 
-def encrypt_recovery_codes(codes):
+async def encrypt_recovery_codes(codes):
     """
     Encrypt the recovery codes kept in the session during signup and recovery.
 
@@ -66,7 +66,7 @@ def encrypt_recovery_codes(codes):
     return recovery_session_cipher().encrypt(json.dumps(codes).encode()).decode("ascii")
 
 
-def decrypt_recovery_codes(token):
+async def decrypt_recovery_codes(token):
     """
     Decrypt the recovery codes kept in the session.
 

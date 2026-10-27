@@ -92,7 +92,7 @@ async def verify_recovery_code(device, code):
     return True
 
 
-def new_recovery_code():
+async def new_recovery_code():
     """
     Return a new random recovery code of 128 bits, as 32 lowercase hex characters in four dash-separated groups.
 
@@ -116,7 +116,7 @@ async def create_recovery_codes(user, confirmed):
         list[str]: The plain-text recovery codes, to show the user one time.
     """
     device = await StaticDevice.objects.acreate(user=user, name=RECOVERY_DEVICE_NAME, confirmed=confirmed)
-    codes = [new_recovery_code() for _ in range(RECOVERY_CODE_COUNT)]
+    codes = [await new_recovery_code() for _ in range(RECOVERY_CODE_COUNT)]
     # Each PBKDF2 hash runs in its own worker thread, so the codes are hashed in parallel.
     hashes = await asyncio.gather(*(hash_recovery_code(code, device) for code in codes))
     # Save all the hashed codes in one query instead of one query per code.
