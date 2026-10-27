@@ -54,7 +54,7 @@ fAIth is a Bible study app, and some of its users may live in countries where Ch
 
 ### Django Defaults
 These protections come from Django itself and are on without any fAIth configuration. The [Django security documentation](https://docs.djangoproject.com/en/6.0/topics/security/) describes the threats they address.
-- **Password hashing:** Passwords are never stored in plain text. Django's first password hasher is PBKDF2-SHA256, so new passwords are hashed with it before saving.
+- **Password hashing:** Passwords are never stored in plain text. Django salts each password and hashes it with a slow key-derivation function. fAIth overrides Django's default algorithm, as described under Account Passwords.
 - **Session invalidation on password change:** Changing a user's password logs out all of their sessions.
 - **Clickjacking protection:** `X_FRAME_OPTIONS` defaults to `DENY`, which sends `X-Frame-Options: DENY` through `XFrameOptionsMiddleware`, so other sites can't embed pages in a frame.
 - **MIME sniffing protection:** `SECURE_CONTENT_TYPE_NOSNIFF` defaults to `True`, which sends `X-Content-Type-Options: nosniff` through `SecurityMiddleware`, so browsers don't reinterpret files as a different type.
@@ -66,6 +66,7 @@ These protections come from Django itself and are on without any fAIth configura
 - **Database queries:** Django's ORM passes query values as parameters, which protects against SQL injection.
 
 ### Account Passwords
+- **Password hashing:** Passwords are stored as PBKDF2-HMAC-SHA512 with a random salt and Django's default iteration count (1,200,000). This replaces Django's default SHA-256 hasher. SHA-512 produces a larger output than SHA-256, which gives a wider security margin. On most modern 64-bit processors it also runs faster than SHA-256, so the same iteration count takes less time.
 - New passwords must pass the project's password validators: they can't be too similar to the username, must meet a minimum length, can't be a common password, and can't be all numeric.
 - Changing a password requires the current password and must be different from the old one. The user's current session stays signed in, so only their other sessions are signed out.
 
