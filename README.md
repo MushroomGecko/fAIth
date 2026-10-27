@@ -94,7 +94,7 @@ These protections come from Django itself and are on without any fAIth configura
 - **Client identifiers are hashed before storage.** IP addresses and usernames are stored only as HMAC-SHA256 hashes keyed with `DJANGO_SECRET_KEY`, so they can't be recovered without that key. Usernames are normalised to lowercase before hashing, and the plain username is masked in stored request data. This follows GDPR's data-minimisation principle.
 - **Failed-attempt records are short-lived.** Each record includes the client's user agent and requested path, and is removed once its 15-minute lockout window has passed, during cleanup on a later failed login.
 - **Successful logins are not logged.** django-axes' access log, which would store the IP and user agent for every login, is disabled.
-- **Account IDs are random.** User IDs are random UUIDv4 values rather than sequential numbers, so an ID reveals neither account order nor how many accounts exist.
+- **Account IDs are random UUIDv4 values.** They aren't sequential, so an ID doesn't reveal when an account was created or how many accounts exist, and they are hard to guess (122 random bits). This still holds if IDs end up in logs, error reports, or other places outside the database. Access to each account is enforced on the server, so the IDs are never the only protection.
 - **Proxy headers are only trusted when configured.** `X-Forwarded-For` is read only when `DJANGO_TRUSTED_PROXY_COUNT` matches the deployment. Otherwise a client could spoof its address to evade lockouts.
 - **No third-party scripts or CDN assets.** The templates don't load external JavaScript or CSS.
 - **Web searches go through a self-hosted SearXNG instance** that is not reachable from outside the Docker network.

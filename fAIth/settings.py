@@ -215,6 +215,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# The only password hasher. Django can't verify a hash whose algorithm isn't listed here, so every password
+# must be stored as PBKDF2-SHA512. Only add an entry here if existing users need it, and that can't happen
+# until there are real users.
+PASSWORD_HASHERS = [
+    "backend.utils.hashing.PBKDF2SHA512PasswordHasher",
+]
+
 
 # Custom user model with a UUID primary key. See backend/models/user.py.
 AUTH_USER_MODEL = "backend.User"
