@@ -2,6 +2,7 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
@@ -13,3 +14,7 @@ class User(AbstractUser):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # The PBKDF2-SHA512 hashes (see backend/utils/hashing.py) are about 133 characters, which exceeds
+    # AbstractBaseUser's default of 128.
+    password = models.CharField(_("password"), max_length=256)

@@ -1,32 +1,32 @@
 # Core dependencies for fAIth
-Django==6.0.6
-django-ninja==1.6.2
-python-dotenv==1.2.2
+Django==6.1.2
+django-ninja==1.7.1
+python-dotenv==1.2.4
 whitenoise==6.12.0
-psycopg[binary]==3.3.4
+psycopg[binary]==3.3.6
 
 # ASGI Server Dependencies
-django-asgi-lifespan==0.5.2
-uvicorn==0.49.0
+django-asgi-lifespan==0.5.4
+uvicorn==0.54.0
 
 # Authentication and Security
-django-otp==1.7.4
+django-otp==1.7.5
 django-axes==8.3.1
 segno==1.6.6
 cryptography==50.0.2
 
 # LLM
-openai==2.44.0
-markdown==3.10.2
+openai==3.39.0
+markdown==3.11.2
 
 # Vector Database / Embedding
-pymilvus==3.0.0
+pymilvus==3.0.2
 
 # Other dependencies
 wn==1.1.1
 
 # Testing
-# ruff==0.15.2
+# ruff==0.17.3
 # pytest==9.1.1
-# pytest-django==4.12.0
-# pytest-asyncio==1.4.0
+# pytest-django==4.14.0
+# pytest-asyncio==1.4.1
