@@ -52,7 +52,7 @@ class SignupViewTestBase(TestCase):
 
     def _pending_totp(self, username="new-signup-user"):
         """Return the unconfirmed authenticator device created for this signup."""
-        return EncryptedTOTPDevice.objects.get(user__username=username, confirmed=False)
+        return EncryptedTOTPDevice.objects.get(user__username=username_hmac(username), confirmed=False)
 
 
 # (name, next value sent, next value the page should keep)
@@ -165,9 +165,9 @@ class TestSignupPage(SignupViewTestBase):
 
         self.client.get(self.url)
 
-        assert not EncryptedTOTPDevice.objects.filter(user__username="new-signup-user", confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(user__username=username_hmac("new-signup-user"), confirmed=False).exists()
         assert User.objects.filter(username=username_hmac("new-signup-user")).exists()
-        assert StaticDevice.objects.filter(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME).exists()
+        assert StaticDevice.objects.filter(user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME).exists()
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
         assert PENDING_CODES_SESSION_KEY not in self.client.session
 
@@ -200,7 +200,7 @@ class TestCreateAccount(SignupViewTestBase):
         """The recovery-code device is created confirmed, so it works even if the authenticator step is skipped."""
         self._create_account()
 
-        device = StaticDevice.objects.get(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME)
+        device = StaticDevice.objects.get(user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME)
         assert device.confirmed is True
 
     def test_shows_ten_recovery_codes_once(self):
@@ -302,8 +302,8 @@ class TestConfirmAuthenticator(SignupViewTestBase):
         """Confirming turns on the authenticator and the recovery codes created with it."""
         self._post(step=ENROLLMENT_STEP, otp_token=_totp_code(self._pending_totp()))
 
-        assert EncryptedTOTPDevice.objects.get(user__username="new-signup-user").confirmed is True
-        assert StaticDevice.objects.get(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME).confirmed is True
+        assert EncryptedTOTPDevice.objects.get(user__username=username_hmac("new-signup-user")).confirmed is True
+        assert StaticDevice.objects.get(user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME).confirmed is True
 
     def test_correct_code_clears_pending_session(self):
         """Once confirmed, the pending enrollment and its codes leave the session."""
@@ -355,10 +355,10 @@ class TestSkipAuthenticator(SignupViewTestBase):
         and forgets the pending enrollment."""
         self._post(step=SKIP_STEP)
 
-        assert not EncryptedTOTPDevice.objects.filter(user__username="new-signup-user").exists()
+        assert not EncryptedTOTPDevice.objects.filter(user__username=username_hmac("new-signup-user")).exists()
         assert User.objects.filter(username=username_hmac("new-signup-user")).exists()
         assert StaticDevice.objects.filter(
-            user__username="new-signup-user", name=RECOVERY_DEVICE_NAME, confirmed=True
+            user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME, confirmed=True
         ).exists()
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
         assert PENDING_CODES_SESSION_KEY not in self.client.session

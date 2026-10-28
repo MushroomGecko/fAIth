@@ -54,6 +54,21 @@ class UserManager(DjangoUserManager):
         """
         return self.get(**{self.model.USERNAME_FIELD: username_hmac(username)})
 
+    async def aget_by_natural_key(self, username):
+        """
+        Async version of get_by_natural_key(). Django's aauthenticate() calls this one, so it must hash the name too.
+
+        Parameters:
+            username (str): The username as typed. It is hashed before the lookup.
+
+        Returns:
+            User: The matching user.
+
+        Raises:
+            User.DoesNotExist: If no user has this username, ignoring letter case.
+        """
+        return await self.aget(**{self.model.USERNAME_FIELD: username_hmac(username)})
+
 
 class User(AbstractUser):
     """
