@@ -165,9 +165,13 @@ class TestSignupPage(SignupViewTestBase):
 
         self.client.get(self.url)
 
-        assert not EncryptedTOTPDevice.objects.filter(user__username=username_hmac("new-signup-user"), confirmed=False).exists()
+        assert not EncryptedTOTPDevice.objects.filter(
+            user__username=username_hmac("new-signup-user"), confirmed=False
+        ).exists()
         assert User.objects.filter(username=username_hmac("new-signup-user")).exists()
-        assert StaticDevice.objects.filter(user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME).exists()
+        assert StaticDevice.objects.filter(
+            user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME
+        ).exists()
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
         assert PENDING_CODES_SESSION_KEY not in self.client.session
 
@@ -303,7 +307,12 @@ class TestConfirmAuthenticator(SignupViewTestBase):
         self._post(step=ENROLLMENT_STEP, otp_token=_totp_code(self._pending_totp()))
 
         assert EncryptedTOTPDevice.objects.get(user__username=username_hmac("new-signup-user")).confirmed is True
-        assert StaticDevice.objects.get(user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME).confirmed is True
+        assert (
+            StaticDevice.objects.get(
+                user__username=username_hmac("new-signup-user"), name=RECOVERY_DEVICE_NAME
+            ).confirmed
+            is True
+        )
 
     def test_correct_code_clears_pending_session(self):
         """Once confirmed, the pending enrollment and its codes leave the session."""
