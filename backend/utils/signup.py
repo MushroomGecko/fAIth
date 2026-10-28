@@ -61,6 +61,23 @@ class SignupForm(UserCreationForm):
             raise ValidationError("Username unavailable.")
         return username
 
+    def save(self, commit=True):
+        """
+        Save the new user with its username hashed and encrypted. The password is hashed by UserCreationForm.
+
+        Parameters:
+            commit (bool): Whether to save to the database now (default: True).
+
+        Returns:
+            User: The new user.
+        """
+        user = super().save(commit=False)
+        user.set_username(self.cleaned_data["username"])
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
+
 
 def _save_user_with_lock_sync(form):
     """

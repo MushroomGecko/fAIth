@@ -30,6 +30,8 @@ jobs:
         DJANGO_SECRET_KEY: "secret_key"
         RECOVERY_CODE_ENCRYPTION_KEY: "wJTODaOVKgVGXU2Ybv6m7fNJ55y_5Mh7MLp15O8dbqs="
         TOTP_ENCRYPTION_KEY: "39B7b5GuvdS0NYJUksTx8XCZwIszRGHzRXNry9oFQo8="
+        USERNAME_ENCRYPTION_KEY: "Yq8Vd3WkJbQ1sT6nZ0fLxRmH2cUe4aPgK9wNoB7iDjE="
+        USERNAME_HMAC_KEY: "ci-only-username-hmac-key-not-for-production"
         POSTGRES_PASSWORD: "password"
         MILVUS_PASSWORD: "password"
       run: |

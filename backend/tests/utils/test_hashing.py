@@ -2,6 +2,7 @@
 
 import base64
 import hashlib
+import hmac
 
 from django.conf import settings
 from django.contrib.auth.hashers import (
@@ -14,9 +15,9 @@ from django.contrib.auth.hashers import (
     identify_hasher,
     make_password,
 )
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
-from backend.utils.hashing import PBKDF2SHA512PasswordHasher
+from backend.utils.hashing import PBKDF2SHA512PasswordHasher, username_hmac
 
 PASSWORD = "a-long-test-password-123"
 SALT = "testsalt"
@@ -115,3 +116,43 @@ class TestSha512Hasher(SimpleTestCase):
         assert decoded["algorithm"] == "pbkdf2_sha512"
         assert decoded["salt"] == SALT
         assert decoded["iterations"] == FAST_ITERATIONS
+
+
+class TestUsernameHmac(SimpleTestCase):
+    """Tests for username_hmac, the keyed HMAC-SHA512 stored in User.username."""
+
+    def test_digest_is_hmac_sha512_of_lowercase_name(self):
+        """The value is the HMAC-SHA512 of the lowercase username, keyed with USERNAME_HMAC_KEY, as hex."""
+        expected = hmac.new(settings.USERNAME_HMAC_KEY.encode(), b"alice", hashlib.sha512).hexdigest()
+
+        assert username_hmac("Alice") == expected
+
+    def test_is_128_hex_characters(self):
+        """SHA-512 gives 64 bytes, which is 128 hex characters, so it fits the username column."""
+        value = username_hmac("alice")
+
+        assert len(value) == 128
+        assert all(character in "0123456789abcdef" for character in value)
+
+    def test_ignores_letter_case(self):
+        """Names that differ only in letter case give the same value, matching signup's rule."""
+        assert username_hmac("MixedCase") == username_hmac("mixedcase") == username_hmac("MIXEDCASE")
+
+    def test_different_names_give_different_values(self):
+        """Different usernames don't share a stored value."""
+        assert username_hmac("alice") != username_hmac("bob")
+
+    def test_nfkc_equivalent_names_match(self):
+        """Full-width letters normalize to ASCII first, so they give the same value as the ASCII name."""
+        assert username_hmac("\uff41lice") == username_hmac("alice")
+
+    def test_value_is_not_the_plain_name(self):
+        """The stored value doesn't contain the username."""
+        assert "alice" not in username_hmac("alice")
+
+    def test_different_key_gives_different_value(self):
+        """Changing USERNAME_HMAC_KEY changes every value, so the key has to be kept secret and stable."""
+        original = username_hmac("alice")
+
+        with override_settings(USERNAME_HMAC_KEY="another-key"):
+            assert username_hmac("alice") != original

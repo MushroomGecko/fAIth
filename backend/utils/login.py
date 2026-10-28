@@ -49,10 +49,11 @@ async def canonical_username(username):
         username (str): The username as the user typed it.
 
     Returns:
-        str: The stored username if an account matches ignoring case, otherwise the input unchanged.
+        str: The username as the account stored it, decrypted, if an account matches ignoring case, otherwise the
+            input unchanged.
     """
     user = await users_matching_username(username).afirst()
-    return user.username if user else username
+    return user.decrypted_username if user else username
 
 
 async def authenticator_device_id(user):

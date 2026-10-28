@@ -8,7 +8,7 @@
             {% block content %}
                 {% if user.is_authenticated %}
                     <span class="text-muted small">Welcome,</span>
-                    <a class="link-primary fw-bold text-decoration-underline" href="{% url 'api:profile' %}" title="Go to your profile">{{ user.username }}</a>
+                    <a class="link-primary fw-bold text-decoration-underline" href="{% url 'api:profile' %}" title="Go to your profile">{{ user.decrypted_username }}</a>
                     <form class="d-inline m-0" action="{% url 'api:logout' %}?next={{ request.get_full_path|urlencode }}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary btn-sm">Log Out</button>

@@ -15,6 +15,7 @@ from django.shortcuts import render
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 
 from backend.models import EncryptedTOTPDevice
+from backend.utils.hashing import username_hmac
 
 # How many PBKDF2 iterations to run on each recovery code.
 RECOVERY_CODE_HASH_ITERATIONS = 100000
@@ -212,15 +213,16 @@ def users_matching_username(username):
     """
     Return a queryset of the accounts whose username matches, ignoring letter case.
 
-    Signup stops two usernames from differing only in case, so at most one account matches.
+    The username column holds an HMAC of the lowercase name, so the typed name is hashed before the lookup. Signup
+    stops two usernames from differing only in case, so at most one account matches.
 
     Parameters:
-        username (str): The username to match.
+        username (str): The username to match, as typed.
 
     Returns:
         QuerySet: The matching accounts. Callers add .aexists(), .afirst(), or .exists() as needed.
     """
-    return get_user_model().objects.filter(username__iexact=username)
+    return get_user_model().objects.filter(username=username_hmac(username))
 
 
 async def clear_unconfirmed_totp(user):
@@ -323,7 +325,7 @@ async def record_failed_login(request, username):
 
     Parameters:
         request (HttpRequest): The current request.
-        username (str): The username as stored on the account.
+        username (str): The plain username as the user typed it, or as shown by User.decrypted_username.
     """
     await sync_to_async(user_login_failed.send, thread_sensitive=True)(
         sender=get_user_model(), credentials={"username": username}, request=request

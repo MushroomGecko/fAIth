@@ -7,10 +7,13 @@ from django.test import TestCase, override_settings
 from backend.utils.encryption import (
     decrypt_recovery_codes,
     decrypt_totp_key,
+    decrypt_username,
     encrypt_recovery_codes,
     encrypt_totp_key,
+    encrypt_username,
     recovery_session_cipher,
     totp_key_cipher,
+    username_cipher,
 )
 
 # A Fernet key that differs from the test settings, used to check that data encrypted with one key can't be read
@@ -97,6 +100,53 @@ class TestEncryptTotpKey(TestCase):
 
         with self.assertRaises(InvalidToken):
             decrypt_totp_key(tampered)
+
+
+class TestUsernameCipher(TestCase):
+    """Tests for username_cipher, encrypt_username, and decrypt_username."""
+
+    def test_cipher_uses_username_key(self):
+        """The username cipher is built from USERNAME_ENCRYPTION_KEY."""
+        token = username_cipher().encrypt(b"Alice")
+
+        assert Fernet(_settings_key("USERNAME_ENCRYPTION_KEY")).decrypt(token) == b"Alice"
+
+    def test_round_trip_keeps_letter_case(self):
+        """Decrypting gives back the username exactly as typed, including its letter case."""
+        token = encrypt_username("MixedCase-Name")
+
+        assert decrypt_username(token) == "MixedCase-Name"
+
+    def test_encrypted_value_is_text_and_hides_name(self):
+        """The stored value is a str and doesn't contain the plain username."""
+        token = encrypt_username("plain-name")
+
+        assert isinstance(token, str)
+        assert "plain-name" not in token
+
+    def test_same_name_gives_different_tokens(self):
+        """Fernet adds a random nonce, so two tokens for the same name don't match each other."""
+        assert encrypt_username("same-name") != encrypt_username("same-name")
+
+    def test_wrong_key_is_refused(self):
+        """A token made with one username key raises InvalidToken under another."""
+        token = encrypt_username("plain-name")
+
+        with override_settings(USERNAME_ENCRYPTION_KEY=OTHER_KEY):
+            with self.assertRaises(InvalidToken):
+                decrypt_username(token)
+
+    def test_totp_key_token_is_refused(self):
+        """A token made with the TOTP key is refused, so the two kinds of value can't be swapped."""
+        token = encrypt_totp_key(HEX_SECRET)
+
+        with self.assertRaises(InvalidToken):
+            decrypt_username(token)
+
+    def test_garbage_token_is_refused(self):
+        """A value that isn't a Fernet token raises InvalidToken."""
+        with self.assertRaises(InvalidToken):
+            decrypt_username("not-a-fernet-token")
 
 
 class TestEncryptRecoveryCodes(TestCase):

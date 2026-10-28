@@ -77,7 +77,7 @@ async def recovery_submit(request):
     user = await users_matching_username(username).afirst()
 
     # Use the stored spelling of the username, so failures are recorded under the same name as the account.
-    account_name = user.get_username() if user is not None else username
+    account_name = user.decrypted_username if user is not None else username
     # A locked client gets the lockout message and nothing else. No password or code is checked.
     if await account_locked(request, account_name):
         return await recovery_locked(request, RECOVERY_TEMPLATE, username, next_url=next_url)

@@ -28,6 +28,7 @@ from backend.utils.authentication import (
     create_recovery_codes,
     verify_recovery_code,
 )
+from backend.utils.hashing import username_hmac
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
@@ -97,6 +98,23 @@ class TestUsernameForm(TestCase):
 
         assert form.is_valid()
 
+    def test_form_shows_the_plain_current_username(self):
+        """The field starts with the decrypted name, not the stored HMAC."""
+        form = UsernameForm(instance=self.user)
+
+        assert form.initial["username"] == "CurrentName"
+
+    def test_save_stores_hmac_and_encrypted_name(self):
+        """Saving stores the HMAC in username and the typed name, encrypted, in username_display."""
+        form = UsernameForm(data={"username": "Fresh-Name"}, instance=self.user)
+        assert form.is_valid()
+
+        form.save()
+
+        self.user.refresh_from_db()
+        assert self.user.username == username_hmac("Fresh-Name")
+        assert self.user.decrypted_username == "Fresh-Name"
+
 
 class TestPasswordForm(TestCase):
     """Tests for PasswordForm validation and save."""
@@ -127,6 +145,13 @@ class TestPasswordForm(TestCase):
 
         assert not form.is_valid()
         assert "Choose a password that is different from your current one." in form.errors["new_password1"]
+
+    def test_password_similar_to_username_fails(self):
+        """The similarity validator still compares against the plain username, not the stored HMAC."""
+        form = PasswordForm(self.user, data=self._data("password-form-user"))
+
+        assert not form.is_valid()
+        assert "new_password1" in form.errors
 
     def test_weak_password_fails_validators(self):
         """A password rejected by AUTH_PASSWORD_VALIDATORS is refused."""

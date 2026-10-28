@@ -15,6 +15,7 @@ from backend.utils.authentication import (
     create_recovery_codes,
     hash_recovery_code,
 )
+from backend.utils.hashing import username_hmac
 
 User = get_user_model()
 PASSWORD = "a-long-test-password-123"
@@ -156,7 +157,8 @@ class TestChangeUsername(ProfileViewTestBase):
 
         assert response.status_code == 200
         self.user.refresh_from_db()
-        assert self.user.username == "renamed-user"
+        assert self.user.decrypted_username == "renamed-user"
+        assert self.user.username == username_hmac("renamed-user")
 
     def test_wrong_password_keeps_username_and_shows_error(self):
         """A wrong password refuses the change, returns status 400, and shows the password error."""
@@ -165,7 +167,7 @@ class TestChangeUsername(ProfileViewTestBase):
         assert response.status_code == 400
         assert response.context["username_auth_error"] == "That password is not correct."
         self.user.refresh_from_db()
-        assert self.user.username == "profile-user"
+        assert self.user.decrypted_username == "profile-user"
 
     def test_wrong_password_does_not_reveal_taken_name(self):
         """With a taken name and a wrong password, the page doesn't reveal that the name is taken."""
@@ -185,7 +187,7 @@ class TestChangeUsername(ProfileViewTestBase):
         assert response.status_code == 400
         assert "A user with that username already exists." in response.context["form"].errors["username"]
         self.user.refresh_from_db()
-        assert self.user.username == "profile-user"
+        assert self.user.decrypted_username == "profile-user"
 
     def test_taken_name_in_other_case_is_rejected(self):
         """A name that differs from another account's only in case is refused."""
@@ -201,7 +203,7 @@ class TestChangeUsername(ProfileViewTestBase):
 
         assert response.status_code == 200
         self.user.refresh_from_db()
-        assert self.user.username == "PROFILE-USER"
+        assert self.user.decrypted_username == "PROFILE-USER"
 
     def test_authenticator_account_refuses_bad_combinations(self):
         """With an authenticator on, only the right password plus a valid code changes the username."""
@@ -233,7 +235,7 @@ class TestChangeUsername(ProfileViewTestBase):
                 assert response.status_code == 400
                 assert response.context["username_auth_error"] == error
                 self.user.refresh_from_db()
-                assert self.user.username == "profile-user"
+                assert self.user.decrypted_username == "profile-user"
 
     def test_authenticator_account_with_correct_code_changes_username(self):
         """With the right password and code, the username changes."""
@@ -248,7 +250,7 @@ class TestChangeUsername(ProfileViewTestBase):
 
         assert response.status_code == 200
         self.user.refresh_from_db()
-        assert self.user.username == "renamed-user"
+        assert self.user.decrypted_username == "renamed-user"
 
     def test_recovery_code_is_not_accepted_for_username_change(self):
         """A recovery code can't replace the password for a username change."""
@@ -260,7 +262,7 @@ class TestChangeUsername(ProfileViewTestBase):
 
         assert response.status_code == 400
         self.user.refresh_from_db()
-        assert self.user.username == "profile-user"
+        assert self.user.decrypted_username == "profile-user"
         assert self._code_still_works(self.codes[0]) is True
 
 
@@ -273,7 +275,7 @@ class TestDeleteAccount(ProfileViewTestBase):
 
         assert response.status_code == 200
         assert response["HX-Redirect"] == settings.LOGOUT_REDIRECT_URL
-        assert not User.objects.filter(username="profile-user").exists()
+        assert not User.objects.filter(username=username_hmac("profile-user")).exists()
 
     def test_success_logs_out(self):
         """Deleting the account signs the browser out."""
@@ -286,7 +288,7 @@ class TestDeleteAccount(ProfileViewTestBase):
         response = self._post("api:profile_delete", password="wrong-password-123")
 
         assert response.status_code == 400
-        assert User.objects.filter(username="profile-user").exists()
+        assert User.objects.filter(username=username_hmac("profile-user")).exists()
         assert response.context["delete_auth_error"] == "That password is not correct."
 
     def test_authenticator_account_refuses_bad_combinations(self):
@@ -318,14 +320,14 @@ class TestDeleteAccount(ProfileViewTestBase):
 
                 assert response.status_code == 400
                 assert response.context["delete_auth_error"] == error
-                assert User.objects.filter(username="profile-user").exists()
+                assert User.objects.filter(username=username_hmac("profile-user")).exists()
 
     def test_recovery_code_alone_is_refused(self):
         """Deleting the account needs the password, so a recovery code alone is refused."""
         response = self._post("api:profile_delete", recovery_code=self.codes[0])
 
         assert response.status_code == 400
-        assert User.objects.filter(username="profile-user").exists()
+        assert User.objects.filter(username=username_hmac("profile-user")).exists()
 
     def test_authenticator_account_with_correct_code_deletes(self):
         """With the right password and code, the account is deleted."""
@@ -333,7 +335,7 @@ class TestDeleteAccount(ProfileViewTestBase):
 
         self._post("api:profile_delete", password=PASSWORD, otp_token=_totp_code(device))
 
-        assert not User.objects.filter(username="profile-user").exists()
+        assert not User.objects.filter(username=username_hmac("profile-user")).exists()
 
 
 class TestSecuritySection(ProfileViewTestBase):

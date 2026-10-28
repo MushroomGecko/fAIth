@@ -12,6 +12,7 @@ from django_otp.plugins.otp_static.models import StaticDevice
 
 from backend.models import EncryptedTOTPDevice
 from backend.utils.authentication import INVALID_CODE_MESSAGE, RECOVERY_DEVICE_NAME, TOTP_DEVICE_NAME
+from backend.utils.hashing import username_hmac
 from backend.utils.signup import (
     ENROLLMENT_STEP,
     PENDING_CODES_SESSION_KEY,
@@ -165,7 +166,7 @@ class TestSignupPage(SignupViewTestBase):
         self.client.get(self.url)
 
         assert not EncryptedTOTPDevice.objects.filter(user__username="new-signup-user", confirmed=False).exists()
-        assert User.objects.filter(username="new-signup-user").exists()
+        assert User.objects.filter(username=username_hmac("new-signup-user")).exists()
         assert StaticDevice.objects.filter(user__username="new-signup-user", name=RECOVERY_DEVICE_NAME).exists()
         assert PENDING_DEVICE_SESSION_KEY not in self.client.session
         assert PENDING_CODES_SESSION_KEY not in self.client.session
@@ -185,7 +186,7 @@ class TestCreateAccount(SignupViewTestBase):
         """The account is created with the chosen username and a hashed password."""
         self._create_account()
 
-        user = User.objects.get(username="new-signup-user")
+        user = User.objects.get_by_natural_key("new-signup-user")
         assert user.check_password(PASSWORD)
 
     def test_creates_unconfirmed_authenticator_device(self):
@@ -235,7 +236,7 @@ class TestCreateAccount(SignupViewTestBase):
                 assert response.status_code == 400
                 self.assertTemplateUsed(response, "registration/signup.html")
                 assert "Username unavailable." in response.context["form"].errors["username"]
-        assert User.objects.filter(username__iexact="takenname").count() == 1
+        assert User.objects.filter(username=username_hmac("takenname")).count() == 1
 
     def test_invalid_signup_is_rejected_and_stores_nothing(self):
         """Each invalid form returns status 400 with the error on the right field, creates no account, and leaves no pending enrollment."""
@@ -251,7 +252,7 @@ class TestCreateAccount(SignupViewTestBase):
                 assert response.status_code == 400
                 errors = response.context["form"].errors
                 assert any(field in errors for field in fields)
-                assert not User.objects.filter(username="new-signup-user").exists()
+                assert not User.objects.filter(username=username_hmac("new-signup-user")).exists()
                 assert PENDING_DEVICE_SESSION_KEY not in self.client.session
 
     def test_locked_recheck_error_shows_form_again(self):
@@ -355,7 +356,7 @@ class TestSkipAuthenticator(SignupViewTestBase):
         self._post(step=SKIP_STEP)
 
         assert not EncryptedTOTPDevice.objects.filter(user__username="new-signup-user").exists()
-        assert User.objects.filter(username="new-signup-user").exists()
+        assert User.objects.filter(username=username_hmac("new-signup-user")).exists()
         assert StaticDevice.objects.filter(
             user__username="new-signup-user", name=RECOVERY_DEVICE_NAME, confirmed=True
         ).exists()

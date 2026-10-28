@@ -1,3 +1,5 @@
+import copy
+
 from asgiref.sync import sync_to_async
 from django import forms
 from django.contrib.auth import get_user_model
@@ -33,6 +35,14 @@ class UsernameForm(forms.ModelForm):
         model = get_user_model()
         fields = ["username"]
 
+    def __init__(self, *args, **kwargs):
+        """
+        Fill the field with the name the user sees, not the stored HMAC.
+        """
+        super().__init__(*args, **kwargs)
+        if self.instance.pk is not None:
+            self.initial["username"] = self.instance.decrypted_username
+
     def clean_username(self):
         """
         Check that no other account already uses this username, ignoring letter case.
@@ -48,6 +58,41 @@ class UsernameForm(forms.ModelForm):
         if taken.exists():
             raise ValidationError("A user with that username already exists.")
         return username
+
+    def save(self, commit=True):
+        """
+        Save the user with the new username hashed and encrypted.
+
+        Parameters:
+            commit (bool): Whether to save to the database now (default: True).
+
+        Returns:
+            User: The updated user.
+        """
+        user = super().save(commit=False)
+        user.set_username(self.cleaned_data["username"])
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
+
+
+def _user_with_plain_username(user):
+    """
+    Return an unsaved copy of the user whose username is the plain name, for the password validators.
+
+    UserAttributeSimilarityValidator rejects passwords that resemble the username, so it needs the real name. The
+    stored username is the HMAC, so the copy gets the decrypted name. The original user is never changed or saved.
+
+    Parameters:
+        user (User): The user whose password is being set.
+
+    Returns:
+        User: A copy of the user with the plain username.
+    """
+    validation_user = copy.copy(user)
+    validation_user.username = user.decrypted_username
+    return validation_user
 
 
 class PasswordForm(forms.Form):
@@ -92,7 +137,7 @@ class PasswordForm(forms.Form):
         # The password is not saved yet, so check_password still compares against the current password.
         if self.user.check_password(password):
             raise ValidationError("Choose a password that is different from your current one.")
-        validate_password(password, self.user)
+        validate_password(password, _user_with_plain_username(self.user))
         return password
 
     def clean(self):

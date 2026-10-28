@@ -61,6 +61,28 @@ try:
 except ValueError as error:
     raise ValueError("TOTP_ENCRYPTION_KEY must be a valid Fernet key") from error
 
+# Fernet key that encrypts each username as typed, which is stored in User.username_display so the name can be shown
+# back to the user. Kept separate from the other keys so it can be rotated on its own.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+USERNAME_ENCRYPTION_KEY = os.getenv("USERNAME_ENCRYPTION_KEY")
+if not USERNAME_ENCRYPTION_KEY or USERNAME_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("USERNAME_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(USERNAME_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("USERNAME_ENCRYPTION_KEY must be a valid Fernet key") from error
+
+# Secret key for the HMAC that stores each username in User.username, so lookups work without storing the name.
+# Keep it separate from DJANGO_SECRET_KEY: changing that key would otherwise break every username lookup.
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(64))"
+USERNAME_HMAC_KEY = os.getenv("USERNAME_HMAC_KEY")
+if not USERNAME_HMAC_KEY or USERNAME_HMAC_KEY == "CHANGE_ME_use_a_long_random_key":
+    raise ValueError("USERNAME_HMAC_KEY environment variable is not set or was set to the default value")
+# A short key makes guessing usernames from a leaked database easy, so require at least 32 characters.
+# token_urlsafe(32) gives 43 characters, and token_urlsafe(64) gives 86.
+if len(USERNAME_HMAC_KEY) < 32:
+    raise ValueError("USERNAME_HMAC_KEY must be at least 32 characters long")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 

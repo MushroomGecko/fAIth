@@ -93,6 +93,7 @@ These protections come from Django itself and are on without any fAIth configura
 
 ### Privacy and Data Minimisation
 - **Client identifiers are hashed before storage.** IP addresses and usernames are stored only as HMAC-SHA256 hashes keyed with `DJANGO_SECRET_KEY`, so they can't be recovered without that key. Usernames are normalised to lowercase before hashing, and the plain username is masked in stored request data. This follows GDPR's data-minimisation principle.
+- **Usernames are treated as personal data, so they are not stored in plain text.** People often reuse the same username across websites. If this database were breached, a plain username could link an account here to a real identity elsewhere. That matters most for users in countries where being connected to an account could expose them to surveillance or retaliation. The `username` column holds a keyed HMAC-SHA512 of the lowercase name (keyed with `USERNAME_HMAC_KEY`). Login and signup checks use this value, and it can't be reversed or checked against a list of names without that key. The name, Unicode-normalized (NFKC) the same way Django normalizes usernames, is kept only as a Fernet token (`USERNAME_ENCRYPTION_KEY`) in `username_display`, so it can still be shown to the user. Both protections rely on their keys staying secret. A leaked database alone doesn't expose usernames.
 - **Failed-attempt records are short-lived.** Each record includes the client's user agent and requested path, and is removed once its 15-minute lockout window has passed, during cleanup on a later failed login.
 - **Successful logins are not logged.** django-axes' access log, which would store the IP and user agent for every login, is disabled.
 - **Account IDs are random UUIDv4 values.** They aren't sequential, so an ID doesn't reveal when an account was created or how many accounts exist, and they are hard to guess (122 random bits). This still holds if IDs end up in logs, error reports, or other places outside the database. Access to each account is enforced on the server, so the IDs are never the only protection.
@@ -104,7 +105,8 @@ These protections come from Django itself and are on without any fAIth configura
 
 ### Encryption and Secrets
 - Authenticator secrets are encrypted at rest with Fernet, and recovery codes in the session are encrypted with a second Fernet key. The two keys are separate, so one can be rotated without breaking the other.
-- The app refuses to start if `DJANGO_SECRET_KEY`, `RECOVERY_CODE_ENCRYPTION_KEY`, or `TOTP_ENCRYPTION_KEY` is missing, left at the template default, or not a valid key.
+- The app refuses to start if `DJANGO_SECRET_KEY`, `RECOVERY_CODE_ENCRYPTION_KEY`, `TOTP_ENCRYPTION_KEY`, `USERNAME_ENCRYPTION_KEY`, or `USERNAME_HMAC_KEY` is missing, left at the template default, or not a valid key.
+- `USERNAME_HMAC_KEY` is kept separate from `DJANGO_SECRET_KEY` on purpose. Changing it breaks every username lookup, so it must be stable.
 - The `.env` file is ignored by git, so secrets are not committed. `.env_template` contains only placeholders.
 
 ### Dependencies

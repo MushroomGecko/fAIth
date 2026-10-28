@@ -75,7 +75,7 @@ async def login(request):
             # The password is right, but this account has no authenticator, so any code is an error. It gets the same
             # generic error as a wrong password, so the response doesn't reveal whether the account uses an authenticator.
             # The password was right, so this counts against the account.
-            await record_failed_login(request, user.username)
+            await record_failed_login(request, user.decrypted_username)
             return await login_refused(request, LOGIN_TEMPLATE, data["username"])
         # The login succeeded, so an unfinished authenticator setup is over. Clear it, like signup does.
         await clear_unconfirmed_totp(user)
@@ -108,5 +108,5 @@ async def login(request):
     # The password was right, but the code is missing or wrong. Count it against the account, then return the same
     # generic error as a wrong password. Field-level errors from the form are not shown, since they would reveal
     # that the account has an authenticator app.
-    await record_failed_login(request, user.username)
+    await record_failed_login(request, user.decrypted_username)
     return await login_refused(request, LOGIN_TEMPLATE, data["username"])

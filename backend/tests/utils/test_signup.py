@@ -20,6 +20,7 @@ from backend.utils.authentication import (
     RECOVERY_DEVICE_NAME,
     TOTP_DEVICE_NAME,
 )
+from backend.utils.hashing import username_hmac
 from backend.utils.signup import (
     PENDING_CODES_SESSION_KEY,
     PENDING_DEVICE_SESSION_KEY,
@@ -121,12 +122,12 @@ class TestCreateUserAndDevices(TestCase):
     async def test_refuses_name_taken_in_another_letter_case_after_validation(self):
         """A name taken in any letter case after the form was checked is refused, and no second account is saved."""
         form = await _valid_form("lockbob")
-        await User.objects.acreate(username="LockBob")
+        await sync_to_async(User.objects.create_user)(username="LockBob", password=PASSWORD)
 
         with self.assertRaises(ValidationError):
             await create_user_and_devices(form)
 
-        assert await User.objects.filter(username__iexact="lockbob").acount() == 1
+        assert await User.objects.filter(username=username_hmac("lockbob")).acount() == 1
 
     async def test_saves_user_with_password(self):
         """The user is saved with the chosen password, hashed."""
@@ -134,7 +135,7 @@ class TestCreateUserAndDevices(TestCase):
 
         await create_user_and_devices(form)
 
-        user = await User.objects.aget(username="signup-create-user")
+        user = await User.objects.aget(username=username_hmac("signup-create-user"))
         assert user.check_password(PASSWORD)
 
     async def test_returns_unconfirmed_totp_device(self):
@@ -145,7 +146,7 @@ class TestCreateUserAndDevices(TestCase):
 
         assert totp.name == TOTP_DEVICE_NAME
         assert totp.confirmed is False
-        assert totp.user.username == "signup-totp-user"
+        assert totp.user.decrypted_username == "signup-totp-user"
 
     async def test_returns_recovery_codes(self):
         """Ten plain-text recovery codes are returned for the user to save."""
@@ -162,7 +163,7 @@ class TestCreateUserAndDevices(TestCase):
 
         await create_user_and_devices(form)
 
-        device = await StaticDevice.objects.aget(user__username="signup-recovery-user")
+        device = await StaticDevice.objects.aget(user__username=username_hmac("signup-recovery-user"))
         assert device.name == RECOVERY_DEVICE_NAME
         assert device.confirmed is True
 
