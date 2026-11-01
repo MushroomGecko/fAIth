@@ -1,0 +1,68 @@
+{% comment %}
+    A reusable confirmation panel for sensitive actions. It must be placed inside a <form>.
+
+    Clicking the trigger button reveals the panel. The panel asks for the password, and for the verification
+    code when the account has an authenticator app (has_totp).
+
+    Parameters (passed with "with" when the include is used):
+        collapse_id (str): A unique ID for this panel, such as "username-confirm".
+        trigger_label (str): Text of the button that reveals the panel.
+        confirm_label (str): Text of the submit button inside the panel.
+        tone (str): Bootstrap colour name, such as "primary" or "danger".
+        border_class (str): Optional extra border class for the panel, such as "border-danger".
+        intro (str): Optional explanation shown at the top of the panel.
+        auth_error (str): Error from the password or code check, shown in the panel.
+        error (str): Any other error, shown in the panel.
+        recovery_key (bool): Optional, default False. When True and the account has an authenticator app, shows a
+            second field for a recovery code. The user either enters the password and an authenticator app code, or a
+            recovery code on its own. Entering both codes is not allowed. The server enforces this.
+{% endcomment %}
+<button type="button" class="btn btn-outline-{{ tone }} mt-3" data-bs-toggle="collapse"
+        data-bs-target="#{{ collapse_id }}" aria-controls="{{ collapse_id }}"
+        aria-expanded="{% if error or auth_error %}true{% else %}false{% endif %}">
+    {{ trigger_label }}
+</button>
+
+<div class="collapse{% if error or auth_error %} show{% endif %} mt-3" id="{{ collapse_id }}">
+    <div class="border {{ border_class }} rounded p-3">
+        {% if intro %}
+            <p class="small text-muted mb-3">{{ intro }}</p>
+        {% endif %}
+
+        <label class="form-label" for="{{ collapse_id }}-password">Password</label>
+        <input class="form-control" type="password" name="password" id="{{ collapse_id }}-password"
+               autocomplete="current-password">
+
+        {% if has_totp %}
+            {% if recovery_key %}
+                <label class="form-label mt-3" for="{{ collapse_id }}-otp">Authenticator app code</label>
+                <input class="form-control" type="text" name="otp_token" id="{{ collapse_id }}-otp"
+                       autocomplete="one-time-code" inputmode="numeric">
+
+                <div class="d-flex align-items-center my-4">
+                    <hr class="flex-grow-1 m-0">
+                    <span class="px-3 small text-muted text-uppercase">or</span>
+                    <hr class="flex-grow-1 m-0">
+                </div>
+
+                <label class="form-label" for="{{ collapse_id }}-recovery">Recovery code</label>
+                <input class="form-control" type="text" name="recovery_code" id="{{ collapse_id }}-recovery"
+                       autocomplete="off" spellcheck="false">
+                <div class="form-text">Enter a recovery code on its own, without your password, or use your password with an authenticator app code. Not both codes.</div>
+            {% else %}
+                <label class="form-label mt-3" for="{{ collapse_id }}-otp">Authenticator app code</label>
+                <input class="form-control" type="text" name="otp_token" id="{{ collapse_id }}-otp"
+                       autocomplete="one-time-code" inputmode="numeric">
+            {% endif %}
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger mt-2 mb-0">{{ error }}</div>
+        {% endif %}
+        {% if auth_error %}
+            <div class="alert alert-danger mt-2 mb-0">{{ auth_error }}</div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-{{ tone }} w-100 mt-3">{{ confirm_label }}</button>
+    </div>
+</div>

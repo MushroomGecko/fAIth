@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.search import SearchInputSerializer
@@ -25,6 +26,7 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 @router.post("/search", tags=[APITags.AI], url_name="search")
+@csrf_protect
 async def search(request, payload: SearchInputSerializer = Form(...)):
     """
     API endpoint for searching the vector database and direct search in the Bible given the collection and returning the results.

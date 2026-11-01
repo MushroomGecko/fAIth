@@ -10,12 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import hashlib
+import hmac
+import ipaddress
 import json
 import logging
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import wn
+from cryptography.fernet import Fernet
 
 from fAIth.function_globals import derive_boolean_from_string
 
@@ -35,10 +40,71 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 if not SECRET_KEY or SECRET_KEY == "CHANGE_ME_use_a_long_secret_key":
     raise ValueError("DJANGO_SECRET_KEY environment variable is not set or was set to the default value")
 
+# Fernet key that encrypts the recovery codes kept in the session during signup and recovery.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+RECOVERY_CODE_ENCRYPTION_KEY = os.getenv("RECOVERY_CODE_ENCRYPTION_KEY")
+if not RECOVERY_CODE_ENCRYPTION_KEY or RECOVERY_CODE_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("RECOVERY_CODE_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(RECOVERY_CODE_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("RECOVERY_CODE_ENCRYPTION_KEY must be a valid Fernet key") from error
+
+# Fernet key that encrypts each TOTP (authenticator app) secret before it is stored. Kept separate from
+# RECOVERY_CODE_ENCRYPTION_KEY so either one can be rotated without breaking the other.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+TOTP_ENCRYPTION_KEY = os.getenv("TOTP_ENCRYPTION_KEY")
+if not TOTP_ENCRYPTION_KEY or TOTP_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("TOTP_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(TOTP_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("TOTP_ENCRYPTION_KEY must be a valid Fernet key") from error
+
+# Fernet key that encrypts each username as typed, which is stored in User.username_display so the name can be shown
+# back to the user. Kept separate from the other keys so it can be rotated on its own.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+USERNAME_ENCRYPTION_KEY = os.getenv("USERNAME_ENCRYPTION_KEY")
+if not USERNAME_ENCRYPTION_KEY or USERNAME_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("USERNAME_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(USERNAME_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("USERNAME_ENCRYPTION_KEY must be a valid Fernet key") from error
+
+# Secret key for the HMAC that stores each username in User.username, so lookups work without storing the name.
+# Keep it separate from DJANGO_SECRET_KEY: changing that key would otherwise break every username lookup.
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(64))"
+USERNAME_HMAC_KEY = os.getenv("USERNAME_HMAC_KEY")
+if not USERNAME_HMAC_KEY or USERNAME_HMAC_KEY == "CHANGE_ME_use_a_long_random_key":
+    raise ValueError("USERNAME_HMAC_KEY environment variable is not set or was set to the default value")
+# A short key makes guessing usernames from a leaked database easy, so require at least 32 characters.
+# token_urlsafe(32) gives 43 characters, and token_urlsafe(64) gives 86.
+if len(USERNAME_HMAC_KEY) < 32:
+    raise ValueError("USERNAME_HMAC_KEY must be at least 32 characters long")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = derive_boolean_from_string(os.getenv("DJANGO_DEBUG", "False"))
 
 ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1", "localhost"]').strip())
+
+# HTTPS settings. Turn these on only once the site is served over HTTPS, because they break plain-HTTP access.
+# DJANGO_HTTPS = True assumes a TLS-terminating proxy in front of the app that sets X-Forwarded-Proto.
+DJANGO_HTTPS = derive_boolean_from_string(os.getenv("DJANGO_HTTPS", "False"))
+SESSION_COOKIE_SECURE = DJANGO_HTTPS
+CSRF_COOKIE_SECURE = DJANGO_HTTPS
+SECURE_SSL_REDIRECT = DJANGO_HTTPS
+# Start with a short HSTS window, then raise it once HTTPS is confirmed to work.
+SECURE_HSTS_SECONDS = 3600 if DJANGO_HTTPS else 0
+if DJANGO_HTTPS:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Where @login_required sends anonymous users. Matches the login route in backend/views/accounts/login.py.
+LOGIN_URL = "/accounts/login/"
+# Where users go after a successful login when there is no safe "next" page (see get_next_url in backend/utils/login.py).
+LOGIN_REDIRECT_URL = "/"
+# Where users go after logout.
+LOGOUT_REDIRECT_URL = "/"
 
 
 # Wordnet configuration
@@ -72,12 +138,20 @@ if WORDNET_DOWNLOAD_VERSION:
 # Application definition
 
 INSTALLED_APPS = [
+    # Django apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Django OTP apps
+    "django_otp",
+    "django_otp.plugins.otp_static",
+    "django_otp.plugins.otp_totp",
+    # Lockout after repeated failed logins and recovery attempts
+    "axes",
+    # fAIth apps
     "ai",
     "backend",
     "frontend",
@@ -90,6 +164,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_asgi_lifespan.middleware.LifespanStateMiddleware",
@@ -161,6 +236,97 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# The only password hasher. Django can't verify a hash whose algorithm isn't listed here, so every password
+# must be stored as PBKDF2-SHA512. Only add an entry here if existing users need it, and that can't happen
+# until there are real users.
+PASSWORD_HASHERS = [
+    "backend.utils.hashing.PBKDF2SHA512PasswordHasher",
+]
+
+
+# Custom user model with a UUID primary key. See backend/models/user.py.
+AUTH_USER_MODEL = "backend.User"
+
+# Authentication backends and account lockout (django-axes)
+# https://django-axes.readthedocs.io/en/latest/2_installation.html
+# AxesLockoutBackend must come first. It wraps axes' AxesStandaloneBackend, which refuses locked-out accounts, and ModelBackend then does the password check.
+AUTHENTICATION_BACKENDS = [
+    "backend.utils.authentication.AxesLockoutBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+# Number of reverse proxies between the internet and this app. Set DJANGO_TRUSTED_PROXY_COUNT to match the deployment.
+# Leave it at 0 when there is no proxy, so the client address is taken from REMOTE_ADDR.
+TRUSTED_PROXY_COUNT = int(os.getenv("DJANGO_TRUSTED_PROXY_COUNT", "0"))
+
+
+def axes_ip_identifier(request):
+    """
+    Return the value django-axes counts lockouts by, in place of the client's IP address.
+
+    The IP is replaced by a keyed hash (HMAC with SECRET_KEY), written as an IPv6 address because axes stores
+    it in an IP field. The raw IP is never stored, and the hash can't be reversed without SECRET_KEY.
+
+    Parameters:
+        request (HttpRequest): The request being checked.
+
+    Returns:
+        str: The hashed client identifier.
+    """
+    ip = request.META.get("REMOTE_ADDR", "")
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if TRUSTED_PROXY_COUNT and forwarded:
+        # Each trusted proxy appends the address it received the request from, so the client is that many entries from the end.
+        addresses = [address.strip() for address in forwarded.split(",")]
+        ip = addresses[-min(TRUSTED_PROXY_COUNT, len(addresses))]
+    digest = hmac.new(SECRET_KEY.encode(), ip.encode(), hashlib.sha256).digest()
+    return str(ipaddress.IPv6Address(digest[:16]))
+
+
+def axes_username_identifier(request, credentials):
+    """
+    Return the value django-axes stores in place of the username on failed attempts.
+
+    The username is replaced by a keyed hash (HMAC with SECRET_KEY) of its lowercase form, so the stored
+    value can't be reversed and matches signup's case-insensitive rule. Lockouts don't use the username,
+    so this changes only what is recorded.
+
+    Parameters:
+        request (HttpRequest): The request being checked.
+        credentials (dict | None): The credentials passed to the failed login, with "username" if known.
+
+    Returns:
+        str | None: The hashed username as hex, or None if there is no username.
+    """
+    username = (credentials or {}).get("username") or request.POST.get("username")
+    if not username:
+        return None
+    return hmac.new(SECRET_KEY.encode(), username.strip().lower().encode(), hashlib.sha256).hexdigest()
+
+
+# Lockouts apply per client. Failures from one client across all accounts count together, so one client can't spread
+# guesses across many accounts. Clients on other connections are unaffected.
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+# A factor of 0 turns off django-otp's per-device throttle for authenticator codes. That throttle is shared by everyone,
+# so anyone with a user's password could lock out their authenticator. Wrong codes still count through axes, the same
+# as wrong passwords, so the limit is per client instead.
+OTP_TOTP_THROTTLE_FACTOR = 0
+# Failed attempts from one client before it is locked out.
+AXES_FAILURE_LIMIT = 5
+# Attempts are kept for 15 minutes only, so a genuine user locked out by mistake recovers within that time.
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+# A successful login does not clear failed attempts. Clearing them would let someone with their own account reset the
+# count for their IP and keep guessing on another account. Failures expire after the cool-off time instead.
+AXES_RESET_ON_SUCCESS = False
+# Store the keyed hash from axes_ip_identifier instead of the raw IP address.
+AXES_CLIENT_IP_CALLABLE = axes_ip_identifier
+# Store the keyed hash from axes_username_identifier instead of the username on failed attempts.
+AXES_USERNAME_CALLABLE = axes_username_identifier
+# Don't keep a log of every successful login with its IP address and user agent.
+AXES_DISABLE_ACCESS_LOG = True
+# AxesMiddleware is left out on purpose. It would replace the login page's generic error with axes' own lockout page.
+# Lockouts are still enforced by AxesStandaloneBackend and by the recovery view.
+SILENCED_SYSTEM_CHECKS = ["axes.W002"]
 
 
 # Internationalization

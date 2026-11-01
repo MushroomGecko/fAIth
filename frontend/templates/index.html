@@ -1,22 +1,14 @@
+{% extends "base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="fAIth - AI Powered Study Bible">
-        <title>fAIth</title>
-        <link rel="icon" href="{% static 'images/favicon.ico' %}">
 
-        <!-- Installed CSS -->
-        <link rel="stylesheet" href="{% static 'css/installed/bootstrap.min.css' %}">
-        <link rel="stylesheet" href="{% static 'css/installed/bootstrap-theme.min.css' %}">
-        <!-- Bootstrap Icons -->
-        <link rel="stylesheet" href="{% static 'bootstrap/icons/bootstrap-icons.min.css' %}">
-        <!-- Custom CSS -->
-        <link rel="stylesheet" href="{% static 'css/installed/verse_styling.css' %}">
-    </head>
-    <body class="d-flex flex-column vh-100">
+{% block title %}fAIth{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'bootstrap/icons/bootstrap-icons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/installed/verse_styling.css' %}">
+{% endblock %}
+{% block body_class %}d-flex flex-column vh-100{% endblock %}
+{% block content %}
+
         <!-- Navbar -->
         {% include 'navbar.html' %}
 
@@ -41,11 +33,9 @@
         {% include 'modals/inputs/map_search.html' %}
         {% include 'modals/outputs/server_response.html' %}
 
-        <!-- Installed JS -->
-        <script src="{% static 'js/installed/htmx.min.js' %}"></script>
-        <script src="{% static 'js/installed/popper.min.js' %}"></script>
-        <script src="{% static 'js/installed/bootstrap.min.js' %}"></script>
-        <!-- Custom JS -->
+{% endblock %}
+
+{% block extra_js %}
         <script src="{% static 'js/fAIth/htmx_updates.js' %}"></script>
         <script src="{% static 'js/fAIth/text_selection.js' %}"></script>
         <script src="{% static 'js/fAIth/summarize_chapter.js' %}"></script>
@@ -54,7 +44,6 @@
         <script src="{% static 'js/fAIth/image_search.js' %}"></script>
         <script src="{% static 'js/fAIth/map_search.js' %}"></script>
         <script src="{% static 'js/fAIth/definition_search.js' %}"></script>
-    </body>
-</html>
+{% endblock %}
 
 

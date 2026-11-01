@@ -1,0 +1,23 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="{% block description %}fAIth - AI Powered Study Bible{% endblock %}">
+        <title>{% block title %}fAIth{% endblock %}</title>
+        <link rel="icon" href="{% static 'images/favicon.ico' %}">
+
+        <link rel="stylesheet" href="{% static 'css/installed/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'css/installed/bootstrap-theme.min.css' %}">
+        {% block extra_css %}{% endblock %}
+    </head>
+    <body class="{% block body_class %}{% endblock %}">
+        {% block content %}{% endblock %}
+
+        <script src="{% static 'js/installed/htmx.min.js' %}"></script>
+        <script src="{% static 'js/installed/popper.min.js' %}"></script>
+        <script src="{% static 'js/installed/bootstrap.min.js' %}"></script>
+        {% block extra_js %}{% endblock %}
+    </body>
+</html>

@@ -1,0 +1,20 @@
+<div class="d-flex flex-column flex-shrink-0 bg-light" style="width: 5rem;">
+    <ul class="nav nav-pills nav-flush flex-column mb-auto text-center mt-4">
+        <li class="nav-item">
+            <!-- Account -->
+            <a href="{% url 'api:profile_account' %}" class="nav-link px-0 border-bottom" title="Account" data-bs-placement="right"
+               hx-get="{% url 'api:profile_account' %}" hx-target="#accountPartialLoader" hx-swap="innerHTML">
+                <i class="bi bi-question-lg"></i>
+                <p class="mb-0" style="font-size: 0.75rem;">Account</p>
+            </a>
+        </li>
+        <li class="nav-item">
+            <!-- Security -->
+            <a href="{% url 'api:profile_security' %}" class="nav-link px-0 border-bottom" title="Security" data-bs-placement="right"
+               hx-get="{% url 'api:profile_security' %}" hx-target="#accountPartialLoader" hx-swap="innerHTML">
+                <i class="bi bi-shield-lock"></i>
+                <p class="mb-0" style="font-size: 0.75rem;">Security</p>
+            </a>
+        </li>
+    </ul>
+</div>

@@ -1,5 +1,10 @@
 from ninja import Router
 
+from backend.views.accounts.login import router as login_router
+from backend.views.accounts.logout import router as logout_router
+from backend.views.accounts.profile import router as profile_router
+from backend.views.accounts.recover import router as recover_router
+from backend.views.accounts.signup import router as signup_router
 from backend.views.healthcheck import router as healthcheck_router
 from fAIth.api_tags import APITags
 
@@ -9,3 +14,8 @@ healcheck_api.add_router("", healthcheck_router)
 
 # Aggregate all other backend endpoints
 backend_api = Router(tags=[APITags.BACKEND])
+backend_api.add_router("", profile_router)
+backend_api.add_router("", login_router)
+backend_api.add_router("", logout_router)
+backend_api.add_router("", recover_router)
+backend_api.add_router("", signup_router)

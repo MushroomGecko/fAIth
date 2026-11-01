@@ -5,6 +5,7 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.general_question import GeneralQuestionInputSerializer
@@ -24,6 +25,7 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 @router.post("/general_question", tags=[APITags.AI], url_name="general_question")
+@csrf_protect
 async def general_question(request, payload: GeneralQuestionInputSerializer = Form(...)):
     """
     API endpoint for answering general questions using RAG (Retrieval-Augmented Generation).

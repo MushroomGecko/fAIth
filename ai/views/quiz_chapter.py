@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from ai.serializers.quiz_chapter import QuizChapterInputSerializer
@@ -26,6 +27,7 @@ RAW_PROMPTS_DIRECTORY = Path("ai", "llm", "prompts")
 
 
 @router.post("/quiz_chapter", tags=[APITags.AI], url_name="quiz_chapter")
+@csrf_protect
 async def quiz_chapter(request, payload: QuizChapterInputSerializer = Form(...)):
     """
     API endpoint for generating a quiz.
