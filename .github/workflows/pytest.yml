@@ -28,6 +28,11 @@ jobs:
     - name: Install Testing Dependencies
       run: |
         pip install pytest==9.1.1 pytest-django==4.12.0 pytest-asyncio==1.4.0
+    - name: Collect Static Files
+      env:
+        DJANGO_SETTINGS_MODULE: fAIth.test_settings
+      run: |
+        python manage.py collectstatic --noinput
     - name: Run Pytest Tests
       run: |
         pytest -v
