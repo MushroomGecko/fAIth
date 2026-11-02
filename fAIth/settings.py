@@ -147,6 +147,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     # Django OTP apps
     "django_otp",
     "django_otp.plugins.otp_static",

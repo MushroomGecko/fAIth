@@ -33,6 +33,9 @@
         {% include 'modals/inputs/map_search.html' %}
         {% include 'modals/outputs/server_response.html' %}
 
+        {% include 'modals/inputs/delete_confirm.html' %}
+        {% include 'modals/inputs/note_selected.html' %}
+        {% include 'modals/inputs/edit_note_selected.html' %}
 {% endblock %}
 
 {% block extra_js %}
@@ -44,6 +47,8 @@
         <script src="{% static 'js/fAIth/image_search.js' %}"></script>
         <script src="{% static 'js/fAIth/map_search.js' %}"></script>
         <script src="{% static 'js/fAIth/definition_search.js' %}"></script>
+        <script src="{% static 'js/fAIth/edit_note_selected.js' %}"></script>
+        <script src="{% static 'js/fAIth/delete_confirm.js' %}"></script>
 {% endblock %}
 
 

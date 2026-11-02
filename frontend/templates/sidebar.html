@@ -2,23 +2,45 @@
     <ul class="nav nav-pills nav-flush flex-column mb-auto text-center mt-4">
         <li class="nav-item">
             <!-- General Question -->
-            <a href="#" class="nav-link px-0 border-bottom" title="General Question" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#generalQuestionModal">
-                <i class="bi bi-question-lg"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">General Question</p>
-            </a>
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="General Question" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#generalQuestionModal">
+                    <i class="bi bi-question-lg"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">General Question</p>
+                </a>
+            {% else %}
+                <!-- General Question (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="General Question (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-question-lg"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">General Question</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Ask Selected -->
-            <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Ask Selected" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#askSelectedModal">
-                <i class="bi bi-cursor-text"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Ask Selected</p>
-            </a>
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Ask Selected" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#askSelectedModal">
+                    <i class="bi bi-cursor-text"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Ask Selected</p>
+                </a>
+            {% else %}
+                <!-- Ask Selected (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Ask Selected (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-cursor-text"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Ask Selected</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Define Selected -->
-            {% if control_variables.WORDNET_ENABLED %}
+            {% if user.is_authenticated and control_variables.WORDNET_ENABLED %}
                 <!-- Definition Search (Enabled)-->
                 <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Definition Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#definitionSearchModal">
+                    <i class="bi bi-book"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Definition Search</p>
+                </a>
+            {% elif control_variables.WORDNET_ENABLED %}
+                <!-- Definition Search (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Definition Search (Sign in required)" data-bs-placement="right">
                     <i class="bi bi-book"></i>
                     <p class="mb-0" style="font-size: 0.75rem;">Definition Search</p>
                 </a>
@@ -32,37 +54,75 @@
         </li>
         <li class="nav-item">
             <!-- Search -->
-            <a href="#" class="nav-link px-0 border-bottom" title="Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#searchModal">
-                <i class="bi bi-search"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Search</p>
-            </a>
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#searchModal">
+                    <i class="bi bi-search"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Search</p>
+                </a>
+            {% else %}
+                <!-- Search (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Search (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-search"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Search</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Summarize Chapter -->
-            <a href="#" class="nav-link px-0 border-bottom" title="Summarize Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#summarizeChapterModal">
-                <i class="bi bi-feather"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Summarize Chapter</p>
-            </a>
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="Summarize Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#summarizeChapterModal">
+                    <i class="bi bi-feather"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Summarize Chapter</p>
+                </a>
+            {% else %}
+                <!-- Summarize Chapter (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Summarize Chapter (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-feather"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Summarize Chapter</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Devotional Chapter -->
-            <a href="#" class="nav-link px-0 border-bottom" title="Devotional Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#devotionalChapterModal">
-                <i class="bi bi-bookmark-heart"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Devotional Chapter</p>
-            </a>
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="Devotional Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#devotionalChapterModal">
+                    <i class="bi bi-bookmark-heart"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Devotional Chapter</p>
+                </a>
+            {% else %}
+                <!-- Devotional Chapter (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Devotional Chapter (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-bookmark-heart"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Devotional Chapter</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Quiz Chapter -->
-            <a href="#" class="nav-link px-0 border-bottom" title="Quiz Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#quizChapterModal">
-                <i class="bi bi-question-lg"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Quiz Chapter</p>
-            </a>
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="Quiz Chapter" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#quizChapterModal">
+                    <i class="bi bi-question-lg"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Quiz Chapter</p>
+                </a>
+            {% else %}
+                <!-- Quiz Chapter (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Quiz Chapter (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-question-lg"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Quiz Chapter</p>
+                </a>
+            {% endif %}
         </li>
         <li class="nav-item">
             <!-- Image Search -->
-            {% if control_variables.SEARXNG_ENABLED %}
+            {% if user.is_authenticated and control_variables.SEARXNG_ENABLED %}
                 <!-- SearXNG Image Search (Enabled)-->
                 <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Image Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#imageSearchModal">
+                    <i class="bi bi-card-image"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Image Search</p>
+                </a>
+            {% elif control_variables.SEARXNG_ENABLED %}
+                <!-- SearXNG Image Search (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Image Search (Sign in required)" data-bs-placement="right">
                     <i class="bi bi-card-image"></i>
                     <p class="mb-0" style="font-size: 0.75rem;">Image Search</p>
                 </a>
@@ -76,17 +136,38 @@
         </li>
         <li class="nav-item">
             <!-- Map Search -->
-            {% if control_variables.SEARXNG_ENABLED %}
-            <!-- SearXNG Map Search (Enabled)-->
-            <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Map Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#mapSearchModal">
-                <i class="bi bi-map"></i>
-                <p class="mb-0" style="font-size: 0.75rem;">Map Search</p>
-            </a>
+            {% if user.is_authenticated and control_variables.SEARXNG_ENABLED %}
+                <!-- SearXNG Map Search (Enabled)-->
+                <a href="#" class="nav-link px-0 border-bottom text-highlight" aria-disabled="true" tabindex="-1" title="Map Search" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#mapSearchModal">
+                    <i class="bi bi-map"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Map Search</p>
+                </a>
+            {% elif control_variables.SEARXNG_ENABLED %}
+                <!-- SearXNG Map Search (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Map Search (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-map"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Map Search</p>
+                </a>
             {% else %}
                 <!-- SearXNG Map Search (Disabled) -->
                 <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Map Search (Disabled)" data-bs-placement="right">
                     <i class="bi bi-map"></i>
                     <p class="mb-0" style="font-size: 0.75rem;">Map Search</p>
+                </a>
+            {% endif %}
+        </li>
+        <li class="nav-item">
+            <!-- Create Note -->
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="Create Note" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#noteSelectedModal">
+                    <i class="bi bi-pencil-square"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Create Note</p>
+                </a>
+            {% else %}
+                <!-- Create Note (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Create Note (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-pencil-square"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Create Note</p>
                 </a>
             {% endif %}
         </li>

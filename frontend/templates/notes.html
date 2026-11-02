@@ -1,3 +1,8 @@
-<div class="d-flex flex-column notes-container mb-4">
-    <textarea class="form-control flex-grow-1" placeholder="Notes" style="resize: none;"></textarea>
+<div id="notesContainer" class="d-flex flex-column notes-container mb-4"
+     hx-post="{% url 'api:list_notes' %}"
+     hx-trigger="load, noteSaved from:body"
+     hx-vals='{"collection_name": "{{ version }}", "book": "{{ book }}", "chapter": "{{ chapter }}"}'
+     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+     hx-target="this"
+     hx-swap="innerHTML">
 </div>

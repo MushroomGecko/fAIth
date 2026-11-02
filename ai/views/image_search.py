@@ -16,7 +16,7 @@ from fAIth.api_tags import APITags
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Create router for ask selected API
+# Create router for image search API
 router = Router()
 
 # Configuration constants

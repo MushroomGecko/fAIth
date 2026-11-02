@@ -1,0 +1,22 @@
+<div id="deleteConfirmModal" class="modal fade" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmTitle">Delete this item?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">This can't be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <!-- hx-post and the hidden field's name are set per trigger by delete_confirm.js -->
+                <form id="deleteConfirmForm" data-input-modal="deleteConfirmModal" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                    {% csrf_token %}
+                    <input type="hidden" id="deleteConfirmValue" name="" value="">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
