@@ -1,0 +1,8 @@
+{% extends "errors/base_error.html" %}
+{% load static %}
+
+{% block title %}Bad Request | fAIth{% endblock %}
+{% block error_image %}<img class="img-fluid mb-4" style="max-height: 360px;" src="{% static 'images/errors/400.png' %}" alt="Bad request">{% endblock %}
+{% block error_code %}400{% endblock %}
+{% block error_heading %}Bad request{% endblock %}
+{% block error_message %}The request could not be understood. Please check the link or the information you entered and try again.{% endblock %}
