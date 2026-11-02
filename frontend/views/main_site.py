@@ -135,7 +135,7 @@ async def full_view(request, book, chapter, version):
         }
 
         # Render the full view with the given context
-        return await async_render(request, "index.html", context)
+        return await async_render(request, "index.html", context, 200)
 
     except Exception as e:
         logger.error(f"Unexpected error in full_view for {book} {chapter} ({processed_version}): {e}")

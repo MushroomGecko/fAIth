@@ -18,7 +18,7 @@ class TestAsyncRender(SimpleTestCase):
 
         with patch("frontend.utils.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "test.html", {})
+            result = await utils.async_render(request, "test.html", {}, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -40,7 +40,7 @@ class TestAsyncRender(SimpleTestCase):
 
         with patch("frontend.utils.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "test.html", context)
+            result = await utils.async_render(request, "test.html", context, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -67,7 +67,7 @@ class TestAsyncRender(SimpleTestCase):
 
         with patch("frontend.utils.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "simple.html", {})
+            result = await utils.async_render(request, "simple.html", {}, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -92,7 +92,7 @@ class TestAsyncRender(SimpleTestCase):
         for template in templates:
             with patch("frontend.utils.render") as mock_render:
                 mock_render.return_value = HttpResponse(f"Rendered from {template}")
-                result = await utils.async_render(request, template, {"1": template})
+                result = await utils.async_render(request, template, {"1": template}, 200)
 
                 # Verify render was called
                 assert mock_render.called
@@ -122,7 +122,7 @@ class TestAsyncRender(SimpleTestCase):
 
         with patch("frontend.utils.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "psalms.html", context)
+            result = await utils.async_render(request, "psalms.html", context, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -159,7 +159,7 @@ class TestAsyncRender(SimpleTestCase):
 
             with patch("frontend.utils.render") as mock_render:
                 mock_render.return_value = HttpResponse(f"{method} response")
-                result = await utils.async_render(request, "form.html", {})
+                result = await utils.async_render(request, "form.html", {}, 200)
 
                 # Verify render was called
                 assert mock_render.called
@@ -182,7 +182,7 @@ class TestAsyncRender(SimpleTestCase):
 
         with patch("frontend.utils.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "test.html", {})
+            result = await utils.async_render(request, "test.html", {}, 200)
 
             assert isinstance(result, HttpResponse)
             assert hasattr(result, "content")
@@ -197,7 +197,7 @@ class TestAsyncRender(SimpleTestCase):
         with patch("frontend.utils.render") as mock_render:
             response = HttpResponse("Not found", status=404)
             mock_render.return_value = response
-            result = await utils.async_render(request, "error.html", {})
+            result = await utils.async_render(request, "error.html", {}, 404)
 
             assert result.status_code == 404
 
@@ -211,8 +211,8 @@ class TestAsyncRender(SimpleTestCase):
             mock_render.return_value = HttpResponse("Rendered")
 
             # Simulate concurrent calls
-            result1 = await utils.async_render(request1, "template1.html", {"data": 1})
-            result2 = await utils.async_render(request2, "template2.html", {"data": 2})
+            result1 = await utils.async_render(request1, "template1.html", {"data": 1}, 200)
+            result2 = await utils.async_render(request2, "template2.html", {"data": 2}, 200)
 
             # Both should succeed without interference
             assert mock_render.call_count == 2
