@@ -1,0 +1,8 @@
+{% extends "errors/base_error.html" %}
+{% load static %}
+
+{% block title %}Too Many Requests | fAIth{% endblock %}
+{% block error_image %}<img class="img-fluid mb-4" style="max-height: 360px;" src="{% static 'images/errors/429.png' %}" alt="Too many requests">{% endblock %}
+{% block error_code %}429{% endblock %}
+{% block error_heading %}Too many requests{% endblock %}
+{% block error_message %}You've made too many requests in a short time. Please wait a few minutes and try again.{% endblock %}

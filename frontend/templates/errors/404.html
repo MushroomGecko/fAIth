@@ -1,0 +1,8 @@
+{% extends "errors/base_error.html" %}
+{% load static %}
+
+{% block title %}Page Not Found | fAIth{% endblock %}
+{% block error_image %}<img class="img-fluid mb-4" style="max-height: 360px;" src="{% static 'images/errors/404.png' %}" alt="Page not found">{% endblock %}
+{% block error_code %}404{% endblock %}
+{% block error_heading %}Page not found{% endblock %}
+{% block error_message %}The page you were looking for doesn't exist or may have been moved.{% endblock %}

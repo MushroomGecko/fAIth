@@ -93,6 +93,8 @@ ALLOWED_HOSTS = json.loads(str(os.getenv("DJANGO_ALLOWED_HOSTS") or '["127.0.0.1
 DJANGO_HTTPS = derive_boolean_from_string(os.getenv("DJANGO_HTTPS", "False"))
 SESSION_COOKIE_SECURE = DJANGO_HTTPS
 CSRF_COOKIE_SECURE = DJANGO_HTTPS
+# Friendly page for failed CSRF checks (see frontend/views/errors.py)
+CSRF_FAILURE_VIEW = "frontend.views.errors.csrf_failure"
 SECURE_SSL_REDIRECT = DJANGO_HTTPS
 # Start with a short HSTS window, then raise it once HTTPS is confirmed to work.
 SECURE_HSTS_SECONDS = 3600 if DJANGO_HTTPS else 0

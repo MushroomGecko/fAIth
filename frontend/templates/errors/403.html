@@ -1,0 +1,8 @@
+{% extends "errors/base_error.html" %}
+{% load static %}
+
+{% block title %}Access Denied | fAIth{% endblock %}
+{% block error_image %}<img class="img-fluid mb-4" style="max-height: 360px;" src="{% static 'images/errors/403.png' %}" alt="Access denied">{% endblock %}
+{% block error_code %}403{% endblock %}
+{% block error_heading %}Access denied{% endblock %}
+{% block error_message %}You don't have permission to view this page. If you think this is a mistake, sign in with the correct account or contact support.{% endblock %}

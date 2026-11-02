@@ -8,7 +8,7 @@ from django.urls import reverse
 logger = logging.getLogger(__name__)
 
 
-async def async_render(request, template, context):
+async def async_render(request, template, context, status):
     """
     Asynchronously render a Django template without blocking the event loop.
 
@@ -16,11 +16,12 @@ async def async_render(request, template, context):
         request: The HTTP request object.
         template (str): Path to the template file to render.
         context (dict): Context dictionary to pass to the template.
+        status (int): The HTTP status code to return with the page (e.g., 200, 404).
 
     Returns:
-        HttpResponse: Rendered HTML response.
+        HttpResponse: Rendered HTML response with the given status code.
     """
-    return await sync_to_async(render, thread_sensitive=False)(request, template, context)
+    return await sync_to_async(render, thread_sensitive=False)(request, template, context, status=status)
 
 
 async def async_redirect(url, args=[]):

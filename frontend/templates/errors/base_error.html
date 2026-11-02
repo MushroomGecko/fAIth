@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Error | fAIth{% endblock %}
+{% block description %}fAIth error page{% endblock %}
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+    <main class="min-vh-100 d-flex flex-column align-items-center justify-content-center text-center px-3">
+        <p class="display-1 fw-bold text-primary mb-0">{% block error_code %}{% endblock %}</p>
+        {% block error_title %}<h1 class="visually-hidden">{% block error_heading %}{% endblock %}</h1>{% endblock %}
+        {% block error_image %}{% endblock %}
+        <p class="lead text-muted mb-4" style="max-width: 36rem;">{% block error_message %}{% endblock %}</p>
+        <div>
+            {% block error_actions %}
+                <a class="btn btn-primary btn-lg" href="/">Go to the home page</a>
+            {% endblock %}
+        </div>
+    </main>
+{% endblock %}
