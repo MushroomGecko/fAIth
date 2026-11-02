@@ -1,0 +1,8 @@
+{% extends "errors/base_error.html" %}
+{% load static %}
+
+{% block title %}Service Unavailable | fAIth{% endblock %}
+{% block error_image %}<img class="img-fluid mb-4" style="max-height: 360px;" src="{% static 'images/errors/503.png' %}" alt="Temporarily unavailable">{% endblock %}
+{% block error_code %}503{% endblock %}
+{% block error_heading %}Temporarily unavailable{% endblock %}
+{% block error_message %}fAIth is temporarily unavailable. This is usually short-lived, so please try again in a few minutes.{% endblock %}

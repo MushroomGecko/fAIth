@@ -20,7 +20,9 @@ from frontend.views.errors import (
     preview_403,
     preview_403_csrf,
     preview_404,
+    preview_429,
     preview_500,
+    preview_503,
 )
 
 # Create NinjaAPI instance with custom namespace for simpler reverse() calls
@@ -52,5 +54,7 @@ if settings.DEBUG:
         path("403/", preview_403),
         path("403_csrf/", preview_403_csrf),
         path("404/", preview_404),
+        path("429/", preview_429),
         path("500/", preview_500),
+        path("503/", preview_503),
     ] + urlpatterns

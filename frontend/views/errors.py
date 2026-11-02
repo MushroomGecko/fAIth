@@ -23,5 +23,13 @@ def preview_404(request):
     return render(request, "errors/404.html", status=404)
 
 
+def preview_429(request):
+    return render(request, "errors/429.html", status=429)
+
+
 def preview_500(request):
     return render(request, "errors/500.html", status=500)
+
+
+def preview_503(request):
+    return render(request, "errors/503.html", status=503)
