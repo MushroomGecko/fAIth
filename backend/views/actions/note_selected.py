@@ -58,12 +58,13 @@ async def note_selected(request, payload: NoteSelectedInputSerializer = Form(...
         note=note,
     )
 
-    # HX-Trigger reloads only the notes panel (it listens for noteSaved on body)
+    # Return success response
+    # HX-Refresh tells htmx to reload the whole page so the notes render again
     return HttpResponse(
         "Note saved successfully",
         status=200,
         content_type="text/plain",
-        headers={"HX-Trigger": "noteSaved"},
+        headers={"HX-Refresh": "true"},
     )
 
 
@@ -96,7 +97,7 @@ async def update_note_selected(request, payload: UpdateNoteSelectedInputSerializ
         "Note updated successfully",
         status=200,
         content_type="text/plain",
-        headers={"HX-Trigger": "noteSaved"},
+        headers={"HX-Refresh": "true"},
     )
 
 
@@ -128,5 +129,5 @@ async def delete_note_selected(request, payload: DeleteNoteSelectedInputSerializ
         "Note deleted successfully",
         status=200,
         content_type="text/plain",
-        headers={"HX-Trigger": "noteSaved"},
+        headers={"HX-Refresh": "true"},
     )

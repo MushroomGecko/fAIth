@@ -1,4 +1,4 @@
-<div class="d-flex flex-column flex-shrink-0 bg-light" style="width: 5rem;">
+<div id="sidebar" class="d-flex flex-column flex-shrink-0 bg-light overflow-auto" style="width: 5rem;">
     <ul class="nav nav-pills nav-flush flex-column mb-auto text-center mt-4">
         <li class="nav-item">
             <!-- General Question -->
@@ -159,7 +159,7 @@
         <li class="nav-item">
             <!-- Create Note -->
             {% if user.is_authenticated %}
-                <a href="#" class="nav-link px-0 border-bottom" title="Create Note" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#noteSelectedModal">
+                <a href="#" class="nav-link px-0 border-bottom text-highlight" title="Create Note" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#noteSelectedModal">
                     <i class="bi bi-pencil-square"></i>
                     <p class="mb-0" style="font-size: 0.75rem;">Create Note</p>
                 </a>

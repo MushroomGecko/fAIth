@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 
+from backend.models.note import Note
 from fAIth.bible_globals import (
     ALL_VERSES,
     BIBLE_DATA_ROOT,
@@ -111,6 +112,17 @@ async def full_view(request, book, chapter, version):
             next_book = book
             next_chapter = chapter + 1
 
+        # Load the signed-in user's notes for this version, book, and chapter
+        user = await request.auser()
+        notes = []
+        if user.is_authenticated:
+            notes = [
+                note
+                async for note in Note.objects.filter(
+                    user=user, collection_name=processed_version, book=book, chapter=chapter
+                ).order_by("verses_numbers")
+            ]
+
         # Pass the context to the template
         context = {
             # Current book, chapter, and version information
@@ -132,6 +144,8 @@ async def full_view(request, book, chapter, version):
             "current_url": request.path_info,
             # Control variables
             "control_variables": CONTROL_VARIABLES,
+            # The signed-in user's notes for this chapter, rendered by notes.html
+            "notes": notes,
         }
 
         # Render the full view with the given context

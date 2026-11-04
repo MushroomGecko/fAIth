@@ -1,7 +1,9 @@
 import os
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, HttpResponse
 from django.test import SimpleTestCase
 
@@ -39,6 +41,84 @@ def reset_globals(enabled_versions, default_version, default_book, default_chapt
     bible_globals.set_all_verses()
 
 
+def add_auser(request, user=None):
+    """
+    Give a bare request the auser() method that AuthenticationMiddleware normally adds.
+
+    full_view awaits request.auser() to load the notes. Defaults to a signed-out visitor.
+    """
+    if user is None:
+        user = AnonymousUser()
+
+    async def auser():
+        return user
+
+    request.auser = auser
+    return request
+
+
+def make_note(user, book, chapter, collection_name, verses_numbers, note_text):
+    """Build a stand-in for a Note row. Note itself uses ArrayField, which needs Postgres, so Note.objects is mocked."""
+    return SimpleNamespace(
+        user=user,
+        book=book,
+        chapter=chapter,
+        collection_name=collection_name,
+        verses_numbers=verses_numbers,
+        note=note_text,
+    )
+
+
+class FakeNoteQuerySet:
+    """Stands in for a Django QuerySet of notes. Supports order_by() and async iteration."""
+
+    def __init__(self, notes):
+        self._notes = notes
+
+    def order_by(self, field_name):
+        return FakeNoteQuerySet(sorted(self._notes, key=lambda note: getattr(note, field_name)))
+
+    def __aiter__(self):
+        return self._iterate()
+
+    async def _iterate(self):
+        for note in self._notes:
+            yield note
+
+
+async def get_full_view_context(request, all_notes, book, chapter, version):
+    """Call full_view with Note.objects returning all_notes, and return the context passed to async_render."""
+
+    def filter_notes(**lookups):
+        matching = [
+            note for note in all_notes if all(getattr(note, field) == value for field, value in lookups.items())
+        ]
+        return FakeNoteQuerySet(matching)
+
+    with (
+        patch.multiple(
+            "frontend.views.main_site",
+            BIBLE_DATA_ROOT=bible_globals.BIBLE_DATA_ROOT,
+            DEFAULT_VERSION=bible_globals.DEFAULT_VERSION,
+            DEFAULT_BOOK=bible_globals.DEFAULT_BOOK,
+            DEFAULT_CHAPTER=bible_globals.DEFAULT_CHAPTER,
+            VERSION_SELECTION=bible_globals.VERSION_SELECTION,
+            IN_ORDER_BOOKS=bible_globals.IN_ORDER_BOOKS,
+            CHAPTER_SELECTION=bible_globals.CHAPTER_SELECTION,
+            ALL_VERSES=bible_globals.ALL_VERSES,
+            create=True,
+        ),
+        patch("frontend.views.main_site.Note") as mock_note_model,
+    ):
+        mock_note_model.objects.filter.side_effect = filter_notes
+        with patch("frontend.views.main_site.async_render", new_callable=AsyncMock) as mock_render:
+            mock_render.return_value = HttpResponse("ok")
+            await main_site.full_view(request, book, chapter, version)
+
+    assert mock_render.called, "full_view did not render the page"
+    return mock_render.call_args[0][2]
+
+
 class FailingObject:
     """Create an object that raises an exception on any operation."""
 
@@ -54,7 +134,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_success_genesis_1(self):
         """Test that full_view succeeds with valid book, chapter, and version for Genesis 1 (very first chapter in the Bible)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "Genesis"
         request_chapter = 1
@@ -134,7 +214,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_success_revelation_22(self):
         """Test that full_view succeeds with valid book, chapter, and version for Revelation 22 (very last chapter in the Bible)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "Revelation"
         request_chapter = 22
@@ -214,7 +294,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_success_2_timothy_2(self):
         """Test that full_view succeeds with valid book, chapter, and version for 2 Timothy 2 (a multi-word chapter name while also checking a mid-chapter and not an edge chapter)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "2 Timothy"
         request_chapter = 2
@@ -295,7 +375,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_invalid_book(self):
         """Test that full_view redirects with invalid book."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 WEB because we need a book, chapter, and version that is not the same as the default book, chapter, and version
         request_book = "Invalid"
@@ -356,7 +436,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_invalid_chapter(self):
         """Test that full_view redirects with invalid chapter."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 WEB because we need a book, chapter, and version that is not the same as the default book, chapter, and version
         request_book = "Revelation"
@@ -417,7 +497,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_chapter_is_string(self):
         """Test that full_view redirects with chapter is a string."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 WEB because we need a book, chapter, and version that is not the same as the default book, chapter, and version
         request_book = "Revelation"
@@ -478,7 +558,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_invalid_version(self):
         """Test that full_view redirects with invalid version."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 WEB because we need a book, chapter, and version that is not the same as the default book, chapter, and version
         request_book = "Revelation"
@@ -539,7 +619,7 @@ class TestFullView(SimpleTestCase):
     async def test_full_view_general_error(self):
         """Test that full_view handles a general error gracefully."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 WEB because we need a book, chapter, and version that is not the same as the default book, chapter, and version
         request_book = "Revelation"
@@ -596,6 +676,51 @@ class TestFullView(SimpleTestCase):
                 assert default_version in bible_globals.VERSION_SELECTION
                 assert default_version == bible_globals.DEFAULT_VERSION
 
+    @pytest.mark.asyncio
+    async def test_full_view_notes_only_include_this_users_notes_for_this_book_chapter_and_version(self):
+        """Only the signed-in user's notes for the requested book, chapter, and version are loaded."""
+        reset_globals("[]", "bsb", "Genesis", "1")
+        user = SimpleNamespace(username="notes-view-user", is_authenticated=True)
+        other_user = SimpleNamespace(username="other-notes-user", is_authenticated=True)
+        all_notes = [
+            make_note(user, "Genesis", 1, "bsb", [16], "sixteen"),
+            make_note(user, "Genesis", 1, "bsb", [2], "two"),
+            make_note(user, "Genesis", 1, "bsb", [10], "ten"),
+            make_note(other_user, "Genesis", 1, "bsb", [1], "other user note"),
+            make_note(user, "Genesis", 2, "bsb", [1], "chapter two note"),
+            make_note(user, "Genesis", 1, "kjv", [1], "kjv note"),
+        ]
+
+        context = await get_full_view_context(add_auser(HttpRequest(), user), all_notes, "Genesis", 1, "bsb")
+
+        assert {note.note for note in context["notes"]} == {"sixteen", "two", "ten"}
+
+    @pytest.mark.asyncio
+    async def test_full_view_notes_are_ordered_by_verse_numbers(self):
+        """Notes are sorted by verse, not by the order they were created."""
+        reset_globals("[]", "bsb", "Genesis", "1")
+        user = SimpleNamespace(username="notes-view-user", is_authenticated=True)
+        all_notes = [
+            make_note(user, "Genesis", 1, "bsb", [16], "sixteen"),
+            make_note(user, "Genesis", 1, "bsb", [2], "two"),
+            make_note(user, "Genesis", 1, "bsb", [10], "ten"),
+        ]
+
+        context = await get_full_view_context(add_auser(HttpRequest(), user), all_notes, "Genesis", 1, "bsb")
+
+        assert [note.note for note in context["notes"]] == ["two", "ten", "sixteen"]
+
+    @pytest.mark.asyncio
+    async def test_full_view_anonymous_user_gets_no_notes(self):
+        """A signed-out visitor gets an empty notes list, even when notes exist for the chapter."""
+        reset_globals("[]", "bsb", "Genesis", "1")
+        user = SimpleNamespace(username="notes-view-user")
+        all_notes = [make_note(user, "Genesis", 1, "bsb", [1], "private note")]
+
+        context = await get_full_view_context(add_auser(HttpRequest()), all_notes, "Genesis", 1, "bsb")
+
+        assert context["notes"] == []
+
 
 class TestBookChapterView(SimpleTestCase):
     """Tests for book_chapter_view function."""
@@ -606,7 +731,7 @@ class TestBookChapterView(SimpleTestCase):
         """Test that book_chapter_view redirects to full_view with default version for Genesis 1 (first chapter in the Bible)."""
         reset_globals("[]", "bsb", "Genesis", "1")
 
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
         request_book = "Genesis"
         request_chapter = 1
         request.path_info = f"/{request_book}-{request_chapter}/"
@@ -660,7 +785,7 @@ class TestBookChapterView(SimpleTestCase):
     async def test_book_chapter_view_success_revelation_22(self):
         """Test that book_chapter_view redirects to full_view with default version for Revelation 22 (very last chapter in the Bible)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "Revelation"
         request_chapter = 22
@@ -715,7 +840,7 @@ class TestBookChapterView(SimpleTestCase):
     async def test_book_chapter_view_success_2_timothy_2(self):
         """Test that book_chapter_view redirects to full_view with default version for 2 Timothy 2 (a multi-word chapter name while also checking a mid-chapter and not an edge chapter)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "2 Timothy"
         request_chapter = 2
@@ -771,7 +896,7 @@ class TestBookChapterView(SimpleTestCase):
     async def test_book_chapter_view_invalid_book(self):
         """Test that book_chapter_view redirects to defaults when given invalid book."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 because we need a book and chapter that is not the same as the default book and chapter
         request_book = "Invalid"
@@ -827,7 +952,7 @@ class TestBookChapterView(SimpleTestCase):
     async def test_book_chapter_view_invalid_chapter(self):
         """Test that book_chapter_view redirects to default chapter when given invalid chapter."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 because we need a book and chapter that is not the same as the default book and chapter
         request_book = "Revelation"
@@ -883,7 +1008,7 @@ class TestBookChapterView(SimpleTestCase):
     async def test_book_chapter_view_chapter_is_string(self):
         """Test that book_chapter_view redirects to default chapter when given invalid chapter."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 because we need a book and chapter that is not the same as the default book and chapter
         request_book = "Revelation"
@@ -939,7 +1064,7 @@ class TestBookChapterView(SimpleTestCase):
     async def test_book_chapter_view_general_error(self):
         """Test that book_chapter_view handles errors gracefully."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation 22 because we need a book and chapter that is not the same as the default book and chapter
         request_book = "Revelation"
@@ -999,7 +1124,7 @@ class TestBookView(SimpleTestCase):
     async def test_book_view_success_genesis(self):
         """Test that book_view redirects to full_view with chapter 1 and default version for Genesis (first book in the Bible)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "Genesis"
         request.path_info = f"/{request_book}/"
@@ -1052,7 +1177,7 @@ class TestBookView(SimpleTestCase):
     async def test_book_view_success_revelation(self):
         """Test that book_view redirects to full_view with chapter 1 and default version for Revelation (last book in the Bible)."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "Revelation"
         request.path_info = f"/{request_book}/"
@@ -1105,7 +1230,7 @@ class TestBookView(SimpleTestCase):
     async def test_book_view_success_2_timothy(self):
         """Test that book_view redirects to full_view with chapter 1 and default version."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         request_book = "2 Timothy"
         request.path_info = f"/{request_book}/"
@@ -1159,7 +1284,7 @@ class TestBookView(SimpleTestCase):
     async def test_book_view_invalid_book(self):
         """Test that book_view redirects to defaults when given invalid book."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation because we need a book that is not the same as the default book
         request_book = "Invalid"
@@ -1213,7 +1338,7 @@ class TestBookView(SimpleTestCase):
     async def test_book_view_general_error(self):
         """Test that book_view handles errors gracefully."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
 
         # We want to intend Revelation because we need a book that is not the same as the default book
         request_book = "Revelation"
@@ -1272,7 +1397,7 @@ class TestDefaultView(SimpleTestCase):
     async def test_default_view_success(self):
         """Test that default_view redirects to full_view with default book, chapter, and version."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
         request.path_info = "/"
 
         # Patch the globals in views module to match what we set up
@@ -1323,7 +1448,7 @@ class TestDefaultView(SimpleTestCase):
     async def test_default_view_general_error(self):
         """Test that default_view handles errors gracefully."""
         reset_globals("[]", "bsb", "Genesis", "1")
-        request = HttpRequest()
+        request = add_auser(HttpRequest())
         request.path_info = "/"
 
         # Patch the globals in views module with VERSION_SELECTION that will cause an error

@@ -30,9 +30,11 @@
 /* Landscape layout */
 @media (orientation: landscape) 
 {
-    .main-layout-container 
+    .main-layout-container
     {
         flex-direction: row;
+        /* Bootstrap's .row wraps by default, which lets content size the row and stops the notes panel from scrolling */
+        flex-wrap: nowrap;
     }
 
     .notes-container 
