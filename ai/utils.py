@@ -15,20 +15,6 @@ from fAIth.bible_globals import BIBLE_DATA_ROOT
 logger = logging.getLogger(__name__)
 
 
-def remove_newlines_whitespace(text: str) -> str:
-    """
-    Collapse blank/whitespace-only lines in text, preserving intentional newlines.
-
-    Parameters:
-        text (str): Text that may contain blank or whitespace-only lines.
-
-    Returns:
-        str: Text with blank/whitespace-only lines removed, newlines preserved between
-            remaining lines.
-    """
-    return "\n".join(line.strip() for line in text.splitlines() if line.strip())
-
-
 async def async_read_file(file_path: str | Path, encoding: str = "utf-8") -> str | None:
     """
     Asynchronously read a file without blocking the event loop.

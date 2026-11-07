@@ -157,17 +157,32 @@
             {% endif %}
         </li>
         <li class="nav-item">
-            <!-- Create Note -->
+            <!-- Create Note for Selected -->
             {% if user.is_authenticated %}
-                <a href="#" class="nav-link px-0 border-bottom text-highlight" title="Create Note" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#noteSelectedModal">
+                <a href="#" class="nav-link px-0 border-bottom text-highlight" title="Create Note for Selected" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#noteSelectedModal">
                     <i class="bi bi-pencil-square"></i>
-                    <p class="mb-0" style="font-size: 0.75rem;">Create Note</p>
+                    <p class="mb-0" style="font-size: 0.75rem;">Create Note for Selected</p>
                 </a>
             {% else %}
-                <!-- Create Note (Sign in required) -->
-                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Create Note (Sign in required)" data-bs-placement="right">
+                <!-- Create Note for Selected (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Create Note for Selected (Sign in required)" data-bs-placement="right">
                     <i class="bi bi-pencil-square"></i>
-                    <p class="mb-0" style="font-size: 0.75rem;">Create Note</p>
+                    <p class="mb-0" style="font-size: 0.75rem;">Create Note for Selected</p>
+                </a>
+            {% endif %}
+        </li>
+        <li class="nav-item">
+            <!-- Create General Note: no selection needed, so it isn't a text-highlight element -->
+            {% if user.is_authenticated %}
+                <a href="#" class="nav-link px-0 border-bottom" title="Create General Note" data-bs-placement="right" data-bs-toggle="modal" data-bs-target="#noteSelectedModal">
+                    <i class="bi bi-journal-plus"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Create General Note</p>
+                </a>
+            {% else %}
+                <!-- Create General Note (Sign in required) -->
+                <a class="nav-link px-0 border-bottom disabled" aria-disabled="true" tabindex="-1" title="Create General Note (Sign in required)" data-bs-placement="right">
+                    <i class="bi bi-journal-plus"></i>
+                    <p class="mb-0" style="font-size: 0.75rem;">Create General Note</p>
                 </a>
             {% endif %}
         </li>

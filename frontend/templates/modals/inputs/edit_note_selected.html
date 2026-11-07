@@ -6,7 +6,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="editNoteSelectedForm" data-input-modal="editNoteSelectedModal" hx-post="{% url 'api:update_note_selected' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                <form id="editNoteSelectedForm" data-input-modal="editNoteSelectedModal" hx-post="{% url 'api:update_note' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
                     {% csrf_token %}
                     <input type="hidden" id="editNoteId" name="note_id" value="">
                     <div class="mb-3">

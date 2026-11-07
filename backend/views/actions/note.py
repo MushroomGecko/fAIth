@@ -6,12 +6,14 @@ from django.views.decorators.csrf import csrf_protect
 from ninja import Form, Router
 
 from backend.models.note import Note
-from backend.serializers.note_selected import (
-    DeleteNoteSelectedInputSerializer,
-    NoteSelectedInputSerializer,
-    UpdateNoteSelectedInputSerializer,
+from backend.serializers.note import (
+    DeleteNoteInputSerializer,
+    ListNotesInputSerializer,
+    NoteInputSerializer,
+    UpdateNoteInputSerializer,
 )
 from fAIth.api_tags import APITags
+from frontend.utils import async_render
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -20,11 +22,11 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-@router.post("/note_selected", tags=[APITags.BACKEND], url_name="note_selected")
+@router.post("/post_note", tags=[APITags.BACKEND], url_name="post_note")
 @csrf_protect
-async def note_selected(request, payload: NoteSelectedInputSerializer = Form(...)):
+async def post_note(request, payload: NoteInputSerializer = Form(...)):
     """
-    Save a note about the selected text.
+    Save a note about the selected verses, or a general note about the chapter when nothing is selected.
 
     Args:
         request: The HTTP request (authenticated user is attached to the note).
@@ -69,9 +71,9 @@ async def note_selected(request, payload: NoteSelectedInputSerializer = Form(...
     )
 
 
-@router.post("/update_note_selected", tags=[APITags.BACKEND], url_name="update_note_selected")
+@router.post("/update_note", tags=[APITags.BACKEND], url_name="update_note")
 @csrf_protect
-async def update_note_selected(request, payload: UpdateNoteSelectedInputSerializer = Form(...)):
+async def update_note(request, payload: UpdateNoteInputSerializer = Form(...)):
     """
     Update the text of one of the signed-in user's notes.
 
@@ -102,9 +104,9 @@ async def update_note_selected(request, payload: UpdateNoteSelectedInputSerializ
     )
 
 
-@router.post("/delete_note_selected", tags=[APITags.BACKEND], url_name="delete_note_selected")
+@router.post("/delete_note", tags=[APITags.BACKEND], url_name="delete_note")
 @csrf_protect
-async def delete_note_selected(request, payload: DeleteNoteSelectedInputSerializer = Form(...)):
+async def delete_note(request, payload: DeleteNoteInputSerializer = Form(...)):
     """
     Delete one of the signed-in user's notes.
 
@@ -132,3 +134,36 @@ async def delete_note_selected(request, payload: DeleteNoteSelectedInputSerializ
         content_type="text/plain",
         headers={"HX-Refresh": "true"},
     )
+
+
+@router.post("/list_notes", tags=[APITags.BACKEND], url_name="list_notes")
+@csrf_protect
+async def list_notes(request, payload: ListNotesInputSerializer = Form(...)):
+    """
+    List notes for a given collection, book, and chapter for a given user.
+
+    Args:
+        request: The HTTP request (used to identify the signed-in user).
+        payload: Validated request data (collection_name, book, chapter).
+
+    Returns:
+        HttpResponse: 200 OK with the rendered partials/server_list_notes_partial.html.
+    """
+    # Extract validated data from payload
+    collection_name = payload.collection_name
+    book = payload.book
+    chapter = payload.chapter
+
+    # List the notes for the given user, collection, book, and chapter
+    user = await request.auser()
+    notes = []
+    if user.is_authenticated:
+        notes = [
+            note
+            async for note in Note.objects.filter(
+                user=user, collection_name=collection_name, book=book, chapter=chapter
+            ).order_by("verses_numbers")
+        ]
+
+    # Render the notes list
+    return await async_render(request, "partials/server_list_notes_partial.html", {"notes": notes}, 200)

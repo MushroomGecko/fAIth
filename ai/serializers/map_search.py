@@ -2,7 +2,7 @@ import logging
 
 from pydantic import BaseModel, field_validator
 
-from ai.utils import remove_newlines_whitespace
+from fAIth.function_globals import remove_newlines_whitespace
 
 # Set up logging
 logger = logging.getLogger(__name__)
