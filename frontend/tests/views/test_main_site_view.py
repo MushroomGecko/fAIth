@@ -693,7 +693,7 @@ class TestFullView(SimpleTestCase):
 
         context = await get_full_view_context(add_auser(HttpRequest(), user), all_notes, "Genesis", 1, "bsb")
 
-        assert {note.note for note in context["notes"]} == {"sixteen", "two", "ten"}
+        assert {note.decrypted_note for note in context["notes"]} == {"sixteen", "two", "ten"}
 
     @pytest.mark.asyncio
     async def test_full_view_notes_are_ordered_by_verse_numbers(self):
@@ -708,7 +708,7 @@ class TestFullView(SimpleTestCase):
 
         context = await get_full_view_context(add_auser(HttpRequest(), user), all_notes, "Genesis", 1, "bsb")
 
-        assert [note.note for note in context["notes"]] == ["two", "ten", "sixteen"]
+        assert [note.decrypted_note for note in context["notes"]] == ["two", "ten", "sixteen"]
 
     @pytest.mark.asyncio
     async def test_full_view_anonymous_user_gets_no_notes(self):

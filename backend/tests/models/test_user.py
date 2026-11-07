@@ -25,13 +25,13 @@ class TestUsernameStorage(TestCase):
         assert user.username != "Stored-Name"
 
     def test_display_username_is_encrypted(self):
-        """username_display is a Fernet token, not the plain name."""
+        """encrypted_username is a Fernet token, not the plain name."""
         user = User.objects.create_user(username="Encrypted-Name", password="a-long-test-password-123")
 
         user.refresh_from_db()
 
-        assert "Encrypted-Name" not in user.username_display
-        assert decrypt_username(user.username_display) == "Encrypted-Name"
+        assert "Encrypted-Name" not in user.encrypted_username
+        assert decrypt_username(user.encrypted_username) == "Encrypted-Name"
 
     def test_decrypted_username_keeps_letter_case(self):
         """After a reload, decrypted_username gives back the name as the user typed it."""
@@ -81,10 +81,10 @@ class TestUsernameStorage(TestCase):
             user.save()
 
     def test_save_refuses_display_name_that_does_not_match_username(self):
-        """A username_display for a different name than username is refused on save."""
+        """A encrypted_username for a different name than username is refused on save."""
         user = User.objects.create_user(username="first-name", password="a-long-test-password-123")
         other = User.objects.create_user(username="second-name", password="a-long-test-password-123")
-        user.username_display = other.username_display
+        user.encrypted_username = other.encrypted_username
 
         with self.assertRaises(ValueError):
             user.save()

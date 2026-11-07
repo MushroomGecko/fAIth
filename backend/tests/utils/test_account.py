@@ -105,7 +105,7 @@ class TestUsernameForm(TestCase):
         assert form.initial["username"] == "CurrentName"
 
     def test_save_stores_hmac_and_encrypted_name(self):
-        """Saving stores the HMAC in username and the typed name, encrypted, in username_display."""
+        """Saving stores the HMAC in username and the typed name, encrypted, in encrypted_username."""
         form = UsernameForm(data={"username": "Fresh-Name"}, instance=self.user)
         assert form.is_valid()
 

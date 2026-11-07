@@ -47,7 +47,7 @@ async def note_selected(request, payload: NoteSelectedInputSerializer = Form(...
 
     # Save the note to the database
     user = await request.auser()
-    await Note.objects.acreate(
+    new_note = Note(
         user=user,
         collection_name=collection_name,
         book=book,
@@ -55,8 +55,9 @@ async def note_selected(request, payload: NoteSelectedInputSerializer = Form(...
         verses_text=verses_text,
         verses_numbers=verses_numbers,
         selected_text=selected_text,
-        note=note,
     )
+    new_note.set_note(note)
+    await new_note.asave()
 
     # Return success response
     # HX-Refresh tells htmx to reload the whole page so the notes render again
@@ -90,7 +91,7 @@ async def update_note_selected(request, payload: UpdateNoteSelectedInputSerializ
     if note is None:
         return HttpResponse("Note not found.", status=404, content_type="text/plain")
 
-    note.note = payload.note
+    note.set_note(payload.note)
     await note.asave()
 
     return HttpResponse(

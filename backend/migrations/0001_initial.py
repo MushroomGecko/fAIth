@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 ),
                 ("date_joined", models.DateTimeField(default=django.utils.timezone.now, verbose_name="date joined")),
                 ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ("username_display", models.TextField(default="", editable=False)),
+                ("encrypted_username", models.TextField(default="", editable=False)),
                 ("password", models.CharField(max_length=256, verbose_name="password")),
                 (
                     "groups",

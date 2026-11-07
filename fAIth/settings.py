@@ -61,7 +61,7 @@ try:
 except ValueError as error:
     raise ValueError("TOTP_ENCRYPTION_KEY must be a valid Fernet key") from error
 
-# Fernet key that encrypts each username as typed, which is stored in User.username_display so the name can be shown
+# Fernet key that encrypts each username as typed, which is stored in User.encrypted_username so the name can be shown
 # back to the user. Kept separate from the other keys so it can be rotated on its own.
 # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 USERNAME_ENCRYPTION_KEY = os.getenv("USERNAME_ENCRYPTION_KEY")
@@ -71,6 +71,17 @@ try:
     Fernet(USERNAME_ENCRYPTION_KEY)
 except ValueError as error:
     raise ValueError("USERNAME_ENCRYPTION_KEY must be a valid Fernet key") from error
+
+# Fernet key that encrypts the text of each note before it is stored in Note.encrypted_note. Kept separate from the
+# other keys so it can be rotated on its own.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+NOTE_ENCRYPTION_KEY = os.getenv("NOTE_ENCRYPTION_KEY")
+if not NOTE_ENCRYPTION_KEY or NOTE_ENCRYPTION_KEY == "CHANGE_ME_generate_a_fernet_key":
+    raise ValueError("NOTE_ENCRYPTION_KEY environment variable is not set or was set to the default value")
+try:
+    Fernet(NOTE_ENCRYPTION_KEY)
+except ValueError as error:
+    raise ValueError("NOTE_ENCRYPTION_KEY must be a valid Fernet key") from error
 
 # Secret key for the HMAC that stores each username in User.username, so lookups work without storing the name.
 # Keep it separate from DJANGO_SECRET_KEY: changing that key would otherwise break every username lookup.

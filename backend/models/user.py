@@ -79,7 +79,7 @@ class User(AbstractUser):
 
     The username is never stored in plain text. The username column holds a keyed HMAC of the lowercase username
     (see backend/utils/hashing.py), which is what lookups compare against. The username is also kept encrypted
-    in username_display (see backend/utils/encryption.py), so it can still be shown to the user. Both are built
+    in encrypted_username (see backend/utils/encryption.py), so it can still be shown to the user. Both are built
     from the name after Unicode NFKC normalization, the same normalization Django applies to usernames. Use
     set_username() to set the name, and decrypted_username to read it back.
     """
@@ -93,7 +93,7 @@ class User(AbstractUser):
     # character checks on the typed name still run in the form, before the name is hashed.
 
     # The username as typed, encrypted with Fernet (see backend/utils/encryption.py). Only decrypted_username reads it.
-    username_display = models.TextField(editable=False, default="")
+    encrypted_username = models.TextField(editable=False, default="")
 
     # The PBKDF2-SHA512 hashes (see backend/utils/hashing.py) are about 133 characters, which exceeds
     # AbstractBaseUser's default of 128.
@@ -101,7 +101,7 @@ class User(AbstractUser):
 
     def set_username(self, username):
         """
-        Set the username. Stores its HMAC in username and its encrypted form in username_display.
+        Set the username. Stores its HMAC in username and its encrypted form in encrypted_username.
 
         The name is normalized with Unicode NFKC first, the same way Django normalizes usernames. Both stored
         values are built from that normalized name, so they match what login and signup look up. For plain ASCII
@@ -112,12 +112,12 @@ class User(AbstractUser):
         """
         username = self.normalize_username(username)
         self.username = username_hmac(username)
-        self.username_display = encrypt_username(username)
+        self.encrypted_username = encrypt_username(username)
 
     @property
     def decrypted_username(self):
         """
-        The username, decrypted from username_display. Use this to show the name to the user.
+        The username, decrypted from encrypted_username. Use this to show the name to the user.
 
         The value is the NFKC-normalized name that set_username() stored, which is the typed name for plain ASCII.
 
@@ -125,21 +125,21 @@ class User(AbstractUser):
             str: The plain username, or an empty string if no username has been set.
 
         Raises:
-            cryptography.fernet.InvalidToken: If username_display wasn't made with USERNAME_ENCRYPTION_KEY.
+            cryptography.fernet.InvalidToken: If encrypted_username wasn't made with USERNAME_ENCRYPTION_KEY.
         """
-        if not self.username_display:
+        if not self.encrypted_username:
             return ""
-        return decrypt_username(self.username_display)
+        return decrypt_username(self.encrypted_username)
 
     def save(self, *args, **kwargs):
         """
-        Save the user, after checking that username is the HMAC of the name in username_display.
+        Save the user, after checking that username is the HMAC of the name in encrypted_username.
 
         This catches a plain name assigned straight to username, which would otherwise be written to the database
-        unhashed. It also catches a username_display that doesn't match username. Use set_username() to change the name.
+        unhashed. It also catches a encrypted_username that doesn't match username. Use set_username() to change the name.
 
         Raises:
-            ValueError: If username isn't the HMAC of the name in username_display.
+            ValueError: If username isn't the HMAC of the name in encrypted_username.
         """
         if self.username != username_hmac(self.decrypted_username):
             raise ValueError("Set the username with set_username() before saving the user.")
