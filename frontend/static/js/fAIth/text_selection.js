@@ -148,6 +148,12 @@ document.addEventListener('selectionchange', () => {
             {
                 verses.push(verseText);
             }
+            // Headers have non-numeric ids (e.g. "header_1"). The server only accepts verse numbers as
+            // highlight keys, so headers are saved as text without a highlight.
+            if (!/^\d+$/.test(p.id))
+            {
+                return;
+            }
             const highlight = getVerseHighlight(range, p);
             if (highlight)
             {
