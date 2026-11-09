@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from collections import defaultdict
 
 from backend.models.note import Note
 from fAIth.bible_globals import (
@@ -15,7 +16,8 @@ from fAIth.bible_globals import (
 )
 from fAIth.function_globals import derive_boolean_from_string
 from fAIth.settings import WORDNET_ENABLED
-from frontend.utils import async_redirect, async_render
+from frontend.utils.highlight import apply_highlights
+from frontend.utils.render import async_redirect, async_render
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -120,8 +122,25 @@ async def full_view(request, book, chapter, version):
                 note
                 async for note in Note.objects.filter(
                     user=user, collection_name=processed_version, book=book, chapter=chapter
-                ).order_by("verses_numbers")
+                )
             ]
+            # Sort in Python by verse numbers, element by element
+            notes.sort(key=lambda note: note.verses_numbers)
+
+        # Group each note's highlights by verse, then wrap them in <mark>. This builds a new dict,
+        # so the shared ALL_VERSES cache is never changed and other users never see these highlights.
+        highlights_by_verse = defaultdict(list)
+        # Oldest first, so a newer highlight on top of an older one is the one shown
+        for note in sorted(notes, key=lambda note: note.created_at):
+            if note.highlight_coordinates and note.highlight_color:
+                for verse_num, offsets in note.highlight_coordinates.items():
+                    highlights_by_verse[verse_num].append((offsets["beginning"], offsets["end"], note.highlight_color))
+        # Only verses with highlights are changed. With no highlights, the shared dict is used as-is.
+        if highlights_by_verse:
+            verses = dict(verses)
+            for verse_num, highlights in highlights_by_verse.items():
+                if verse_num in verses:
+                    verses[verse_num] = apply_highlights(verses[verse_num], highlights)
 
         # Pass the context to the template
         context = {

@@ -5,12 +5,15 @@ from django.conf import settings
 from django.test import TestCase, override_settings
 
 from backend.utils.encryption import (
+    decrypt_note,
     decrypt_recovery_codes,
     decrypt_totp_key,
     decrypt_username,
+    encrypt_note,
     encrypt_recovery_codes,
     encrypt_totp_key,
     encrypt_username,
+    note_cipher,
     recovery_session_cipher,
     totp_key_cipher,
     username_cipher,
@@ -59,7 +62,7 @@ class TestCipherKeys(TestCase):
             recovery_session_cipher().decrypt(token)
 
 
-class TestEncryptTotpKey(TestCase):
+class TextTotpKeyEncryption(TestCase):
     """Tests for encrypt_totp_key and decrypt_totp_key."""
 
     def test_round_trip_returns_original_secret(self):
@@ -87,11 +90,6 @@ class TestEncryptTotpKey(TestCase):
             with self.assertRaises(InvalidToken):
                 decrypt_totp_key(token)
 
-    def test_garbage_token_is_refused(self):
-        """A value that isn't a Fernet token raises InvalidToken."""
-        with self.assertRaises(InvalidToken):
-            decrypt_totp_key("not-a-fernet-token")
-
     def test_tampered_token_is_refused(self):
         """Changing one character of a valid token makes decryption fail, so the secret can't be altered unnoticed."""
         token = encrypt_totp_key(HEX_SECRET)
@@ -101,9 +99,14 @@ class TestEncryptTotpKey(TestCase):
         with self.assertRaises(InvalidToken):
             decrypt_totp_key(tampered)
 
+    def test_garbage_token_is_refused(self):
+        """A value that isn't a Fernet token raises InvalidToken."""
+        with self.assertRaises(InvalidToken):
+            decrypt_totp_key("not-a-fernet-token")
 
-class TestUsernameCipher(TestCase):
-    """Tests for username_cipher, encrypt_username, and decrypt_username."""
+
+class TextUsernameEncryption(TestCase):
+    """Tests for username_cipher, encrypt_username, and decrypt_username, which use USERNAME_ENCRYPTION_KEY."""
 
     def test_cipher_uses_username_key(self):
         """The username cipher is built from USERNAME_ENCRYPTION_KEY."""
@@ -149,7 +152,63 @@ class TestUsernameCipher(TestCase):
             decrypt_username("not-a-fernet-token")
 
 
-class TestEncryptRecoveryCodes(TestCase):
+class TextNoteEncryption(TestCase):
+    """Tests for note_cipher, encrypt_note, and decrypt_note, which use NOTE_ENCRYPTION_KEY."""
+
+    def test_cipher_uses_note_key(self):
+        """The note cipher is built from NOTE_ENCRYPTION_KEY."""
+        token = note_cipher().encrypt(b"A private thought")
+
+        assert Fernet(_settings_key("NOTE_ENCRYPTION_KEY")).decrypt(token) == b"A private thought"
+
+    def test_round_trip_returns_original_text(self):
+        """Decrypting gives back the note exactly, including unicode and punctuation."""
+        text = "Grace & peace — “amen”"
+
+        assert decrypt_note(encrypt_note(text)) == text
+
+    def test_encrypted_value_is_text_and_hides_the_note(self):
+        """The stored value is a str and doesn't contain the note as typed."""
+        token = encrypt_note("A private thought")
+
+        assert isinstance(token, str)
+        assert "A private thought" not in token
+
+    def test_same_note_gives_different_tokens(self):
+        """Fernet adds a random nonce, so encrypting the same note twice gives two different tokens."""
+        assert encrypt_note("A private thought") != encrypt_note("A private thought")
+
+    def test_wrong_key_is_refused(self):
+        """A note encrypted with one note key raises InvalidToken under another."""
+        token = encrypt_note("A private thought")
+
+        with override_settings(NOTE_ENCRYPTION_KEY=OTHER_KEY):
+            with self.assertRaises(InvalidToken):
+                decrypt_note(token)
+
+    def test_tampered_token_is_refused(self):
+        """Changing one character of a valid token makes decryption fail, so the note can't be altered unnoticed."""
+        token = encrypt_note("A private thought")
+        flipped = "A" if token[-1] != "A" else "B"
+        tampered = token[:-1] + flipped
+
+        with self.assertRaises(InvalidToken):
+            decrypt_note(tampered)
+
+    def test_note_token_is_refused_by_the_username_key(self):
+        """A note token is refused by the username cipher, so the two kinds of secret can't be swapped."""
+        token = encrypt_note("A private thought")
+
+        with self.assertRaises(InvalidToken):
+            decrypt_username(token)
+
+    def test_garbage_token_is_refused(self):
+        """A value that isn't a Fernet token raises InvalidToken."""
+        with self.assertRaises(InvalidToken):
+            decrypt_note("not-a-fernet-token")
+
+
+class TextRecoveryCodesEncryption(TestCase):
     """Tests for encrypt_recovery_codes and decrypt_recovery_codes."""
 
     async def test_round_trip_returns_original_codes(self):
@@ -166,6 +225,13 @@ class TestEncryptRecoveryCodes(TestCase):
         for code in RECOVERY_CODES:
             assert code not in token
 
+    async def test_same_codes_give_different_tokens(self):
+        """Fernet adds a random nonce, so encrypting the same codes twice gives two different tokens."""
+        first = await encrypt_recovery_codes(RECOVERY_CODES)
+        second = await encrypt_recovery_codes(RECOVERY_CODES)
+
+        assert first != second
+
     async def test_wrong_key_is_refused(self):
         """Codes encrypted with one recovery key raise InvalidToken under another, so they can't be read silently."""
         token = await encrypt_recovery_codes(RECOVERY_CODES)
@@ -174,10 +240,14 @@ class TestEncryptRecoveryCodes(TestCase):
             with self.assertRaises(InvalidToken):
                 await decrypt_recovery_codes(token)
 
-    async def test_garbage_token_is_refused(self):
-        """A value that isn't a Fernet token raises InvalidToken."""
+    async def test_tampered_token_is_refused(self):
+        """Changing one character of a valid token makes decryption fail, so the codes can't be altered unnoticed."""
+        token = await encrypt_recovery_codes(RECOVERY_CODES)
+        flipped = "A" if token[-1] != "A" else "B"
+        tampered = token[:-1] + flipped
+
         with self.assertRaises(InvalidToken):
-            await decrypt_recovery_codes("not-a-fernet-token")
+            await decrypt_recovery_codes(tampered)
 
     async def test_totp_key_token_is_refused(self):
         """A token made with the TOTP key is refused, so the two kinds of secret can't be swapped."""
@@ -185,3 +255,8 @@ class TestEncryptRecoveryCodes(TestCase):
 
         with self.assertRaises(InvalidToken):
             await decrypt_recovery_codes(token)
+
+    async def test_garbage_token_is_refused(self):
+        """A value that isn't a Fernet token raises InvalidToken."""
+        with self.assertRaises(InvalidToken):
+            await decrypt_recovery_codes("not-a-fernet-token")

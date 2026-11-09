@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-from frontend.utils import async_render
+from frontend.utils.render import async_render
 
 
 def csrf_failure(request, reason=""):

@@ -1,4 +1,5 @@
 import os
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -66,6 +67,10 @@ def make_note(user, book, chapter, collection_name, verses_numbers, note_text):
         collection_name=collection_name,
         verses_numbers=verses_numbers,
         note=note_text,
+        decrypted_note=note_text,
+        created_at=datetime.now(UTC),
+        highlight_coordinates={},
+        highlight_color=None,
     )
 
 
@@ -720,6 +725,87 @@ class TestFullView(SimpleTestCase):
         context = await get_full_view_context(add_auser(HttpRequest()), all_notes, "Genesis", 1, "bsb")
 
         assert context["notes"] == []
+
+
+GENESIS_1_VERSES = {"16": "For God so loved the world", "17": "For he gave his only Son"}
+YELLOW_MARK = '<mark class="highlight" style="background-color: #FFFF00;">'
+GREEN_MARK = '<mark class="highlight" style="background-color: #00FF00;">'
+EARLIER = datetime(2026, 1, 1, tzinfo=UTC)
+LATER = datetime(2026, 1, 2, tzinfo=UTC)
+
+
+class TestFullViewHighlights(SimpleTestCase):
+    """Tests that full_view wraps each saved highlight in <mark> tags, using only the signed-in user's notes."""
+
+    def setUp(self):
+        reset_globals("[]", "bsb", "Genesis", "1")
+        self.user = SimpleNamespace(username="highlight-user", is_authenticated=True)
+        self.other_user = SimpleNamespace(username="highlight-other", is_authenticated=True)
+        # Replace only Genesis 1 with fixed verse text, so offsets are predictable. Restored after each test.
+        verses_patch = patch.dict(bible_globals.ALL_VERSES["bsb"]["Genesis"], {1: dict(GENESIS_1_VERSES)}, clear=True)
+        verses_patch.start()
+        self.addCleanup(verses_patch.stop)
+
+    def _note(self, user, beginning, end, color, created_at, verse="16"):
+        """Build a stand-in note with one highlight in the given verse."""
+        note = make_note(user, "Genesis", 1, "bsb", [int(verse)], "a note")
+        note.highlight_coordinates = {verse: {"beginning": beginning, "end": end}}
+        note.highlight_color = color
+        note.created_at = created_at
+        return note
+
+    async def _verses(self, notes):
+        """Call full_view for the signed-in user and return the verses dict passed to the template."""
+        context = await get_full_view_context(add_auser(HttpRequest(), self.user), notes, "Genesis", 1, "bsb")
+        return context["verses"]
+
+    @pytest.mark.asyncio
+    async def test_saved_highlight_wraps_its_characters(self):
+        """A highlight covering characters 4 to 6 wraps 'God' in a yellow mark."""
+        verses = await self._verses([self._note(self.user, 4, 7, "#FFFF00", EARLIER)])
+
+        assert verses["16"] == "For " + YELLOW_MARK + "God</mark> so loved the world"
+
+    @pytest.mark.asyncio
+    async def test_overlapping_highlights_nest_with_the_newer_one_inside(self):
+        """Where two highlights overlap, the newer green one is the inner mark, whatever order the notes arrive in."""
+        older = self._note(self.user, 4, 7, "#FFFF00", EARLIER)
+        newer = self._note(self.user, 5, 9, "#00FF00", LATER)
+
+        verses = await self._verses([newer, older])
+
+        expected = f"For {YELLOW_MARK}G{GREEN_MARK}od</mark></mark>{GREEN_MARK} s</mark>o loved the world"
+        assert verses["16"] == expected
+
+    @pytest.mark.asyncio
+    async def test_another_users_highlight_is_not_shown(self):
+        """A highlight saved by a different user doesn't change the verse for the signed-in user."""
+        verses = await self._verses([self._note(self.other_user, 4, 7, "#FFFF00", EARLIER)])
+
+        assert verses["16"] == GENESIS_1_VERSES["16"]
+
+    @pytest.mark.asyncio
+    async def test_note_without_a_color_is_not_highlighted(self):
+        """A note with coordinates but no color doesn't add a mark."""
+        note = self._note(self.user, 4, 7, None, EARLIER)
+
+        verses = await self._verses([note])
+
+        assert verses["16"] == GENESIS_1_VERSES["16"]
+
+    @pytest.mark.asyncio
+    async def test_only_the_highlighted_verse_changes(self):
+        """Verses with no highlight keep their original text."""
+        verses = await self._verses([self._note(self.user, 4, 7, "#FFFF00", EARLIER, verse="16")])
+
+        assert verses["17"] == GENESIS_1_VERSES["17"]
+
+    @pytest.mark.asyncio
+    async def test_shared_verse_text_is_not_changed(self):
+        """Highlighting builds a new dict, so the shared verse cache keeps the plain text for other requests."""
+        await self._verses([self._note(self.user, 4, 7, "#FFFF00", EARLIER)])
+
+        assert bible_globals.ALL_VERSES["bsb"]["Genesis"][1]["16"] == GENESIS_1_VERSES["16"]
 
 
 class TestBookChapterView(SimpleTestCase):

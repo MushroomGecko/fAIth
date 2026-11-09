@@ -25,7 +25,7 @@
                          </div>
                     </div>
                     <blockquote class="blockquote mb-2">
-                         <p class="mb-0">{{ note.selected_text }}</p>
+                         <p class="mb-0">{{ note.selected_html|safe }}</p>
                     </blockquote>
                     <p class="card-text" style="white-space: pre-wrap;">{{ note.decrypted_note }}</p>
                </div>

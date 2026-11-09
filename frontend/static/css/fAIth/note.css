@@ -1,0 +1,23 @@
+/* Highlighted verse text keeps its own color (e.g. red for .wj words of Jesus).
+   Bootstrap sets a color on <mark>, so inherit the parent's color instead. */
+.highlight {
+    color: inherit;
+}
+
+/* Highlight color picker in the note modals */
+.highlight-swatch {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.btn-check:checked + .highlight-swatch {
+    border-color: #212529;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #212529;
+}
+
+.btn-check:disabled + .highlight-swatch {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

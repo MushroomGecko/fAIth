@@ -1,0 +1,23 @@
+<div id="noteGeneralModal" class="modal fade" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Please enter your note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noteGeneralForm" data-input-modal="noteGeneralModal" hx-post="{% url 'api:post_note' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
+                    {% csrf_token %}
+                    <input type="hidden" name="book" value="{{ book }}">
+                    <input type="hidden" name="chapter" value="{{ chapter }}">
+                    <input type="hidden" name="collection_name" value="{{ version }}">
+                    <div class="mb-3">
+                        <label for="noteGeneral" class="form-label">Note</label>
+                        <textarea id="noteGeneral" name="note" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -8,12 +8,11 @@ from ninja import Form, Router
 from backend.models.note import Note
 from backend.serializers.note import (
     DeleteNoteInputSerializer,
-    ListNotesInputSerializer,
     NoteInputSerializer,
     UpdateNoteInputSerializer,
 )
+from backend.utils.note_html import sanitize_note_html
 from fAIth.api_tags import APITags
-from frontend.utils import async_render
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -31,24 +30,31 @@ async def post_note(request, payload: NoteInputSerializer = Form(...)):
     Args:
         request: The HTTP request (authenticated user is attached to the note).
         payload: Validated note data (collection_name, book, chapter, verses_text,
-            selected_text, note).
+            selected_html, note).
 
     Returns:
         HttpResponse: 200 OK with a plain-text confirmation.
     """
+    # Refuse signed-out visitors before anything is built or saved
+    user = await request.auser()
+    if not user.is_authenticated:
+        return HttpResponse("Please sign in to save notes.", status=401, content_type="text/plain")
+
     # Extract validated data from payload
     collection_name = payload.collection_name
     book = payload.book
     chapter = payload.chapter
     verses_text = payload.verses_text
-    selected_text = payload.selected_text
+    # Keep only the allowed spans (e.g. red words of Jesus) so the saved HTML is safe to render
+    selected_html = sanitize_note_html(payload.selected_html)
     note = payload.note
+    highlight_coordinates = payload.highlight_coordinates
+    highlight_color = payload.highlight_color
 
     # Each verse line starts with its number, e.g. "16) For God so loved...".
     verses_numbers = [int(n) for n in re.findall(r"^\s*(\d+)\)", verses_text, re.MULTILINE)]
 
     # Save the note to the database
-    user = await request.auser()
     new_note = Note(
         user=user,
         collection_name=collection_name,
@@ -56,7 +62,9 @@ async def post_note(request, payload: NoteInputSerializer = Form(...)):
         chapter=chapter,
         verses_text=verses_text,
         verses_numbers=verses_numbers,
-        selected_text=selected_text,
+        selected_html=selected_html,
+        highlight_coordinates=highlight_coordinates,
+        highlight_color=highlight_color,
     )
     new_note.set_note(note)
     await new_note.asave()
@@ -79,7 +87,7 @@ async def update_note(request, payload: UpdateNoteInputSerializer = Form(...)):
 
     Args:
         request: The HTTP request (used to identify the signed-in user).
-        payload: Validated update data (note_id, note).
+        payload: Validated update data (note_id, note, highlight_color).
 
     Returns:
         HttpResponse: 200 OK on success, 401 if not signed in, 404 if the note isn't the user's.
@@ -94,6 +102,7 @@ async def update_note(request, payload: UpdateNoteInputSerializer = Form(...)):
         return HttpResponse("Note not found.", status=404, content_type="text/plain")
 
     note.set_note(payload.note)
+    note.highlight_color = payload.highlight_color
     await note.asave()
 
     return HttpResponse(
@@ -134,36 +143,3 @@ async def delete_note(request, payload: DeleteNoteInputSerializer = Form(...)):
         content_type="text/plain",
         headers={"HX-Refresh": "true"},
     )
-
-
-@router.post("/list_notes", tags=[APITags.BACKEND], url_name="list_notes")
-@csrf_protect
-async def list_notes(request, payload: ListNotesInputSerializer = Form(...)):
-    """
-    List notes for a given collection, book, and chapter for a given user.
-
-    Args:
-        request: The HTTP request (used to identify the signed-in user).
-        payload: Validated request data (collection_name, book, chapter).
-
-    Returns:
-        HttpResponse: 200 OK with the rendered partials/server_list_notes_partial.html.
-    """
-    # Extract validated data from payload
-    collection_name = payload.collection_name
-    book = payload.book
-    chapter = payload.chapter
-
-    # List the notes for the given user, collection, book, and chapter
-    user = await request.auser()
-    notes = []
-    if user.is_authenticated:
-        notes = [
-            note
-            async for note in Note.objects.filter(
-                user=user, collection_name=collection_name, book=book, chapter=chapter
-            ).order_by("verses_numbers")
-        ]
-
-    # Render the notes list
-    return await async_render(request, "partials/server_list_notes_partial.html", {"notes": notes}, 200)

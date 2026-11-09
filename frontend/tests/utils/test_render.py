@@ -4,7 +4,7 @@ import pytest
 from django.http import HttpResponse, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase
 
-from frontend import utils
+from frontend.utils import render
 
 
 @pytest.mark.asyncio
@@ -16,9 +16,9 @@ class TestAsyncRender(SimpleTestCase):
         factory = RequestFactory()
         request = factory.get("/")
 
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "test.html", {}, 200)
+            result = await render.async_render(request, "test.html", {}, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -38,9 +38,9 @@ class TestAsyncRender(SimpleTestCase):
         request = factory.get("/")
         context = {"book": "Genesis", "chapter": 1, "verses": ["verse1", "verse2"]}
 
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "test.html", context, 200)
+            result = await render.async_render(request, "test.html", context, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -65,9 +65,9 @@ class TestAsyncRender(SimpleTestCase):
         factory = RequestFactory()
         request = factory.get("/")
 
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "simple.html", {}, 200)
+            result = await render.async_render(request, "simple.html", {}, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -90,9 +90,9 @@ class TestAsyncRender(SimpleTestCase):
 
         templates = ["home.html", "about.html", "contact.html", "index.html"]
         for template in templates:
-            with patch("frontend.utils.render") as mock_render:
+            with patch("frontend.utils.render.render") as mock_render:
                 mock_render.return_value = HttpResponse(f"Rendered from {template}")
-                result = await utils.async_render(request, template, {"1": template}, 200)
+                result = await render.async_render(request, template, {"1": template}, 200)
 
                 # Verify render was called
                 assert mock_render.called
@@ -120,9 +120,9 @@ class TestAsyncRender(SimpleTestCase):
             "verses_count": 150,
         }
 
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "psalms.html", context, 200)
+            result = await render.async_render(request, "psalms.html", context, 200)
 
             # Verify render was called
             assert mock_render.called
@@ -157,9 +157,9 @@ class TestAsyncRender(SimpleTestCase):
             else:
                 request = factory.post("/test", {"data": "value"})
 
-            with patch("frontend.utils.render") as mock_render:
+            with patch("frontend.utils.render.render") as mock_render:
                 mock_render.return_value = HttpResponse(f"{method} response")
-                result = await utils.async_render(request, "form.html", {}, 200)
+                result = await render.async_render(request, "form.html", {}, 200)
 
                 # Verify render was called
                 assert mock_render.called
@@ -180,9 +180,9 @@ class TestAsyncRender(SimpleTestCase):
         factory = RequestFactory()
         request = factory.get("/")
 
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
-            result = await utils.async_render(request, "test.html", {}, 200)
+            result = await render.async_render(request, "test.html", {}, 200)
 
             assert isinstance(result, HttpResponse)
             assert hasattr(result, "content")
@@ -194,10 +194,10 @@ class TestAsyncRender(SimpleTestCase):
         request = factory.get("/")
 
         # Test with 404 status code
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             response = HttpResponse("Not found", status=404)
             mock_render.return_value = response
-            result = await utils.async_render(request, "error.html", {}, 404)
+            result = await render.async_render(request, "error.html", {}, 404)
 
             assert result.status_code == 404
 
@@ -207,12 +207,12 @@ class TestAsyncRender(SimpleTestCase):
         request1 = factory.get("/path1")
         request2 = factory.get("/path2")
 
-        with patch("frontend.utils.render") as mock_render:
+        with patch("frontend.utils.render.render") as mock_render:
             mock_render.return_value = HttpResponse("Rendered")
 
             # Simulate concurrent calls
-            result1 = await utils.async_render(request1, "template1.html", {"data": 1}, 200)
-            result2 = await utils.async_render(request2, "template2.html", {"data": 2}, 200)
+            result1 = await render.async_render(request1, "template1.html", {"data": 1}, 200)
+            result2 = await render.async_render(request2, "template2.html", {"data": 2}, 200)
 
             # Both should succeed without interference
             assert mock_render.call_count == 2
@@ -243,11 +243,14 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_simple_url(self):
         """Test that async_redirect successfully redirects to a simple URL."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/expected/path/"
             mock_redirect.return_value = HttpResponseRedirect("/expected/path/")
 
-            result = await utils.async_redirect("home")
+            result = await render.async_redirect("home")
 
             # Verify reverse was called with correct arguments
             mock_reverse.assert_called_once_with("home", args=[])
@@ -258,11 +261,14 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_with_single_arg(self):
         """Test that async_redirect passes a single argument correctly."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/book/genesis/"
             mock_redirect.return_value = HttpResponseRedirect("/book/genesis/")
 
-            result = await utils.async_redirect("book-detail", args=["genesis"])
+            result = await render.async_redirect("book-detail", args=["genesis"])
 
             # Verify reverse was called with correct arguments
             mock_reverse.assert_called_once_with("book-detail", args=["genesis"])
@@ -272,12 +278,15 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_with_multiple_args(self):
         """Test that async_redirect handles multiple arguments."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/book/genesis/1/verse/1/"
             mock_redirect.return_value = HttpResponseRedirect("/book/genesis/1/verse/1/")
 
             args = ["genesis", 1, "verse", 1]
-            result = await utils.async_redirect("verse-detail", args=args)
+            result = await render.async_redirect("verse-detail", args=args)
 
             # Verify reverse was called with correct arguments
             mock_reverse.assert_called_once_with("verse-detail", args=args)
@@ -287,11 +296,14 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_default_empty_args(self):
         """Test that async_redirect uses empty list as default for args."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/home/"
             mock_redirect.return_value = HttpResponseRedirect("/home/")
 
-            result = await utils.async_redirect("home")
+            result = await render.async_redirect("home")
             assert isinstance(result, HttpResponseRedirect)
 
             # Verify reverse was called with empty args list by default
@@ -300,36 +312,45 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_returns_redirect_response(self):
         """Test that async_redirect returns an HttpResponseRedirect object."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/target/"
             response = HttpResponseRedirect("/target/")
             mock_redirect.return_value = response
 
-            result = await utils.async_redirect("target")
+            result = await render.async_redirect("target")
             assert isinstance(result, HttpResponseRedirect)
 
             assert result is response
 
     async def test_async_redirect_status_code(self):
         """Test that async_redirect returns correct HTTP status code."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/redirect-to/"
             # HttpResponseRedirect defaults to 302
             response = HttpResponseRedirect("/redirect-to/")
             mock_redirect.return_value = response
 
-            result = await utils.async_redirect("redirect")
+            result = await render.async_redirect("redirect")
             assert isinstance(result, HttpResponseRedirect)
 
             assert result.status_code == 302
 
     async def test_async_redirect_with_string_arg(self):
         """Test that async_redirect works with string arguments."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/book/genesis/"
             mock_redirect.return_value = HttpResponseRedirect("/book/genesis/")
 
-            result = await utils.async_redirect("book-detail", args=["genesis"])
+            result = await render.async_redirect("book-detail", args=["genesis"])
             assert isinstance(result, HttpResponseRedirect)
 
             # Verify the string argument was passed correctly
@@ -338,11 +359,14 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_with_numeric_args(self):
         """Test that async_redirect works with numeric arguments."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/chapter/1/verse/1/"
             mock_redirect.return_value = HttpResponseRedirect("/chapter/1/verse/1/")
 
-            result = await utils.async_redirect("chapter-verse", args=[1, 1])
+            result = await render.async_redirect("chapter-verse", args=[1, 1])
             assert isinstance(result, HttpResponseRedirect)
 
             # Verify numeric arguments were passed correctly
@@ -351,11 +375,14 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_mixed_arg_types(self):
         """Test that async_redirect handles mixed string and numeric arguments."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.return_value = "/book/genesis/chapter/1/"
             mock_redirect.return_value = HttpResponseRedirect("/book/genesis/chapter/1/")
 
-            result = await utils.async_redirect("book-chapter", args=["genesis", 1])
+            result = await render.async_redirect("book-chapter", args=["genesis", 1])
             assert isinstance(result, HttpResponseRedirect)
 
             # Verify mixed arguments were passed correctly
@@ -375,10 +402,10 @@ class TestAsyncRedirect(SimpleTestCase):
             return HttpResponseRedirect(path)
 
         with (
-            patch("frontend.utils.reverse", side_effect=mock_reverse_func),
-            patch("frontend.utils.redirect", side_effect=mock_redirect_func),
+            patch("frontend.utils.render.reverse", side_effect=mock_reverse_func),
+            patch("frontend.utils.render.redirect", side_effect=mock_redirect_func),
         ):
-            result = await utils.async_redirect("test")
+            result = await render.async_redirect("test")
             assert isinstance(result, HttpResponseRedirect)
 
             # Verify reverse was called before redirect
@@ -386,7 +413,10 @@ class TestAsyncRedirect(SimpleTestCase):
 
     async def test_async_redirect_multiple_sequential_calls(self):
         """Test that multiple sequential async_redirect calls work correctly."""
-        with patch("frontend.utils.reverse") as mock_reverse, patch("frontend.utils.redirect") as mock_redirect:
+        with (
+            patch("frontend.utils.render.reverse") as mock_reverse,
+            patch("frontend.utils.render.redirect") as mock_redirect,
+        ):
             mock_reverse.side_effect = ["/home/", "/about/", "/contact/"]
             mock_redirect.side_effect = [
                 HttpResponseRedirect("/home/"),
@@ -394,9 +424,9 @@ class TestAsyncRedirect(SimpleTestCase):
                 HttpResponseRedirect("/contact/"),
             ]
 
-            result1 = await utils.async_redirect("home")
-            result2 = await utils.async_redirect("about")
-            result3 = await utils.async_redirect("contact")
+            result1 = await render.async_redirect("home")
+            result2 = await render.async_redirect("about")
+            result3 = await render.async_redirect("contact")
             assert isinstance(result1, HttpResponseRedirect)
             assert isinstance(result2, HttpResponseRedirect)
             assert isinstance(result3, HttpResponseRedirect)

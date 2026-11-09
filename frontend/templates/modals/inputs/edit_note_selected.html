@@ -9,6 +9,28 @@
                 <form id="editNoteSelectedForm" data-input-modal="editNoteSelectedModal" hx-post="{% url 'api:update_note' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
                     {% csrf_token %}
                     <input type="hidden" id="editNoteId" name="note_id" value="">
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6">Highlight color</legend>
+                        <div class="d-flex flex-wrap gap-2">
+                            <input type="radio" class="btn-check" name="highlight_color" id="editNoteColorYellow" value="#FFFF00">
+                            <label class="highlight-swatch rounded-circle" for="editNoteColorYellow" style="background-color: #FFFF00;" title="Yellow"><span class="visually-hidden">Yellow</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="editNoteColorGreen" value="#32CD32">
+                            <label class="highlight-swatch rounded-circle" for="editNoteColorGreen" style="background-color: #32CD32;" title="Green"><span class="visually-hidden">Green</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="editNoteColorBlue" value="#00BFFF">
+                            <label class="highlight-swatch rounded-circle" for="editNoteColorBlue" style="background-color: #00BFFF;" title="Bright blue"><span class="visually-hidden">Bright blue</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="editNoteColorPink" value="#FF69B4">
+                            <label class="highlight-swatch rounded-circle" for="editNoteColorPink" style="background-color: #FF69B4;" title="Hot pink"><span class="visually-hidden">Hot pink</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="editNoteColorOrange" value="#FFB347">
+                            <label class="highlight-swatch rounded-circle" for="editNoteColorOrange" style="background-color: #FFB347;" title="Light orange"><span class="visually-hidden">Light orange</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="editNoteColorPurple" value="#B19CD9">
+                            <label class="highlight-swatch rounded-circle" for="editNoteColorPurple" style="background-color: #B19CD9;" title="Light purple"><span class="visually-hidden">Light purple</span></label>
+                        </div>
+                    </fieldset>
                     <div class="mb-3">
                         <label for="editNote" class="form-label">Note</label>
                         <textarea id="editNote" name="note" class="form-control" rows="3" required></textarea>

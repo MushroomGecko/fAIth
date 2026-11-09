@@ -5,6 +5,7 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'bootstrap/icons/bootstrap-icons.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/installed/verse_styling.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fAIth/note.css' %}">
 {% endblock %}
 {% block body_class %}d-flex flex-column vh-100{% endblock %}
 {% block content %}
@@ -35,6 +36,7 @@
 
         {% include 'modals/inputs/delete_confirm.html' %}
         {% include 'modals/inputs/note_selected.html' %}
+        {% include 'modals/inputs/note_general.html' %}
         {% include 'modals/inputs/edit_note_selected.html' %}
 {% endblock %}
 

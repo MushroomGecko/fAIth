@@ -42,6 +42,61 @@ function disableTextHighlightInteractables()
 // Disable text-highlight interactables on page load
 disableTextHighlightInteractables();
 
+// Build {verse_number: {beginning, end}} for every verse the selection touches.
+// beginning and end are character offsets into that verse's textContent (the <p> element, including its "1) " prefix),
+// so they can be used to wrap the same characters in <mark> later.
+// Returns {beginning, end} for the part of the selection inside one verse <p>, or null if the selection
+// doesn't cover any of its text. Called from the selectionchange loop, once per verse.
+function getVerseHighlight(range, p)
+{
+    const verseRange = document.createRange();
+    verseRange.selectNodeContents(p);
+
+    // Clamp the selection to this verse, so a multi-verse selection only covers the part inside this <p>.
+    const clamped = range.cloneRange();
+    if (range.compareBoundaryPoints(Range.START_TO_START, verseRange) < 0)
+    {
+        clamped.setStart(verseRange.startContainer, verseRange.startOffset);
+    }
+    if (range.compareBoundaryPoints(Range.END_TO_END, verseRange) > 0)
+    {
+        clamped.setEnd(verseRange.endContainer, verseRange.endOffset);
+    }
+
+    // Measure from the start of the verse to the clamped selection.
+    const beforeRange = document.createRange();
+    beforeRange.setStart(p, 0);
+    beforeRange.setEnd(clamped.startContainer, clamped.startOffset);
+    const beginning = beforeRange.toString().length;
+    const end = beginning + clamped.toString().length;
+
+    return end > beginning ? { beginning: beginning, end: end } : null;
+}
+
+// Returns the selected verse HTML (keeping spans like <span class="wj">), clamped to the verses container.
+// Existing highlight <mark> wrappers are removed so a saved note doesn't carry the highlight.
+// The server sanitizes this HTML before saving it.
+function getSelectedHtml(range, container)
+{
+    const containerRange = document.createRange();
+    containerRange.selectNodeContents(container);
+
+    const clamped = range.cloneRange();
+    if (range.compareBoundaryPoints(Range.START_TO_START, containerRange) < 0)
+    {
+        clamped.setStart(container, 0);
+    }
+    if (range.compareBoundaryPoints(Range.END_TO_END, containerRange) > 0)
+    {
+        clamped.setEnd(container, container.childNodes.length);
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(clamped.cloneContents());
+    wrapper.querySelectorAll('mark').forEach(mark => mark.replaceWith(...mark.childNodes));
+    return wrapper.innerHTML;
+}
+
 // Update the hidden input and button state on any selection change (mouse, touch, or keyboard).
 // When the selection clears, only reset if a modal is not open, otherwise clicking into the
 // modal's question input would wipe the stored selection before the form is submitted.
@@ -51,28 +106,58 @@ document.addEventListener('selectionchange', () => {
     const selection = document.getSelection();
     let text = selection.toString();
     let verses_text = '';
+    let highlight_coordinates = {};
+    let selected_html = '';
     const range = selection.rangeCount ? selection.getRangeAt(0) : null;
     const container = document.querySelector('.verses-container');
     if (range && container && range.intersectsNode(container))
     {
-        const verses = Array.from(container.querySelectorAll('p'))
-            .filter(p => range.intersectsNode(p))
-            .map(p => p.textContent.trim())
-            .filter(verse => verse !== '');
+        selected_html = getSelectedHtml(range, container);
+        // One pass over the verses the selection touches: collect the verse text and its highlight range together.
+        const verses = [];
+        container.querySelectorAll('p').forEach(p => {
+            if (!range.intersectsNode(p))
+            {
+                return;
+            }
+            const verseText = p.textContent.trim();
+            if (verseText !== '')
+            {
+                verses.push(verseText);
+            }
+            const highlight = getVerseHighlight(range, p);
+            if (highlight)
+            {
+                highlight_coordinates[p.id] = highlight;
+            }
+        });
         verses_text = verses.join('\n');
     }
     const selectedTextInputs = document.querySelectorAll('input[name="selected_text"]');
     const versesTextInputs = document.querySelectorAll('input[name="verses_text"]');
+    const highlightCoordinatesInputs = document.querySelectorAll('input[name="highlight_coordinates"]');
+    const selectedHtmlInputs = document.querySelectorAll('input[name="selected_html"]');
     if (text !== '')
     {
+        // Selections outside the verses have no HTML, so fall back to the plain text, escaped
+        if (selected_html === '')
+        {
+            const escaped = document.createElement('div');
+            escaped.textContent = text;
+            selected_html = escaped.innerHTML;
+        }
         selectedTextInputs.forEach(input => { input.value = text; });
         versesTextInputs.forEach(input => { input.value = verses_text; });
+        highlightCoordinatesInputs.forEach(input => { input.value = JSON.stringify(highlight_coordinates); });
+        selectedHtmlInputs.forEach(input => { input.value = selected_html; });
         enableTextHighlightInteractables();
     }
     else if (!document.querySelector('.modal.show'))
     {
         selectedTextInputs.forEach(input => { input.value = ''; });
         versesTextInputs.forEach(input => { input.value = ''; });
+        highlightCoordinatesInputs.forEach(input => { input.value = '{}'; });
+        selectedHtmlInputs.forEach(input => { input.value = ''; });
         disableTextHighlightInteractables();
     }
 });

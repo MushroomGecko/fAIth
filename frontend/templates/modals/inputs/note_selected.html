@@ -8,11 +8,34 @@
             <div class="modal-body">
                 <form id="noteSelectedForm" data-input-modal="noteSelectedModal" hx-post="{% url 'api:post_note' %}" hx-target="#serverResponseContent" hx-swap="innerHTML" hx-encoding="application/x-www-form-urlencoded">
                     {% csrf_token %}
-                    <input type="hidden" name="selected_text" value="">
+                    <input type="hidden" name="selected_html" value="">
                     <input type="hidden" name="verses_text" value="">
+                    <input type="hidden" name="highlight_coordinates" value="{}">
                     <input type="hidden" name="book" value="{{ book }}">
                     <input type="hidden" name="chapter" value="{{ chapter }}">
                     <input type="hidden" name="collection_name" value="{{ version }}">
+                    <fieldset id="noteHighlightColors" class="mb-3">
+                        <legend class="form-label fs-6">Highlight color</legend>
+                        <div class="d-flex flex-wrap gap-2">
+                            <input type="radio" class="btn-check" name="highlight_color" id="noteColorYellow" value="#FFFF00" checked>
+                            <label class="highlight-swatch rounded-circle" for="noteColorYellow" style="background-color: #FFFF00;" title="Yellow"><span class="visually-hidden">Yellow</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="noteColorGreen" value="#32CD32">
+                            <label class="highlight-swatch rounded-circle" for="noteColorGreen" style="background-color: #32CD32;" title="Green"><span class="visually-hidden">Green</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="noteColorBlue" value="#00BFFF">
+                            <label class="highlight-swatch rounded-circle" for="noteColorBlue" style="background-color: #00BFFF;" title="Bright blue"><span class="visually-hidden">Bright blue</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="noteColorPink" value="#FF69B4">
+                            <label class="highlight-swatch rounded-circle" for="noteColorPink" style="background-color: #FF69B4;" title="Hot pink"><span class="visually-hidden">Hot pink</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="noteColorOrange" value="#FFB347">
+                            <label class="highlight-swatch rounded-circle" for="noteColorOrange" style="background-color: #FFB347;" title="Light orange"><span class="visually-hidden">Light orange</span></label>
+
+                            <input type="radio" class="btn-check" name="highlight_color" id="noteColorPurple" value="#B19CD9">
+                            <label class="highlight-swatch rounded-circle" for="noteColorPurple" style="background-color: #B19CD9;" title="Light purple"><span class="visually-hidden">Light purple</span></label>
+                        </div>
+                    </fieldset>
                     <div class="mb-3">
                         <label for="note" class="form-label">Note</label>
                         <textarea id="note" name="note" class="form-control" rows="3" required></textarea>
