@@ -73,6 +73,9 @@ function getVerseHighlight(range, p)
     return end > beginning ? { beginning: beginning, end: end } : null;
 }
 
+// Span classes kept in saved notes. Must match ALLOWED_SPAN_CLASSES in backend/utils/note_html.py.
+const SAVED_SPAN_CLASSES = ['wj', 'header'];
+
 // Returns the selected verse HTML (keeping spans like <span class="wj">), clamped to the verses container.
 // Existing highlight <mark> wrappers are removed so a saved note doesn't carry the highlight.
 // The server sanitizes this HTML before saving it.
@@ -91,8 +94,28 @@ function getSelectedHtml(range, container)
         clamped.setEnd(container, container.childNodes.length);
     }
 
+    // cloneContents() only keeps ancestors that are partly inside the selection. When the selection is
+    // entirely inside one span (e.g. a few words of red text), that span is left out, so re-wrap the
+    // selection in clones of the allowed span ancestors above it.
+    let fragment = clamped.cloneContents();
+    let ancestor = clamped.commonAncestorContainer;
+    if (ancestor.nodeType === Node.TEXT_NODE)
+    {
+        ancestor = ancestor.parentNode;
+    }
+    while (ancestor && ancestor !== container)
+    {
+        if (ancestor.tagName === 'SPAN' && SAVED_SPAN_CLASSES.some(cls => ancestor.classList.contains(cls)))
+        {
+            const outer = ancestor.cloneNode(false);
+            outer.appendChild(fragment);
+            fragment = outer;
+        }
+        ancestor = ancestor.parentNode;
+    }
+
     const wrapper = document.createElement('div');
-    wrapper.appendChild(clamped.cloneContents());
+    wrapper.appendChild(fragment);
     wrapper.querySelectorAll('mark').forEach(mark => mark.replaceWith(...mark.childNodes));
     return wrapper.innerHTML;
 }
